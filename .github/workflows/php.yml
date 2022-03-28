@@ -1,0 +1,29 @@
+name: PHP Composer
+
+on:
+  push:
+
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP 7.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.1'
+
+      - name: Install Composer and Dependencies
+        run: curl -s http://getcomposer.org/installer | php && php composer.phar self-update && php composer.phar install
+
+      - name: Tests
+        run: php composer.phar test
+
+      - name: Coding Style
+        run: php composer.phar cs-check
