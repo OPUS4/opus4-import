@@ -58,7 +58,7 @@ class MetadataImportTest extends TestCase
         parent::setUp();
 
         $this->documentImported = false;
-        $this->xmlDir           = dirname(dirname(dirname(__FILE__))) . '/import/';
+        $this->xmlDir           = dirname(dirname(__FILE__)) . '/_files/';
     }
 
     public function tearDown()
@@ -75,14 +75,14 @@ class MetadataImportTest extends TestCase
     public function testInvalidXmlExceptionWhenNotWellFormed()
     {
         $importer = new MetadataImport('This ist no XML');
-        $this->setExpectedException(MetadataImportInvalidXmlException::class);
+        $this->expectException(MetadataImportInvalidXmlException::class);
         $importer->run();
     }
 
     public function testInvalidXmlExceptionWhenNotWellFormedWithFile()
     {
         $importer = new MetadataImport($this->xmlDir . 'test_import_badformed.xml', true);
-        $this->setExpectedException(MetadataImportInvalidXmlException::class);
+        $this->expectException(MetadataImportInvalidXmlException::class);
         $importer->run();
     }
 
@@ -92,7 +92,7 @@ class MetadataImportTest extends TestCase
         $this->loadInputFile();
         $importer = new MetadataImport($this->xml);
 
-        $this->setExpectedException(MetadataImportInvalidXmlException::class);
+        $this->expectException(MetadataImportInvalidXmlException::class);
         $importer->run();
     }
 
@@ -139,7 +139,7 @@ class MetadataImportTest extends TestCase
         $this->loadInputFile();
         $importer = new MetadataImport($this->xml);
 
-        $this->setExpectedException(MetadataImportSkippedDocumentsException::class);
+        $this->expectException(MetadataImportSkippedDocumentsException::class);
         $importer->run();
     }
 
@@ -148,8 +148,6 @@ class MetadataImportTest extends TestCase
      */
     public function testUpdateDocument()
     {
-        $this->resetDatabase();
-
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
         $importer = new MetadataImport($this->xml);

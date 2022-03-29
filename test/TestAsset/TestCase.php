@@ -49,7 +49,7 @@ class TestCase extends SimpleTestCase
     protected function clearDatabase()
     {
         $databaseHelper = new DatabaseHelper();
-        $databaseHelper->clearTables();
+        $databaseHelper->clearTables(true); // TODO 'true' needed for MetadataImportTest::updateDocument (slows all tests down)
     }
 
     /**
