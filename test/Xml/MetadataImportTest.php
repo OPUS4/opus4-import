@@ -153,9 +153,11 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
 
         $importer->run();
+
         try {
             $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
+            $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
             $this->fail("Import failed");
@@ -171,8 +173,9 @@ class MetadataImportTest extends TestCase
         $titleMain  = $updatedDoc->getTitleMain();
         $abstracts  = $updatedDoc->getTitleAbstract();
 
+        $this->assertCount(1, $titleMain);
         $this->assertEquals('La Vie en Rose', $titleMain[0]->getValue(), "Update failed");
-        $this->assertEquals(1, count($abstracts), 'Expected 1 abstract after update');
+        $this->assertCount(1, $abstracts, 'Expected 1 abstract after update');
     }
 
     /**
@@ -194,6 +197,7 @@ class MetadataImportTest extends TestCase
         try {
             $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
+            $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie en Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
             $this->fail("Import failed");
@@ -225,6 +229,7 @@ class MetadataImportTest extends TestCase
         try {
             $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
+            $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
             $this->fail("Import failed");
@@ -277,23 +282,23 @@ class MetadataImportTest extends TestCase
         $importedDoc = Document::new(1);
         $authors     = $importedDoc->getPersonAuthor();
 
-        $this->assertEquals(1, count($authors));
+        $this->assertCount(1, $authors);
         $this->assertEquals(1, $authors[0]->getAllowEmailContact());
 
         $contributors = $importedDoc->getPersonContributor();
-        $this->assertEquals(1, count($contributors));
+        $this->assertCount(1, $contributors);
         $this->assertEquals(0, $contributors[0]->getAllowEmailContact());
 
         $editor = $importedDoc->getPersonEditor();
-        $this->assertEquals(1, count($editor));
+        $this->assertCount(1, $editor);
         $this->assertEquals(0, $editor[0]->getAllowEmailContact());
 
         $referee = $importedDoc->getPersonReferee();
-        $this->assertEquals(1, count($referee));
+        $this->assertCount(1, $referee);
         $this->assertEquals(0, $referee[0]->getAllowEmailContact());
 
         $advisor = $importedDoc->getPersonAdvisor();
-        $this->assertEquals(1, count($advisor));
+        $this->assertCount(1, $advisor);
         $this->assertEquals(1, $advisor[0]->getAllowEmailContact());
     }
 
@@ -310,7 +315,7 @@ class MetadataImportTest extends TestCase
         $importedDoc = Document::new(1);
 
         $other = $importedDoc->getPersonOther();
-        $this->assertEquals(1, count($other));
+        $this->assertCount(1, $other);
         $this->assertEquals('Janet', $other[0]->getFirstName());
         $this->assertEquals('Doe', $other[0]->getLastName());
     }
