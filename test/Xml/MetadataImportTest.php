@@ -39,7 +39,7 @@ use Opus\Model\NotFoundException;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use OpusTest\TestAsset\TestCase;
+use OpusTest\Import\TestAsset\TestCase;
 
 use function array_pop;
 use function count;
