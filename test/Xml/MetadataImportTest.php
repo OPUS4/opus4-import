@@ -35,10 +35,10 @@ use DOMDocument;
 use Exception;
 use Opus\Document;
 use Opus\DocumentFinder;
-use Opus\Model\NotFoundException;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
+use Opus\Model\NotFoundException;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function array_pop;

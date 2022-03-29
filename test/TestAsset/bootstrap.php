@@ -50,18 +50,18 @@ require_once APPLICATION_PATH . '/vendor/autoload.php';
 require_once APPLICATION_PATH . '/vendor/opus4-repo/framework/library/OpusDb/Mysqlutf8.php';
 
 // Do test environment initializiation.
-$application = new \Zend_Application(
+$application = new Zend_Application(
     APPLICATION_ENV,
     [
         "config" => [
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini'
-        ]
+            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
+        ],
     ]
 );
 
 // TODO should not be necessary for search tests
-$options = $application->getOptions();
+$options                                        = $application->getOptions();
 $options['opus']['disableDatabaseVersionCheck'] = true;
 $application->setOptions($options);
 
-$application->bootstrap(['Database','Temp','OpusLocale','IndexPlugin']);
+$application->bootstrap(['Database', 'Temp', 'OpusLocale', 'IndexPlugin']);
