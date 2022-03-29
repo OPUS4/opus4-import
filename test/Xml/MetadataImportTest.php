@@ -27,22 +27,18 @@
  *
  * @copyright   Copyright (c) 2008-2019, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Tests
- * @package     Opus\Util
- * @author      Gunar Maiwald <maiwald@zib.de>
  */
 
-namespace OpusTest\Util;
+namespace OpusTest\Import\Xml;
 
 use DOMDocument;
 use Exception;
 use Opus\Document;
 use Opus\DocumentFinder;
 use Opus\Model\NotFoundException;
-use Opus\Util\MetadataImport;
-use Opus\Util\MetadataImportInvalidXmlException;
-use Opus\Util\MetadataImportSkippedDocumentsException;
+use Opus\Import\Xml\MetadataImport;
+use Opus\Import\Xml\MetadataImportInvalidXmlException;
+use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\TestAsset\TestCase;
 
 use function array_pop;
@@ -72,7 +68,7 @@ class MetadataImportTest extends TestCase
         if ($this->documentImported) {
             $ids    = Document::getAllIds();
             $lastId = array_pop($ids);
-            $doc    = new Document($lastId);
+            $doc    = Document::new($lastId);
             $doc->delete();
         }
         parent::tearDown();
@@ -162,7 +158,7 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
         try {
-            $importedDoc = new Document(1);
+            $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
@@ -175,7 +171,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
         $importer->run();
 
-        $updatedDoc = new Document(1);
+        $updatedDoc = Document::new(1);
         $titleMain  = $updatedDoc->getTitleMain();
         $abstracts  = $updatedDoc->getTitleAbstract();
 
@@ -200,7 +196,7 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
         try {
-            $importedDoc = new Document(1);
+            $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertEquals('La Vie en Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
@@ -214,7 +210,7 @@ class MetadataImportTest extends TestCase
         $importer->keepFieldsOnUpdate(['TitleAbstract']);
         $importer->run();
 
-        $updatedDoc = new Document(1);
+        $updatedDoc = Document::new(1);
         $abstracts  = $updatedDoc->getTitleAbstract();
 
         $this->assertEquals(2, count($abstracts), 'Expected 2 abstracts after update');
@@ -231,7 +227,7 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
         try {
-            $importedDoc = new Document(1);
+            $importedDoc = Document::new(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {
@@ -254,7 +250,7 @@ class MetadataImportTest extends TestCase
 
         $this->assertTrue($expectedException, "The expected exception did not occur.");
 
-        $updatedDoc = new Document(1);
+        $updatedDoc = Document::new(1);
         $titleMain  = $updatedDoc->getTitleMain();
         $this->assertNotEmpty($titleMain, 'Existing Document was corrupted on failed update attempt.');
         $this->assertEquals(
@@ -282,7 +278,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
 
         $importer->run();
-        $importedDoc = new Document(1);
+        $importedDoc = Document::new(1);
         $authors     = $importedDoc->getPersonAuthor();
 
         $this->assertEquals(1, count($authors));
@@ -315,7 +311,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
 
         $importer->run();
-        $importedDoc = new Document(1);
+        $importedDoc = Document::new(1);
 
         $other = $importedDoc->getPersonOther();
         $this->assertEquals(1, count($other));
@@ -335,16 +331,16 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
 
-        $importedDoc = new Document(1);
+        $importedDoc = Document::new(1);
         $this->assertEquals(1, $importedDoc->getField('BelongsToBibliography')->getValue()); // "true" in XML
 
-        $importedDoc = new Document(2);
+        $importedDoc = Document::new(2);
         $this->assertEquals(1, $importedDoc->getField('BelongsToBibliography')->getValue()); // "1"
 
-        $importedDoc = new Document(3);
+        $importedDoc = Document::new(3);
         $this->assertEquals(0, $importedDoc->getField('BelongsToBibliography')->getValue()); // "false"
 
-        $importedDoc = new Document(4);
+        $importedDoc = Document::new(4);
         $this->assertEquals(0, $importedDoc->getField('BelongsToBibliography')->getValue()); // "0"
     }
 }
