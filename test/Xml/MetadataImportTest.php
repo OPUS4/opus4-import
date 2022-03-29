@@ -46,6 +46,9 @@ use function count;
 use function dirname;
 use function get_class;
 
+/**
+ * TODO get rid of class variables that are not needed, like $xml
+ */
 class MetadataImportTest extends TestCase
 {
     private $documentImported;
@@ -124,7 +127,7 @@ class MetadataImportTest extends TestCase
 
         $finder = new DocumentFinder();
         $docId  = $finder->ids()[0];
-        $doc    = new Document($docId);
+        $doc    = Document::get($docId);
         $this->assertEquals(1, $doc->getPageFirst());
         $this->assertEquals(2, $doc->getPageLast());
         $this->assertEquals(3, $doc->getPageNumber());
@@ -155,7 +158,7 @@ class MetadataImportTest extends TestCase
         $importer->run();
 
         try {
-            $importedDoc = Document::new(1);
+            $importedDoc = Document::get(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
@@ -169,7 +172,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
         $importer->run();
 
-        $updatedDoc = Document::new(1);
+        $updatedDoc = Document::get(1);
         $titleMain  = $updatedDoc->getTitleMain();
         $abstracts  = $updatedDoc->getTitleAbstract();
 
@@ -195,7 +198,7 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
         try {
-            $importedDoc = Document::new(1);
+            $importedDoc = Document::get(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie en Rose', $titleMain[0]->getValue());
@@ -210,7 +213,7 @@ class MetadataImportTest extends TestCase
         $importer->keepFieldsOnUpdate(['TitleAbstract']);
         $importer->run();
 
-        $updatedDoc = Document::new(1);
+        $updatedDoc = Document::get(1);
         $abstracts  = $updatedDoc->getTitleAbstract();
 
         $this->assertEquals(2, count($abstracts), 'Expected 2 abstracts after update');
@@ -227,7 +230,7 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
         try {
-            $importedDoc = Document::new(1);
+            $importedDoc = Document::get(1);
             $titleMain   = $importedDoc->getTitleMain();
             $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
@@ -251,7 +254,7 @@ class MetadataImportTest extends TestCase
 
         $this->assertTrue($expectedException, "The expected exception did not occur.");
 
-        $updatedDoc = Document::new(1);
+        $updatedDoc = Document::get(1);
         $titleMain  = $updatedDoc->getTitleMain();
         $this->assertNotEmpty($titleMain, 'Existing Document was corrupted on failed update attempt.');
         $this->assertEquals(
@@ -279,7 +282,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
 
         $importer->run();
-        $importedDoc = Document::new(1);
+        $importedDoc = Document::get(1);
         $authors     = $importedDoc->getPersonAuthor();
 
         $this->assertCount(1, $authors);
@@ -312,7 +315,7 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
 
         $importer->run();
-        $importedDoc = Document::new(1);
+        $importedDoc = Document::get(1);
 
         $other = $importedDoc->getPersonOther();
         $this->assertCount(1, $other);
@@ -332,16 +335,16 @@ class MetadataImportTest extends TestCase
 
         $importer->run();
 
-        $importedDoc = Document::new(1);
+        $importedDoc = Document::get(1);
         $this->assertEquals(1, $importedDoc->getField('BelongsToBibliography')->getValue()); // "true" in XML
 
-        $importedDoc = Document::new(2);
+        $importedDoc = Document::get(2);
         $this->assertEquals(1, $importedDoc->getField('BelongsToBibliography')->getValue()); // "1"
 
-        $importedDoc = Document::new(3);
+        $importedDoc = Document::get(3);
         $this->assertEquals(0, $importedDoc->getField('BelongsToBibliography')->getValue()); // "false"
 
-        $importedDoc = Document::new(4);
+        $importedDoc = Document::get(4);
         $this->assertEquals(0, $importedDoc->getField('BelongsToBibliography')->getValue()); // "0"
     }
 }
