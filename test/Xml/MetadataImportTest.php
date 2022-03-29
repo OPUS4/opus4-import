@@ -39,6 +39,7 @@ use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Model\NotFoundException;
+use Opus\Util\DatabaseHelper;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function array_pop;
@@ -151,6 +152,9 @@ class MetadataImportTest extends TestCase
      */
     public function testUpdateDocument()
     {
+        $databaseHelper = new DatabaseHelper();
+        $databaseHelper->clearTables(true);
+
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
         $importer = new MetadataImport($this->xml);

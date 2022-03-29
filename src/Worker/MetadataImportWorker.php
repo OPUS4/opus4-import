@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
  * the Federal Department of Higher Education and Research and the Ministry
@@ -27,79 +27,67 @@
  *
  * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- */
+*/
 
-namespace OpusTest\Import\TestAsset;
+namespace Opus\Import\Worker;
 
-use Opus\Util\DatabaseHelper;
+use Opus\Import\Xml\MetadataImport;
+use Opus\Job;
+use Opus\Job\Worker\AbstractWorker;
+use Opus\Job\Worker\InvalidJobException;
+use Zend_Log;
 
-use function array_diff;
-use function is_dir;
-use function rmdir;
-use function scandir;
-use function unlink;
-
-use const DIRECTORY_SEPARATOR;
+use function is_object;
 
 /**
- * Superclass for all tests.  Providing maintenance tasks.
+ * Worker for importing metadata
  */
-class TestCase extends SimpleTestCase
+class MetadataImportWorker extends AbstractWorker
 {
-    protected function clearDatabase()
-    {
-        $databaseHelper = new DatabaseHelper();
-        $databaseHelper->clearTables();
-    }
+    const LABEL = 'opus-metadata-import';
 
     /**
-     * Deletes folders in workspace/files in case a test didn't do proper cleanup.
+     * Constructs worker.
      *
-     * @param string|null $directory
+     * @param null|Zend_Log $logger
      */
-    protected function clearFiles($directory = null)
+    public function __construct($logger = null)
     {
-        if ($directory === null) {
-            if (empty(APPLICATION_PATH)) {
-                return;
-            }
-            $filesDir = APPLICATION_PATH . DIRECTORY_SEPARATOR . 'build' . DIRECTORY_SEPARATOR . 'workspace'
-            . DIRECTORY_SEPARATOR . 'files';
-            $files    = array_diff(scandir($filesDir), ['.', '..', '.gitignore']);
-        } else {
-            $filesDir = $directory;
-            $files    = array_diff(scandir($filesDir), ['.', '..']);
-        }
-
-        foreach ($files as $file) {
-            $path = $filesDir . DIRECTORY_SEPARATOR . $file;
-
-            if (is_dir($path)) {
-                $this->clearFiles($path);
-            } else {
-                unlink($path);
-            }
-        }
-
-        if ($directory !== null) {
-            rmdir($directory);
-        }
-
-        return;
+        $this->setLogger($logger);
     }
 
     /**
-     * Standard setUp method for clearing database.
+     * Return message label that is used to trigger worker process.
+     *
+     * @return string Message label.
      */
-    protected function setUp()
+    public function getActivationLabel()
     {
-        parent::setUp();
-
-        $this->clearDatabase();
+        return self::LABEL;
     }
 
-    protected function tearDown()
+    /**
+     * Perfom work.
+     *
+     * @param Job $job Job description and attached data.
+     */
+    public function work(Job $job)
     {
-        parent::tearDown();
+        if ($job->getLabel() !== $this->getActivationLabel()) {
+            throw new InvalidJobException($job->getLabel() . " is not a suitable job for this worker.");
+        }
+
+        $data = $job->getData();
+
+        if (! (is_object($data) && isset($data->xml) && $data->xml !== null)) {
+             throw new InvalidJobException("Incomplete or missing data.");
+        }
+
+        if (null !== $this->logger) {
+            $this->logger->debug("Importing Metadata:\n" . $data->xml);
+        }
+
+        $importer = new MetadataImport($data->xml);
+        $importer->run();
     }
 }
