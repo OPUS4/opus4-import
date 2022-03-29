@@ -64,4 +64,4 @@ $options                                        = $application->getOptions();
 $options['opus']['disableDatabaseVersionCheck'] = true;
 $application->setOptions($options);
 
-$application->bootstrap(['Database', 'Temp', 'OpusLocale', 'IndexPlugin']);
+$application->bootstrap(['Database', 'Temp', 'OpusLocale']);
