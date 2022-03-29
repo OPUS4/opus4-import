@@ -57,8 +57,6 @@ class MetadataImportTest extends TestCase
     {
         parent::setUp();
 
-        $this->clearTables();
-
         $this->documentImported = false;
         $this->xmlDir           = dirname(dirname(dirname(__FILE__))) . '/import/';
     }
