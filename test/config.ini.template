@@ -68,7 +68,6 @@ log.prepare.xml = false
 log.level = DEBUG
 
 ; Plugins used by Opus_Document
-model.plugins.document[] = 'Opus\Search\Plugin\Index'
 model.plugins.document[] = 'Opus\Document\Plugin\XmlCache'
 model.plugins.document[] = 'Opus\Document\Plugin\IdentifierUrn'
 model.plugins.document[] = 'Opus\Document\Plugin\IdentifierDoi'
