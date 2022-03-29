@@ -42,9 +42,7 @@ use function unlink;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * Superclass for all tests.  Providing maintainance tasks.
- *
- * @category Tests
+ * Superclass for all tests.  Providing maintenance tasks.
  */
 class TestCase extends SimpleTestCase
 {
@@ -52,14 +50,6 @@ class TestCase extends SimpleTestCase
     {
         $databaseHelper = new DatabaseHelper();
         $databaseHelper->clearTables();
-    }
-
-    /**
-     * Removes all documents from Solr index.
-     */
-    protected function clearSolrIndex()
-    {
-        Service::selectIndexingService(null, 'solr')->removeAllDocumentsFromIndex();
     }
 
     /**
@@ -105,17 +95,11 @@ class TestCase extends SimpleTestCase
     {
         parent::setUp();
 
-        Config::dropCached();
-        Service::dropCached();
-
         $this->clearDatabase();
-        $this->clearSolrIndex();
     }
 
     protected function tearDown()
     {
-        $this->clearSolrIndex();
-
         parent::tearDown();
     }
 }
