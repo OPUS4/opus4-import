@@ -28,6 +28,7 @@
     }
   },
   "minimum-stability": "dev",
+  "prefer-stable": true,
   "scripts": {
     "check": [
       "@cs-check",
