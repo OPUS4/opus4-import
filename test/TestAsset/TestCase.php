@@ -31,6 +31,7 @@
 
 namespace OpusTest\Import\TestAsset;
 
+use Opus\Config;
 use Opus\Db\Util\DatabaseHelper;
 
 use function array_diff;
@@ -101,5 +102,14 @@ class TestCase extends SimpleTestCase
     protected function tearDown()
     {
         parent::tearDown();
+    }
+
+    /**
+     * TODO adjustConfiguration also makes it configurable - so maybe not needed anymore
+     */
+    public function makeConfigurationModifiable()
+    {
+        $config = new \Zend_Config([], true);
+        Config::set($config->merge(Config::get()));
     }
 }
