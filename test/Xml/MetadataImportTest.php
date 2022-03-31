@@ -33,13 +33,13 @@ namespace OpusTest\Import\Xml;
 
 use DOMDocument;
 use Exception;
+use Opus\Db\Util\DatabaseHelper;
 use Opus\Document;
 use Opus\DocumentFinder;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Model\NotFoundException;
-use Opus\Util\DatabaseHelper;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function array_pop;

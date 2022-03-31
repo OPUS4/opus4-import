@@ -31,7 +31,7 @@
 
 namespace OpusTest\Import\TestAsset;
 
-use Opus\Util\DatabaseHelper;
+use Opus\Db\Util\DatabaseHelper;
 
 use function array_diff;
 use function is_dir;
