@@ -19,7 +19,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Opus\\": "src/"
+      "Opus\\Import\\": "src/"
     }
   },
   "autoload-dev": {

@@ -46,7 +46,7 @@ class ImporterTest extends TestCase
 
     public function testImportEnrichmentWithoutValue()
     {
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/test_import_enrichment_without_value.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/test_import_enrichment_without_value.xml');
 
         $importer = new Importer($xml, false, Log::get());
 
@@ -67,7 +67,7 @@ class ImporterTest extends TestCase
      */
     public function testImportInvalidEmbargoDate()
     {
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/incomplete-embargo-date.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-date.xml');
 
         $importer = new Importer($xml, false, Log::get());
 
@@ -77,7 +77,7 @@ class ImporterTest extends TestCase
 
     public function testValidEmbargoDate()
     {
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/embargo-date.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/embargo-date.xml');
 
         $importer = new Importer($xml, false, Log::get());
 

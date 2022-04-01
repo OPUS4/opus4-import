@@ -33,6 +33,7 @@
 
 namespace OpusTest\Import;
 
+use DirectoryIterator;
 use Opus\Import\XmlValidation;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -55,7 +56,7 @@ class XmlValidationTest extends TestCase
 
     public function testValidation2()
     {
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/import2.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import2.xml');
         $this->_checkValid($xml, 'import2.xml');
     }
 
@@ -66,7 +67,7 @@ class XmlValidationTest extends TestCase
     {
         $validator = new XmlValidation();
 
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/invalid-import1.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/invalid-import1.xml');
 
         $this->assertFalse($validator->validate($xml));
 
@@ -79,7 +80,7 @@ class XmlValidationTest extends TestCase
     {
         $validator = new XmlValidation();
 
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/enrichment-without-value.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/enrichment-without-value.xml');
 
         $this->assertTrue($validator->validate($xml));
 
@@ -99,7 +100,7 @@ class XmlValidationTest extends TestCase
     {
         $validator = new XmlValidation();
 
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/incomplete-embargo-date.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-date.xml');
 
         $this->assertTrue($validator->validate($xml));
     }
@@ -108,7 +109,7 @@ class XmlValidationTest extends TestCase
     {
         $validator = new XmlValidation();
 
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/incomplete-embargo-year.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-year.xml');
 
         $this->assertFalse($validator->validate($xml));
 
@@ -119,7 +120,7 @@ class XmlValidationTest extends TestCase
     {
         $validator = new XmlValidation();
 
-        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import/embargo-date.xml');
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/embargo-date.xml');
 
         $this->assertTrue($validator->validate($xml));
     }
