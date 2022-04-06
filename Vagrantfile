@@ -9,6 +9,7 @@ apt-get -yq install php7.1
 
 # Install required PHP packages
 apt-get -yq install php7.1-curl
+apt-get -yq install php7.1-zip
 apt-get -yq install php7.1-dom
 
 # Install required tools
