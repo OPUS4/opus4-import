@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,21 +25,20 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2008-2012, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application
  * @package     Import
  * @author      Sascha Szott <szott@zib.de>
- * @copyright   Copyright (c) 2008-2012, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 /**
- *
  * TODO: dieses Skript wird aktuell nicht in den Tarball / Deb-Package aufgenommen
  * Es ist noch sehr stark an die Anforderungen einer Testinstanz angepasst und
  * müsste vor der offiziellen Aufnahme noch generalisiert werden. Die Steuerung
  * sollte über eine externe Konfigurationsdatei erfolgen, so dass der Quellcode
  * später nicht mehr angepasst werden muss.
- *
  */
 
 namespace Opus\Import;
@@ -50,10 +50,28 @@ use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Identifier;
 use Opus\Licence;
+use Opus\Model\NotFoundException;
 use Opus\Person;
 use Opus\Series;
 use Opus\UserRole;
-use Opus\Model\NotFoundException;
+
+use function array_key_exists;
+use function count;
+use function explode;
+use function fclose;
+use function fgetcsv;
+use function file_exists;
+use function fopen;
+use function is_null;
+use function is_readable;
+use function lcfirst;
+use function preg_match;
+use function strpos;
+use function substr_count;
+use function trim;
+use function ucfirst;
+
+use const DIRECTORY_SEPARATOR;
 
 class CsvImporter
 {
@@ -61,44 +79,44 @@ class CsvImporter
 
     const NUM_OF_COLUMNS = 33;
 
-    const OLD_ID = 0;
-    const LANGUAGE = 1;
-    const TYPE = 2;
-    const SERVER_STATE = 3;
-    const TITLE_MAIN_LANGUAGE = 4;
-    const TITLE_MAIN_VALUE = 5;
-    const ABSTRACT_LANGUAGE = 6;
-    const ABSTRACT_VALUE = 7;
-    const OTHER_TITLE_TYPE = 8;
+    const OLD_ID               = 0;
+    const LANGUAGE             = 1;
+    const TYPE                 = 2;
+    const SERVER_STATE         = 3;
+    const TITLE_MAIN_LANGUAGE  = 4;
+    const TITLE_MAIN_VALUE     = 5;
+    const ABSTRACT_LANGUAGE    = 6;
+    const ABSTRACT_VALUE       = 7;
+    const OTHER_TITLE_TYPE     = 8;
     const OTHER_TITLE_LANGUAGE = 9;
-    const OTHER_TITLE_VALUE = 10;
-    const PERSON_TYPE = 11;
-    const PERSON_FIRSTNAME = 12;
-    const PERSON_LASTNAME = 13;
-    const DATE_TYPE = 14;
-    const DATE_VALUE = 15;
-    const IDENTIFIER_TYPE = 16;
-    const IDENTIFIER_VALUE = 17;
-    const NOTE_VISIBILITY = 18;
-    const NOTE_VALUE = 19;
-    const COLLECTION_ID = 20;
-    const SERIES_ID = 21;
-    const VOL_ID = 22;
-    const LICENCE_ID = 23;
-    const ENRICHMENTS = 24; // wird aktuell ignoriert
+    const OTHER_TITLE_VALUE    = 10;
+    const PERSON_TYPE          = 11;
+    const PERSON_FIRSTNAME     = 12;
+    const PERSON_LASTNAME      = 13;
+    const DATE_TYPE            = 14;
+    const DATE_VALUE           = 15;
+    const IDENTIFIER_TYPE      = 16;
+    const IDENTIFIER_VALUE     = 17;
+    const NOTE_VISIBILITY      = 18;
+    const NOTE_VALUE           = 19;
+    const COLLECTION_ID        = 20;
+    const SERIES_ID            = 21;
+    const VOL_ID               = 22;
+    const LICENCE_ID           = 23;
+    const ENRICHMENTS          = 24; // wird aktuell ignoriert
     //TODO bei Fromm gibt es 7 Enrichmentkeys
-    const ENRICHMENT_AVAILABILITY = 25;
-    const ENRICHMENT_FORMAT = 26;
+    const ENRICHMENT_AVAILABILITY      = 25;
+    const ENRICHMENT_FORMAT            = 26;
     const ENRICHMENT_KINDOFPUBLICATION = 27;
-    const ENRICHMENT_IDNO = 28;
-    const ENRICHMENT_COPYRIGHTPRINT = 29;
-    const ENRICHMENT_COPYRIGHTEBOOK = 30;
-    const ENRICHMENT_RELEVANCE = 31;
-    const FILENAME = 32;
+    const ENRICHMENT_IDNO              = 28;
+    const ENRICHMENT_COPYRIGHTPRINT    = 29;
+    const ENRICHMENT_COPYRIGHTEBOOK    = 30;
+    const ENRICHMENT_RELEVANCE         = 31;
+    const FILENAME                     = 32;
 
     private $_seriesIdsMap = [];
-    private $_fulltextDir = null;
-    private $_guestRole = null;
+    private $_fulltextDir;
+    private $_guestRole;
 
     public function run($argv)
     {
@@ -108,7 +126,7 @@ class CsvImporter
         }
 
         $ignoreHeader = true;
-        if (count($argv) > 3 && $argv[3] == 'noheader') {
+        if (count($argv) > 3 && $argv[3] === 'noheader') {
             $ignoreHeader = false;
         }
 
@@ -117,7 +135,7 @@ class CsvImporter
                 echo "fulltext directory '" . $argv[2] . "' is not readable -- check path or permissions\n";
             } else {
                 $this->_fulltextDir = $argv[2];
-                $this->_guestRole = UserRole::fetchByName('guest');
+                $this->_guestRole   = UserRole::fetchByName('guest');
             }
         }
 
@@ -131,19 +149,19 @@ class CsvImporter
             echo "Error while opening import file\n";
         }
 
-        $rowCounter = 0;
-        $docCounter = 0;
+        $rowCounter   = 0;
+        $docCounter   = 0;
         $errorCounter = 0;
         // TODO Feldtrenner und Feldbegrenzer konfigurierbar machen
-        while (($row = fgetcsv($file, 0, "\t", '"', '\\')) != false) {
+        while (($row = fgetcsv($file, 0, "\t", '"', '\\')) !== false) {
             $rowCounter++;
             $numOfCols = count($row);
-            if ($numOfCols != self::NUM_OF_COLUMNS) {
+            if ($numOfCols !== self::NUM_OF_COLUMNS) {
                 echo "unexpected number of columns ($numOfCols) in row $rowCounter: row is skipped\n";
                 // TODO add to reject.log
                 continue;
             }
-            if ($ignoreHeader && $rowCounter == 1) {
+            if ($ignoreHeader && $rowCounter === 1) {
                 continue;
             }
             if ($this->processRow($row)) {
@@ -199,7 +217,7 @@ class CsvImporter
                 self::ENRICHMENT_IDNO,
                 self::ENRICHMENT_COPYRIGHTPRINT,
                 self::ENRICHMENT_COPYRIGHTEBOOK,
-                self::ENRICHMENT_RELEVANCE
+                self::ENRICHMENT_RELEVANCE,
             ];
             foreach ($enrichementkeys as $enrichmentkey) {
                 $this->processEnrichment($enrichmentkey, $row, $doc);
@@ -235,14 +253,14 @@ class CsvImporter
         $t->setLanguage(trim($row[self::TITLE_MAIN_LANGUAGE]));
 
         // Abstract ist kein Pflichtfeld
-        if (trim($row[self::ABSTRACT_LANGUAGE]) != '') {
-            if (trim($row[self::ABSTRACT_VALUE]) != '') {
+        if (trim($row[self::ABSTRACT_LANGUAGE]) !== '') {
+            if (trim($row[self::ABSTRACT_VALUE]) !== '') {
                 // möglicherweise sind mehrere Abstracts (und zugehörige Sprachen) vorhanden
 
-                $values = explode('||', trim($row[self::ABSTRACT_VALUE]));
+                $values    = explode('||', trim($row[self::ABSTRACT_VALUE]));
                 $languages = explode('||', trim($row[self::ABSTRACT_LANGUAGE]));
 
-                if (count($values) != count($languages)) {
+                if (count($values) !== count($languages)) {
                     echo "Dokument $oldId mit Mismatch zwischen Anzahl Abstracts und zugehörigen Sprachen\n";
                     return;
                 }
@@ -258,10 +276,10 @@ class CsvImporter
         }
 
         // weitere Titel sind nicht Pflicht
-        if (trim($row[self::OTHER_TITLE_LANGUAGE]) != '') {
-            if (trim($row[self::OTHER_TITLE_VALUE]) != '') {
+        if (trim($row[self::OTHER_TITLE_LANGUAGE]) !== '') {
+            if (trim($row[self::OTHER_TITLE_VALUE]) !== '') {
                 $method = 'addTitle' . ucfirst($row[self::OTHER_TITLE_TYPE]);
-                $t = $doc->$method();
+                $t      = $doc->$method();
                 $t->setValue(trim($row[self::OTHER_TITLE_VALUE]));
                 $t->setLanguage(trim($row[self::OTHER_TITLE_LANGUAGE]));
             } else {
@@ -275,40 +293,42 @@ class CsvImporter
     {
         // Personen sind nicht Pflicht
 
-        if ($row[self::PERSON_TYPE] != '') {
+        if ($row[self::PERSON_TYPE] !== '') {
             // die drei Spalten persontype, firstname, lastname können mehrere
             // Personen enthalten
             // in diesem Fall erfolgt die Abtrennung *innerhalb* des Felds durch ||
-            $types = $row[self::PERSON_TYPE];
-            $firstnames = $row[self::PERSON_FIRSTNAME];
-            $lastnames = $row[self::PERSON_LASTNAME];
-            $numOfPipesTypeField = substr_count($types, '||');
+            $types                    = $row[self::PERSON_TYPE];
+            $firstnames               = $row[self::PERSON_FIRSTNAME];
+            $lastnames                = $row[self::PERSON_LASTNAME];
+            $numOfPipesTypeField      = substr_count($types, '||');
             $numOfPipesTypeFirstnames = substr_count($firstnames, '||');
-            $numOfPipesTypeLastnames = substr_count($lastnames, '||');
+            $numOfPipesTypeLastnames  = substr_count($lastnames, '||');
             if ($numOfPipesTypeFirstnames > 0) {
-                if ($numOfPipesTypeField == 0) {
+                if ($numOfPipesTypeField === 0) {
                     // alle Personen haben den gleichen Typ
-                    if ($numOfPipesTypeFirstnames != $numOfPipesTypeLastnames) {
+                    if ($numOfPipesTypeFirstnames !== $numOfPipesTypeLastnames) {
                         throw new Exception("skip all persons of document $oldId");
                     }
                 } else {
-                    if (! ($numOfPipesTypeField == $numOfPipesTypeFirstnames
-                            && $numOfPipesTypeField == $numOfPipesTypeLastnames)) {
+                    if (
+                        ! ($numOfPipesTypeField === $numOfPipesTypeFirstnames
+                            && $numOfPipesTypeField === $numOfPipesTypeLastnames)
+                    ) {
                         throw new Exception("skip all persons of document $oldId");
                     }
                 }
                 $firstnames = explode('||', $firstnames);
-                $lastnames = explode('||', $lastnames);
-                $types = explode('||', $types);
+                $lastnames  = explode('||', $lastnames);
+                $types      = explode('||', $types);
                 for ($i = 0; $i <= $numOfPipesTypeFirstnames; $i++) {
-                    if ($numOfPipesTypeField == 0) {
+                    if ($numOfPipesTypeField === 0) {
                         $this->addPerson($doc, $types[0], $firstnames[$i], $lastnames[$i], $oldId);
                     } else {
                         $this->addPerson($doc, $types[$i], $firstnames[$i], $lastnames[$i], $oldId);
                     }
                 }
             } else {
-                if (! ($numOfPipesTypeLastnames == 0 && $numOfPipesTypeField == 0)) {
+                if (! ($numOfPipesTypeLastnames === 0 && $numOfPipesTypeField === 0)) {
                     throw new Exception("skip all persons of document $oldId");
                 }
                 $this->addPerson($doc, $types, $firstnames, $lastnames, $oldId);
@@ -319,7 +339,7 @@ class CsvImporter
     private function addPerson($doc, $type, $firstname, $lastname, $oldId)
     {
         $p = new Person();
-        if (trim($firstname) == '') {
+        if (trim($firstname) === '') {
             echo "Datensatz $oldId ohne Wert für $type.firstname\n";
         } else {
             $p->setFirstName(trim($firstname));
@@ -345,19 +365,19 @@ class CsvImporter
     private function processIdentifier($row, $doc, $oldId)
     {
         // ist kein Pflichtfeld
-        if (trim($row[self::IDENTIFIER_TYPE]) != '') {
+        if (trim($row[self::IDENTIFIER_TYPE]) !== '') {
             // die zwei Spalten identifiertype und identifier können mehrere
             // Identifier enthalten
             // in diesem Fall erfolgt die Abtrennung *innerhalb* des Felds durch ||
-            $types = $row[self::IDENTIFIER_TYPE];
-            $values = $row[self::IDENTIFIER_VALUE];
-            $numOfPipesTypeField = substr_count($types, '||');
+            $types                = $row[self::IDENTIFIER_TYPE];
+            $values               = $row[self::IDENTIFIER_VALUE];
+            $numOfPipesTypeField  = substr_count($types, '||');
             $numOfPipesTypeValues = substr_count($values, '||');
-            if ($numOfPipesTypeField != $numOfPipesTypeValues) {
+            if ($numOfPipesTypeField !== $numOfPipesTypeValues) {
                 throw new Exception("skip all identifiers of document $oldId");
             }
             $values = explode('||', $values);
-            $types = explode('||', $types);
+            $types  = explode('||', $types);
             for ($i = 0; $i <= $numOfPipesTypeValues; $i++) {
                 $this->addIdentifier($doc, $types[$i], $values[$i], $oldId);
             }
@@ -377,7 +397,7 @@ class CsvImporter
     {
         // TODO aktuell nur Unterstützung für *eine* Note
         // ist kein Pflichtfeld
-        if (trim($row[self::NOTE_VALUE]) != '') {
+        if (trim($row[self::NOTE_VALUE]) !== '') {
             $n = $doc->addNote();
             $n->setMessage(trim($row[self::NOTE_VALUE]));
             $visibility = trim($row[self::NOTE_VISIBILITY]);
@@ -393,7 +413,7 @@ class CsvImporter
     {
         // TODO mehrere Collection-IDs können innerhalb des Felds durch || getrennt werden
         // ist kein Pflichtfeld
-        if (trim($row[self::COLLECTION_ID]) != '') {
+        if (trim($row[self::COLLECTION_ID]) !== '') {
             $collIds = explode('||', $row[self::COLLECTION_ID]);
             foreach ($collIds as $collId) {
                 $collectionId = trim($collId);
@@ -411,7 +431,7 @@ class CsvImporter
     private function processLicence($row, $doc, $oldId)
     {
         // TODO aktuell nur Unterstützung für *eine* Lizenz
-        if (trim($row[self::LICENCE_ID]) != '') {
+        if (trim($row[self::LICENCE_ID]) !== '') {
             $licenceId = trim($row[self::LICENCE_ID]);
             try {
                 $l = new Licence($licenceId);
@@ -423,31 +443,31 @@ class CsvImporter
             // in diesem Fall versuchen wir die Lizenz aus dem format-Enrichment abzuleiten
             $format = trim($row[self::ENRICHMENT_FORMAT]);
 
-            if (! (strpos($format, 'no download') == false) || ! (strpos($format, 'no copy') == false)) {
+            if (! (strpos($format, 'no download') === false) || ! (strpos($format, 'no copy') === false)) {
                 $l = new Licence(11);
                 $doc->addLicence($l);
                 return;
             }
 
-            if (! (strpos($format, 'xerox') == false)) {
+            if (! (strpos($format, 'xerox') === false)) {
                 $l = new Licence(13);
                 $doc->addLicence($l);
                 return;
             }
 
-            if (! (strpos($format, 'to download') == false)) {
+            if (! (strpos($format, 'to download') === false)) {
                 $l = new Licence(9);
                 $doc->addLicence($l);
                 return;
             }
 
-            if (! (strpos($format, 'upon request') == false)) {
+            if (! (strpos($format, 'upon request') === false)) {
                 $l = new Licence(10);
                 $doc->addLicence($l);
                 return;
             }
 
-            if (! (strpos($format, 'to purchase') == false)) {
+            if (! (strpos($format, 'to purchase') === false)) {
                 $l = new Licence(12);
                 $doc->addLicence($l);
                 return;
@@ -465,10 +485,10 @@ class CsvImporter
         // nur Enrichments eines Enrichmentkeys stehen
         // zusätzliche Anforderung: in evalue können mehrere Werte stehen (dann durch || getrennt)
         $value = trim($row[$enrichmentkey]);
-        if ($value != '') {
+        if ($value !== '') {
             preg_match('/^{([A-Za-z]+):(.+)}$/', $value, $matches);
 
-            if (count($matches) != 3) {
+            if (count($matches) !== 3) {
                 throw new Exception("unerwarteter Wert '$value' für Enrichment in Spalte $enrichmentkey");
             }
 
@@ -494,9 +514,9 @@ class CsvImporter
         // Spezial-Workaround fuer Fromm, um die Inhalte aus der
         // Spalte 26 (Enrichment: kindofpublication) in das Identifierfeld serial zu schreiben
         $value = trim($row[self::ENRICHMENT_KINDOFPUBLICATION]);
-        if ($value != '') {
+        if ($value !== '') {
             preg_match('/^{([A-Za-z]+):(.+)}$/', $value, $matches);
-            if (count($matches) != 3) {
+            if (count($matches) !== 3) {
                 throw new Exception("unerwarteter Wert '$value' fuer Enrichment in Spalte $enrichmentkey"); // TODO bug
             }
             $this->addIdentifier($doc, 'serial', trim($matches[2]));
@@ -506,7 +526,7 @@ class CsvImporter
     private function processSeries($row, $doc)
     {
         // ist kein Pflichtfeld
-        if (trim($row[self::SERIES_ID]) != '') {
+        if (trim($row[self::SERIES_ID]) !== '') {
             $seriesIds = explode('||', $row[self::SERIES_ID]);
             foreach ($seriesIds as $seriesId) {
                 $seriesIdTrimmed = trim($seriesId);
@@ -530,16 +550,17 @@ class CsvImporter
 
     private function processFile($row, $doc, $oldId, $extension = 'pdf')
     {
-
-        $format = trim($row[self::ENRICHMENT_FORMAT]);
+        $format   = trim($row[self::ENRICHMENT_FORMAT]);
         $filename = trim($row[self::FILENAME]);
 
         // in format-Spalte sind nur bestimmte Werte zulässig
-        if ((strpos($format, 'no download') === false) &&
+        if (
+            (strpos($format, 'no download') === false) &&
                 (strpos($format, 'no copy') === false) &&
                 (strpos($format, 'to purchase') === false) &&
                 (strpos($format, 'to download') === false) &&
-                (strpos($format, 'upon request') === false)) {
+                (strpos($format, 'upon request') === false)
+        ) {
             echo "Dokument $oldId: [ERR001] Inhalt '$format' des format-Enrichments entspricht nicht dem zulässigen"
                 . " Vokabular -- evtl. vorhandene Datei wird nicht importiert\n";
             return null;
@@ -547,10 +568,12 @@ class CsvImporter
 
         // bei den Keywords 'no download', 'no copy' und 'to purchase' wird keine Dateiangabe erwartet: steht doch ein
         // da, ist das ein Fehler!
-        if (! (strpos($format, 'no download') === false) ||
+        if (
+            ! (strpos($format, 'no download') === false) ||
                 ! (strpos($format, 'no copy') === false) ||
-                ! (strpos($format, 'to purchase') === false)) {
-            if ($filename != '') {
+                ! (strpos($format, 'to purchase') === false)
+        ) {
+            if ($filename !== '') {
                 echo "Dokument $oldId: [ERR002] Dateiname angegeben aber format-Enrichment mit unerwartetem Inhalt"
                     . " '$format' -- Datei wird nicht importiert\n";
             }
@@ -558,8 +581,10 @@ class CsvImporter
         }
 
         // nur bei den Keywords 'to download' und 'upon request' wird überhaupt eine Datei erwartet
-        if ($filename == '' && (! (strpos($format, 'to download') === false)
-                || ! (strpos($format, 'upon request') === false))) {
+        if (
+            $filename === '' && (! (strpos($format, 'to download') === false)
+                || ! (strpos($format, 'upon request') === false))
+        ) {
             // bei 'xerox upon request' wird keine Datei erwartet
             if (strpos($format, 'xerox upon request') === false) {
                 echo "Dokument $oldId: [ERR003] Dateiname erwartet, aber leeren Inhalt in Spalte für Dateinamen"
@@ -575,8 +600,8 @@ class CsvImporter
             return null;
         }
 
-        $filename = $filename . '.' . $extension;
-        $tempfile = $this->_fulltextDir . DIRECTORY_SEPARATOR . $filename;
+        $filename .= '.' . $extension;
+        $tempfile  = $this->_fulltextDir . DIRECTORY_SEPARATOR . $filename;
 
         if (! file_exists($tempfile)) {
             echo "Dokument $oldId: [ERR006] zugeordnete Datei wurden nicht importiert, da sie nicht im angegebenen"

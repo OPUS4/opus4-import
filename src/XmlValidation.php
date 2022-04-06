@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,26 +25,34 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2008-2016, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application
  * @package     Import
  * @author      Jens Schwidder <schwidder@zib.de>
- * @copyright   Copyright (c) 2008-2016, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import;
 
 use DOMDocument;
 
+use function libxml_clear_errors;
+use function libxml_get_errors;
+use function libxml_use_internal_errors;
+use function trim;
+
+use const DIRECTORY_SEPARATOR;
+use const LIBXML_ERR_ERROR;
+use const LIBXML_ERR_FATAL;
+use const LIBXML_ERR_WARNING;
+
 /**
  * Class for validating OPUS import xml.
- *
  */
 class XmlValidation
 {
-    /**
-     * @var array|null
-     */
+    /** @var array|null */
     private $errors;
 
     /**

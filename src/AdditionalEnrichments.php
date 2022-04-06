@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,9 +25,6 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @category    Application
- * @package     Import
- * @author      Sascha Szott <opus-development@saschaszott.de>
  * @copyright   Copyright (c) 2016-2019
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
@@ -42,13 +40,20 @@
  * opus.import.checksum : md5 checksum of SWORD package (as specified in HTTP
  *                        Content-MD5 header)
  *
- *
+ * @category    Application
+ * @package     Import
+ * @author      Sascha Szott <opus-development@saschaszott.de>
  */
 
 namespace Opus\Import;
 
 use Exception;
 use Opus\EnrichmentKey;
+
+use function array_key_exists;
+use function gmdate;
+use function is_null;
+use function trim;
 
 /**
  * Additional enrichments for imported documents.
@@ -59,7 +64,6 @@ use Opus\EnrichmentKey;
  */
 class AdditionalEnrichments
 {
-
     /**
      * Authenticated user account that performed the import.
      */
@@ -85,14 +89,9 @@ class AdditionalEnrichments
      */
     const OPUS_SOURCE = 'opus.source';
 
-    /**
-     * @var
-     */
+    /** @var */
     private $enrichmentMap;
 
-    /**
-     * AdditionalEnrichments constructor.
-     */
     public function __construct()
     {
         if (! $this->checkKeysExist()) {

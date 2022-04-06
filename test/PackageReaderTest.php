@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,23 +25,33 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application Unit Tests
  * @package     Application
  * @author      Jens Schwidder <schwidder@zib.de>
  * @author      Sascha Szott <opus-development@saschaszott.de>
- * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
 
-use Opus\Config;
 use Opus\Import\PackageReader;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use OpusTest\Import\TestAsset\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+
+use function file_put_contents;
+use function is_dir;
+use function is_writable;
+use function mkdir;
+use function rmdir;
+use function touch;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
 
 class PackageReaderTest extends TestCase
 {
@@ -118,8 +129,7 @@ class PackageReaderTest extends TestCase
         try {
             $this->expectException(MetadataImportInvalidXmlException::class);
             $method->invokeArgs($this->mockReader, [$extractDir]);
-        }
-        finally {
+        } finally {
             unlink($metadataFile);
             rmdir($extractDir);
         }
@@ -169,7 +179,7 @@ XML;
 
     protected static function getMethod($name)
     {
-        $class = new ReflectionClass(PackageReader::class);
+        $class  = new ReflectionClass(PackageReader::class);
         $method = $class->getMethod($name);
         $method->setAccessible(true);
         return $method;
@@ -177,7 +187,7 @@ XML;
 
     public static function cleanupTmpDir($tmpDirName)
     {
-        $it = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
+        $it    = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
         $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($files as $file) {
             if ($file->isDir()) {

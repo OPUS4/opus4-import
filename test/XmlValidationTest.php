@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,11 +25,12 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2008-2018, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application Unit Tests
  * @package     Application
  * @author      Jens Schwidder <schwidder@zib.de>
- * @copyright   Copyright (c) 2008-2018, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
@@ -37,17 +39,21 @@ use DirectoryIterator;
 use Opus\Import\XmlValidation;
 use OpusTest\Import\TestAsset\TestCase;
 
+use function file_get_contents;
+use function strpos;
+
 class XmlValidationTest extends TestCase
 {
-
     /**
      * Check if all 'import*.xml' files are valid.
      */
     public function testValidation()
     {
         foreach (new DirectoryIterator(APPLICATION_PATH . '/test/_files') as $fileInfo) {
-            if ($fileInfo->getExtension() !== 'xsd' && ! $fileInfo->isDot()
-                    && strpos($fileInfo->getBasename(), 'import') === 0) {
+            if (
+                $fileInfo->getExtension() !== 'xsd' && ! $fileInfo->isDot()
+                    && strpos($fileInfo->getBasename(), 'import') === 0
+            ) {
                 $xml = file_get_contents($fileInfo->getRealPath());
                 $this->_checkValid($xml, $fileInfo->getBasename());
             }

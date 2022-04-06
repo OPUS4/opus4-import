@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,11 +25,12 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2019, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application Unit Tests
  * @package     Application
  * @author      Sascha Szott <opus-development@saschaszott.de>
- * @copyright   Copyright (c) 2019, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
@@ -36,9 +38,13 @@ namespace OpusTest\Import;
 use Opus\Import\TarPackageReader;
 use OpusTest\Import\TestAsset\TestCase;
 
+use function copy;
+use function mkdir;
+
+use const DIRECTORY_SEPARATOR;
+
 class TarPackageReaderTest extends TestCase
 {
-
     protected $additionalResources = 'database';
 
     public function setUp()
@@ -50,9 +56,14 @@ class TarPackageReaderTest extends TestCase
     public function testReadPackageWithXmlFile()
     {
         $this->adjustConfiguration([
-            'filetypes' => ['xml' => ['mimeType' => [
-                'text/xml', 'application/xml'
-            ]]]
+            'filetypes' => [
+                'xml' => [
+                    'mimeType' => [
+                        'text/xml',
+                        'application/xml',
+                    ],
+                ],
+            ],
         ]);
 
         $reader = new TarPackageReader();

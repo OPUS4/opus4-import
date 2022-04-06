@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,10 +25,6 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @category    Application
- * @package     Application_Import
- * @author      Sascha Szott <opus-development@saschaszott.de>
- * @author      Jens Schwidder <schwidder@zib.de>
  * @copyright   Copyright (c) 2016-2019
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
@@ -35,27 +32,38 @@
  * the documents.
  *
  * Currently ZIP and TAR files are supported by extending classes.
+ *
+ * @category    Application
+ * @package     Application_Import
+ * @author      Sascha Szott <opus-development@saschaszott.de>
+ * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace Opus\Import;
 
 use Exception;
+use Opus\Import\Sword\ImportCollection;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Log;
 use Opus\Model\ModelException;
 use Opus\Security\SecurityException;
-use Opus\Import\Sword\ImportCollection;
 
+use function file_get_contents;
+use function is_dir;
 use function is_null;
+use function is_readable;
+use function is_writable;
+use function mkdir;
+use function trim;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
- * Class PackageReader
  * @package Opus\Import
  */
 abstract class PackageReader
 {
-
     const METADATA_FILENAME = 'opus.xml';
 
     const EXTRACTION_DIR_NAME = 'extracted';
@@ -64,6 +72,7 @@ abstract class PackageReader
 
     /**
      * Sets additional enrichments that will be added to every imported document.
+     *
      * @param $additionalEnrichments
      */
     public function setAdditionalEnrichments($additionalEnrichments)
@@ -141,7 +150,7 @@ abstract class PackageReader
 
     public function getLogger()
     {
-        return  Log::get();
+        return Log::get();
     }
 
     /**
@@ -162,14 +171,12 @@ abstract class PackageReader
         }
 
         $content = file_get_contents($metadataFile);
-        if ($content === false || trim($content) == '') {
+        if ($content === false || trim($content) === '') {
             $this->getLogger()->err('could not get non-empty content from metadata file ' . $metadataFile);
             return null;
         }
 
-        $statusDoc = $this->processOpusXML($content, $extractDir);
-
-        return $statusDoc;
+        return $this->processOpusXML($content, $extractDir);
     }
 
     /**

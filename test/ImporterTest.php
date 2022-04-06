@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,11 +25,12 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application Unit Tests
  * @package     Application
  * @author      Jens Schwidder <schwidder@zib.de>
- * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
@@ -39,9 +41,10 @@ use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Log;
 use OpusTest\Import\TestAsset\TestCase;
 
+use function file_get_contents;
+
 class ImporterTest extends TestCase
 {
-
     protected $additionalResources = 'database';
 
     public function testImportEnrichmentWithoutValue()

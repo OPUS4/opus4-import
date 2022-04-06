@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,11 +25,12 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2016
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application
  * @package     Module_Sword
  * @author      Sascha Szott
- * @copyright   Copyright (c) 2016
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import\Sword;
@@ -38,9 +40,12 @@ use Opus\CollectionRole;
 use Opus\Config;
 use Opus\Log;
 
+use function count;
+use function is_null;
+use function trim;
+
 class ImportCollection
 {
-
     private $importCollection;
 
     private $roleName;
@@ -51,7 +56,7 @@ class ImportCollection
         $config = Config::get();
 
         $collectionNumber = $config->sword->collection->default->number;
-        if (trim($collectionNumber) == '') {
+        if (trim($collectionNumber) === '') {
             $logger->warn('configuration key sword.collection.default.number is not defined -- documents that are imported via SWORD API will not be associated to OPUS collection');
             return;
         }
@@ -74,9 +79,8 @@ class ImportCollection
         }
 
         $this->importCollection = $collectionList[0];
-        $this->roleName = $collectionRole->getName();
+        $this->roleName         = $collectionRole->getName();
     }
-
 
     public function exists()
     {

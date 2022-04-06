@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
@@ -24,12 +25,13 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
+ * @copyright   Copyright (c) 2016-2020
+ * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
  * @category    Application
  * @package     Import
  * @author      Sascha Szott
  * @author      Jens Schwidder <schwidder@zib.de>
- * @copyright   Copyright (c) 2016-2020
- * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import;
@@ -49,15 +51,36 @@ use Opus\File;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Licence;
-use Opus\Person;
-use Opus\Series;
-use Opus\Subject;
 use Opus\Model\ModelException;
 use Opus\Model\NotFoundException;
+use Opus\Person;
 use Opus\Security\SecurityException;
+use Opus\Series;
+use Opus\Subject;
+use Zend_Controller_Action_HelperBroker;
+
+use function array_diff;
+use function array_key_exists;
+use function basename;
+use function hash_file;
+use function intval;
+use function is_null;
+use function is_readable;
+use function libxml_clear_errors;
+use function libxml_use_internal_errors;
+use function pathinfo;
+use function scandir;
+use function strcasecmp;
+use function strlen;
+use function substr;
+use function trim;
+use function ucfirst;
+
+use const DIRECTORY_SEPARATOR;
+use const FILEINFO_MIME_TYPE;
+use const PATHINFO_EXTENSION;
 
 /**
- * Class Importer
  * @package Opus\Import
  *
  * TODO behavior of this importer changes depending swordContext - It means special handling code in various places.
@@ -76,12 +99,10 @@ class Importer
 
     // variables used in SWORD context
     private $swordContext = false;
-    private $importDir = null;
+    private $importDir;
 
-    /**
-     * @var null
-     */
-    private $statusDoc = null;
+    /** @var null */
+    private $statusDoc;
 
     /**
      * Additional enrichments that will be added to each imported document.
@@ -90,9 +111,9 @@ class Importer
      *
      * @var array
      */
-    private $additionalEnrichments = null;
+    private $additionalEnrichments;
 
-    private $importCollection = null;
+    private $importCollection;
     private $singleDocImport = false;
 
     /**
@@ -106,7 +127,7 @@ class Importer
 
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
-        $this->logger = $logger;
+        $this->logger  = $logger;
         $this->logfile = $logfile;
         if ($isFile) {
             $this->xmlFile = $xml;
@@ -123,7 +144,7 @@ class Importer
     public function enableSwordContext()
     {
         $this->swordContext = true;
-        $this->statusDoc = new ImportStatusDocument();
+        $this->statusDoc    = new ImportStatusDocument();
     }
 
     public function setImportDir($imporDir)
@@ -166,14 +187,14 @@ class Importer
         $this->validateXml();
 
         $numOfDocsImported = 0;
-        $numOfSkippedDocs = 0;
+        $numOfSkippedDocs  = 0;
 
         $opusDocuments = $this->xml->getElementsByTagName('opusDocument');
 
         // in case of a single document deposit (via SWORD) we allow to omit
         // the explicit declaration of file elements (within <files>..</files>)
         // and automatically import all files in the root level of the SWORD package
-        $this->singleDocImport = $opusDocuments->length == 1;
+        $this->singleDocImport = $opusDocuments->length === 1;
 
         foreach ($opusDocuments as $opusDocumentElement) {
             // save oldId for later referencing of the record under consideration
@@ -261,7 +282,7 @@ class Importer
             $this->log('... OK');
         }
 
-        if ($numOfSkippedDocs == 0) {
+        if ($numOfSkippedDocs === 0) {
             $this->log("Import finished successfully. $numOfDocsImported documents were imported.");
         } else {
             $this->log("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
@@ -333,6 +354,7 @@ class Importer
 
     /**
      * Allows certain fields to be kept on update.
+     *
      * @param array $fields DescriptionArray of fields to keep on update
      */
     public function keepFieldsOnUpdate($fields)
@@ -341,54 +363,54 @@ class Importer
     }
 
     /**
-     *
      * @param Document $doc
      */
     private function resetDocument($doc)
     {
         $fieldsToDelete = array_diff(
             [
-            'TitleMain',
-            'TitleAbstract',
-            'TitleParent',
-            'TitleSub',
-            'TitleAdditional',
-            'Identifier',
-            'Note',
-            'Enrichment',
-            'Licence',
-            'Person',
-            'Series',
-            'Collection',
-            'Subject',
-            'ThesisPublisher',
-            'ThesisGrantor',
-            'PublishedDate',
-            'PublishedYear',
-            'CompletedDate',
-            'CompletedYear',
-            'ThesisDateAccepted',
-            'ThesisYearAccepted',
-            'EmbargoDate',
-            'ContributingCorporation',
-            'CreatingCorporation',
-            'Edition',
-            'Issue',
-            'Language',
-            'PageFirst',
-            'PageLast',
-            'PageNumber',
-            'ArticleNumber',
-            'PublisherName',
-            'PublisherPlace',
-            'Type',
-            'Volume',
-            'BelongsToBibliography',
-            'ServerState',
-            'ServerDateCreated',
-            'ServerDateModified',
-            'ServerDatePublished',
-            'ServerDateDeleted'],
+                'TitleMain',
+                'TitleAbstract',
+                'TitleParent',
+                'TitleSub',
+                'TitleAdditional',
+                'Identifier',
+                'Note',
+                'Enrichment',
+                'Licence',
+                'Person',
+                'Series',
+                'Collection',
+                'Subject',
+                'ThesisPublisher',
+                'ThesisGrantor',
+                'PublishedDate',
+                'PublishedYear',
+                'CompletedDate',
+                'CompletedYear',
+                'ThesisDateAccepted',
+                'ThesisYearAccepted',
+                'EmbargoDate',
+                'ContributingCorporation',
+                'CreatingCorporation',
+                'Edition',
+                'Issue',
+                'Language',
+                'PageFirst',
+                'PageLast',
+                'PageNumber',
+                'ArticleNumber',
+                'PublisherName',
+                'PublisherPlace',
+                'Type',
+                'Volume',
+                'BelongsToBibliography',
+                'ServerState',
+                'ServerDateCreated',
+                'ServerDateModified',
+                'ServerDatePublished',
+                'ServerDateDeleted',
+            ],
             $this->fieldsToKeepOnUpdate
         );
 
@@ -396,19 +418,18 @@ class Importer
     }
 
     /**
-     *
      * @param DOMNamedNodeMap $attributes
-     * @param Document $doc
+     * @param Document        $doc
      */
     private function processAttributes($attributes, $doc)
     {
         foreach ($attributes as $attribute) {
             $method = 'set' . ucfirst($attribute->name);
-            $value = trim($attribute->value);
-            if ($attribute->name == 'belongsToBibliography') {
-                if ($value == 'true') {
+            $value  = trim($attribute->value);
+            if ($attribute->name === 'belongsToBibliography') {
+                if ($value === 'true') {
                     $value = '1';
-                } elseif ($value == 'false') {
+                } elseif ($value === 'false') {
                     $value = '0';
                 }
             }
@@ -417,11 +438,9 @@ class Importer
     }
 
     /**
-     *
      * @param DOMNodeList $elements
-     * @param Document $doc
-     *
-     * @return boolean returns true if the import XML definition of the
+     * @param Document    $doc
+     * @return bool returns true if the import XML definition of the
      *                 currently processed document contains the first level
      *                 element files
      */
@@ -487,8 +506,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleTitleMain($node, $doc)
@@ -503,8 +521,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleTitles($node, $doc)
@@ -512,7 +529,7 @@ class Importer
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
                 $method = 'addTitle' . ucfirst($childNode->getAttribute('type'));
-                $t = $doc->$method();
+                $t      = $doc->$method();
                 $t->setValue(trim($childNode->textContent));
                 $t->setLanguage(trim($childNode->getAttribute('language')));
             }
@@ -520,8 +537,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleAbstracts($node, $doc)
@@ -536,8 +552,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handlePersons($node, $doc)
@@ -560,7 +575,7 @@ class Importer
                 }
 
                 $method = 'addPerson' . ucfirst($childNode->getAttribute('role'));
-                $link = $doc->$method($p);
+                $link   = $doc->$method($p);
 
                 if ($childNode->hasAttribute('allowEmailContact') && ($childNode->getAttribute('allowEmailContact') === 'true' || $childNode->getAttribute('allowEmailContact') === '1')) {
                     $link->setAllowEmailContact(true);
@@ -571,7 +586,7 @@ class Importer
                 if ($childNode->hasChildNodes()) {
                     $identifiers = $childNode->childNodes;
                     foreach ($identifiers as $identifier) {
-                        if ($identifier instanceof DOMElement && $identifier->tagName == 'identifiers') {
+                        if ($identifier instanceof DOMElement && $identifier->tagName === 'identifiers') {
                             $this->handlePersonIdentifiers($identifier, $p);
                         }
                     }
@@ -581,25 +596,24 @@ class Importer
     }
 
     /**
-     *
      * @param DOMNodeList $identifiers
-     * @param Person $person
+     * @param Person      $person
      */
     private function handlePersonIdentifiers($identifiers, $person)
     {
-        $identifiers = $identifiers->childNodes;
+        $identifiers  = $identifiers->childNodes;
         $idTypesFound = []; // print log message if an identifier type is used more than once
         foreach ($identifiers as $identifier) {
-            if ($identifier instanceof DOMElement && $identifier->tagName == 'identifier') {
+            if ($identifier instanceof DOMElement && $identifier->tagName === 'identifier') {
                 $idType = $identifier->getAttribute('type');
-                if ($idType == 'intern') {
+                if ($idType === 'intern') {
                     $idType = 'misc';
                 }
                 if (array_key_exists($idType, $idTypesFound)) {
                     $this->log('could not save more than one identifier of type ' . $idType . ' for person ' . $person->getId());
                     continue; // ignore current identifier
                 }
-                $idValue = trim($identifier->textContent);
+                $idValue    = trim($identifier->textContent);
                 $methodName = 'setIdentifier' . ucfirst($idType);
                 $person->$methodName($idValue);
                 $idTypesFound[$idType] = true; // do not allow further values for this identifier type
@@ -608,8 +622,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleKeywords($node, $doc)
@@ -626,15 +639,14 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleDnbInstitutions($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $instId = trim($childNode->getAttribute('id'));
+                $instId   = trim($childNode->getAttribute('id'));
                 $instRole = $childNode->getAttribute('role');
                 // check if dnbInstitute with given id and role exists
                 try {
@@ -661,8 +673,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleIdentifiers($node, $doc)
@@ -677,8 +688,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleNotes($node, $doc)
@@ -693,8 +703,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleCollections($node, $doc)
@@ -719,8 +728,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleSeries($node, $doc)
@@ -730,7 +738,7 @@ class Importer
                 $seriesId = trim($childNode->getAttribute('id'));
                 // check if document set with given id exists
                 try {
-                    $s = new Series($seriesId);
+                    $s    = new Series($seriesId);
                     $link = $doc->addSeries($s);
                     $link->setNumber(trim($childNode->getAttribute('number')));
                 } catch (NotFoundException $e) {
@@ -748,7 +756,7 @@ class Importer
     /**
      * Processes the enrichments in the document xml.
      *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleEnrichments($node, $doc)
@@ -775,13 +783,14 @@ class Importer
 
     /**
      * Adds an enrichment to the document.
+     *
      * @param $doc Document
      * @param $key string Name of enrichment
      * @param $value string Value of enrichment
      */
     private function addEnrichment($doc, $key, $value)
     {
-        if ($value == null || strlen(trim($value)) == 0) {
+        if ($value === null || strlen(trim($value)) === 0) {
             // enrichment must have a value
             // TODO log? how to identify the document before storing? improve import for easier monitoring
             return;
@@ -792,8 +801,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleLicences($node, $doc)
@@ -817,8 +825,7 @@ class Importer
     }
 
     /**
-     *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
      */
     private function handleDates($node, $doc)
@@ -852,9 +859,9 @@ class Importer
     /**
      * Handling of files was introduced with OPUS 4.6.
      *
-     * @param DOMNode $node
+     * @param DOMNode  $node
      * @param Document $doc
-     * @param string $baseDir
+     * @param string   $baseDir
      */
     private function handleFiles($node, $doc, $baseDir)
     {
@@ -862,7 +869,7 @@ class Importer
             if ($childNode instanceof DOMElement) {
                 $name = trim($childNode->getAttribute('name'));
                 $path = trim($childNode->getAttribute('path'));
-                if ($name == '' && $path == '') {
+                if ($name === '' && $path === '') {
                     $this->log('At least one of the file attributes name or path must be defined!');
                     continue;
                 }
@@ -873,22 +880,21 @@ class Importer
     }
 
     /**
-     *
      * Add a single file to the given Document.
      *
-     * @param Document $doc the given document
+     * @param Document                                                                   $doc the given document
      * @param $name string Name of the file that should be imported (relative to baseDir)
-     * @param string $baseDir (optional) path of the file that should be imported (relative to the import directory)
-     * @param string $path (optional) path (and name) of the file that should be imported (relative to baseDir)
-     * @param DOMNodeList $childNode (optional) additional metadata of the file (taken from import XML)
+     * @param string                                                                     $baseDir (optional) path of the file that should be imported (relative to the import directory)
+     * @param string                                                                     $path (optional) path (and name) of the file that should be imported (relative to baseDir)
+     * @param null|DOMNodeList                                                           $childNode (optional) additional metadata of the file (taken from import XML)
      */
     private function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
     {
         $fullPath = $this->importDir;
-        if ($baseDir != '') {
+        if ($baseDir !== '') {
             $fullPath .= $baseDir . DIRECTORY_SEPARATOR;
         }
-        $fullPath .= ($path != '') ? $path : $name;
+        $fullPath .= $path !== '' ? $path : $name;
 
         if (! is_readable($fullPath)) {
             $this->log('Cannot read file ' . $fullPath . ': make sure that it is contained in import package');
@@ -916,14 +922,14 @@ class Importer
         $file->setTempFile($fullPath);
         // allow to overwrite file name (if attribute name was specified)
         $pathName = $name;
-        if ($pathName == '') {
+        if ($pathName === '') {
             $pathName = $fullPath;
         }
         $file->setPathName(basename($pathName));
 
         if (! is_null($childNode)) {
             $comments = $childNode->getElementsByTagName('comment');
-            if ($comments->length == 1) {
+            if ($comments->length === 1) {
                 $comment = $comments->item(0);
                 $file->setComment(trim($comment->textContent));
             }
@@ -942,11 +948,11 @@ class Importer
      */
     private function validMimeType($fullPath)
     {
-        $extension = pathinfo($fullPath, PATHINFO_EXTENSION);
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $extension     = pathinfo($fullPath, PATHINFO_EXTENSION);
+        $finfo         = new finfo(FILEINFO_MIME_TYPE);
         $mimeTypeFound = $finfo->file($fullPath);
 
-        $fileTypes = \Zend_Controller_Action_HelperBroker::getStaticHelper('fileTypes');
+        $fileTypes = Zend_Controller_Action_HelperBroker::getStaticHelper('fileTypes');
 
         return $fileTypes->isValidMimeType($mimeTypeFound, $extension);
     }
@@ -960,26 +966,25 @@ class Importer
      * die Methode ebenfalls true zurück.
      *
      * @param DOMElement $childNode
-     * @param string $fullPath
+     * @param string     $fullPath
      */
     private function checksumValidation($childNode, $fullPath)
     {
         $checksums = $childNode->getElementsByTagName('checksum');
-        if ($checksums->length == 0) {
+        if ($checksums->length === 0) {
             return true;
         }
 
         $checksumElement = $checksums->item(0);
-        $checksumVal = trim($checksumElement->textContent);
-        $checksumAlgo = $checksumElement->getAttribute('type');
-        $hashValue = hash_file($checksumAlgo, $fullPath);
-        return strcasecmp($checksumVal, $hashValue) == 0;
+        $checksumVal     = trim($checksumElement->textContent);
+        $checksumAlgo    = $checksumElement->getAttribute('type');
+        $hashValue       = hash_file($checksumAlgo, $fullPath);
+        return strcasecmp($checksumVal, $hashValue) === 0;
     }
 
     /**
-     *
      * @param DOMElement $node
-     * @param File $file
+     * @param File       $file
      */
     private function handleFileAttributes($node, $file)
     {
@@ -988,20 +993,20 @@ class Importer
             'displayName',
             'visibleInOai',
             'visibleInFrontdoor',
-            'sortOrder'
+            'sortOrder',
         ];
         foreach ($attrsToConsider as $attribute) {
             $value = trim($node->getAttribute($attribute));
-            if ($value != '') {
+            if ($value !== '') {
                 switch ($attribute) {
                     case 'displayName':
                         $attribute = 'label';
                         break;
                     case 'visibleInFrontdoor':
-                        $value = ($value == 'true') ? true : false;
+                        $value = $value === 'true' ? true : false;
                         break;
                     case 'visibleInOai':
-                        $value = ($value == 'true') ? true : false;
+                        $value = $value === 'true' ? true : false;
                         break;
                     case 'sortOrder':
                         $value = intval($value);
@@ -1029,6 +1034,7 @@ class Importer
 
     /**
      * Returns the imported document.
+     *
      * @return Document
      */
     public function getDocument()
