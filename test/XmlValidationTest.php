@@ -45,7 +45,7 @@ class XmlValidationTest extends TestCase
      */
     public function testValidation()
     {
-        foreach (new DirectoryIterator(APPLICATION_PATH . '/tests/resources/import') as $fileInfo) {
+        foreach (new DirectoryIterator(APPLICATION_PATH . '/test/_files') as $fileInfo) {
             if ($fileInfo->getExtension() !== 'xsd' && ! $fileInfo->isDot()
                     && strpos($fileInfo->getBasename(), 'import') === 0) {
                 $xml = file_get_contents($fileInfo->getRealPath());

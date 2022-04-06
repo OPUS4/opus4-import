@@ -39,11 +39,15 @@
 
 namespace Opus\Import;
 
+use Exception;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Log;
 use Opus\Model\ModelException;
 use Opus\Security\SecurityException;
+use Opus\Import\Sword\ImportCollection;
+
+use function is_null;
 
 /**
  * Class PackageReader
@@ -87,7 +91,8 @@ abstract class PackageReader
         $importer->setImportDir($dirName);
 
         $importer->setAdditionalEnrichments($this->additionalEnrichments);
-        $importCollection = new Sword_Model_ImportCollection();
+        $importCollection = new ImportCollection();
+
         $importer->setImportCollection($importCollection->getCollection());
 
         $importer->run();
@@ -163,6 +168,7 @@ abstract class PackageReader
         }
 
         $statusDoc = $this->processOpusXML($content, $extractDir);
+
         return $statusDoc;
     }
 

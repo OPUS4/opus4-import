@@ -61,7 +61,7 @@ class TarPackageReaderTest extends TestCase
         mkdir($tmpDir);
 
         copy(
-            APPLICATION_PATH . '/test/resources/sword-packages/single-doc-pdf-xml.tar',
+            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar',
             $tmpDir . DIRECTORY_SEPARATOR . 'package.tar'
         );
 
@@ -72,7 +72,8 @@ class TarPackageReaderTest extends TestCase
 
         $document = $status->getDocs()[0];
 
-        $this->addTestDocument($document); // for cleanup
+        // TODO do wee need this?
+        // $this->addTestDocument($document); // for cleanup
 
         $files = $document->getFile();
 

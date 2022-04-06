@@ -34,9 +34,12 @@
 
 namespace OpusTest\Import;
 
+use Opus\Config;
 use Opus\Import\PackageReader;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use OpusTest\Import\TestAsset\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use ReflectionClass;
 
 class PackageReaderTest extends TestCase
@@ -157,7 +160,8 @@ XML;
         $this->assertEquals('eng', $title->getLanguage());
         $this->assertEquals('This is a test document', $title->getValue());
 
-        $this->addTestDocument($doc); // for cleanup
+        // TODO Do we need this?
+        // $this->addTestDocument($doc); // for cleanup
 
         unlink($metadataFile);
         rmdir($extractDir);

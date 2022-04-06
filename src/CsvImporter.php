@@ -43,6 +43,7 @@
 
 namespace Opus\Import;
 
+use Exception;
 use Opus\Collection;
 use Opus\Document;
 use Opus\EnrichmentKey;

@@ -34,6 +34,9 @@
 
 namespace Opus\Import;
 
+use Exception;
+use PharData;
+
 class TarPackageReader extends PackageReader
 {
     protected function extractPackage($dirName)

@@ -35,6 +35,12 @@
 namespace Opus\Import;
 
 use DOMDocument;
+use DOMElement;
+use DOMNamedNodeMap;
+use DOMNode;
+use DOMNodeList;
+use Exception;
+use finfo;
 use Opus\Collection;
 use Opus\DnbInstitute;
 use Opus\Document;
@@ -412,7 +418,7 @@ class Importer
 
     /**
      *
-     * @param \DOMNodeList $elements
+     * @param DOMNodeList $elements
      * @param Document $doc
      *
      * @return boolean returns true if the import XML definition of the
@@ -424,7 +430,7 @@ class Importer
         $filesElementPresent = false;
 
         foreach ($elements as $node) {
-            if ($node instanceof \DOMElement) {
+            if ($node instanceof DOMElement) {
                 switch ($node->tagName) {
                     case 'titlesMain':
                         $this->handleTitleMain($node, $doc);
@@ -482,13 +488,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleTitleMain($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $t = $doc->addTitleMain();
                 $t->setValue(trim($childNode->textContent));
                 $t->setLanguage(trim($childNode->getAttribute('language')));
@@ -498,13 +504,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleTitles($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $method = 'addTitle' . ucfirst($childNode->getAttribute('type'));
                 $t = $doc->$method();
                 $t->setValue(trim($childNode->textContent));
@@ -515,13 +521,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleAbstracts($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $t = $doc->addTitleAbstract();
                 $t->setValue(trim($childNode->textContent));
                 $t->setLanguage(trim($childNode->getAttribute('language')));
@@ -531,13 +537,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handlePersons($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $p = new Person();
 
                 // mandatory fields
@@ -576,7 +582,7 @@ class Importer
 
     /**
      *
-     * @param \DOMNodeList $identifiers
+     * @param DOMNodeList $identifiers
      * @param Person $person
      */
     private function handlePersonIdentifiers($identifiers, $person)
@@ -584,7 +590,7 @@ class Importer
         $identifiers = $identifiers->childNodes;
         $idTypesFound = []; // print log message if an identifier type is used more than once
         foreach ($identifiers as $identifier) {
-            if ($identifier instanceof \DOMElement && $identifier->tagName == 'identifier') {
+            if ($identifier instanceof DOMElement && $identifier->tagName == 'identifier') {
                 $idType = $identifier->getAttribute('type');
                 if ($idType == 'intern') {
                     $idType = 'misc';
@@ -603,13 +609,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleKeywords($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $s = new Subject();
                 $s->setLanguage(trim($childNode->getAttribute('language')));
                 $s->setType($childNode->getAttribute('type'));
@@ -621,13 +627,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleDnbInstitutions($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $instId = trim($childNode->getAttribute('id'));
                 $instRole = $childNode->getAttribute('role');
                 // check if dnbInstitute with given id and role exists
@@ -656,13 +662,13 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleIdentifiers($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof \DOMElement) {
+            if ($childNode instanceof DOMElement) {
                 $i = $doc->addIdentifier();
                 $i->setValue(trim($childNode->textContent));
                 $i->setType($childNode->getAttribute('type'));
@@ -672,7 +678,7 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleNotes($node, $doc)
@@ -688,7 +694,7 @@ class Importer
 
     /**
      *
-     * @param \DOMNode $node
+     * @param DOMNode $node
      * @param Document $doc
      */
     private function handleCollections($node, $doc)
@@ -972,7 +978,7 @@ class Importer
 
     /**
      *
-     * @param \DOMElement $node
+     * @param DOMElement $node
      * @param File $file
      */
     private function handleFileAttributes($node, $file)

@@ -61,7 +61,7 @@ class ZipPackageReaderTest extends TestCase
         mkdir($tmpDir);
 
         copy(
-            APPLICATION_PATH . '/tests/resources/sword-packages/single-doc-pdf-xml.zip',
+            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip',
             $tmpDir . DIRECTORY_SEPARATOR . 'package.zip'
         );
 
@@ -72,7 +72,8 @@ class ZipPackageReaderTest extends TestCase
 
         $document = $status->getDocs()[0];
 
-        $this->addTestDocument($document); // for cleanup
+        // TODO do we need this?
+        // $this->addTestDocument($document); // for cleanup
 
         $files = $document->getFile();
 

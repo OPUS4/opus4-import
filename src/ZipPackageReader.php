@@ -34,6 +34,9 @@
 
 namespace Opus\Import;
 
+use Exception;
+use ZipArchive;
+
 class ZipPackageReader extends PackageReader
 {
     protected function extractPackage($dirName)

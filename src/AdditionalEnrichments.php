@@ -47,6 +47,7 @@
 
 namespace Opus\Import;
 
+use Exception;
 use Opus\EnrichmentKey;
 
 /**
