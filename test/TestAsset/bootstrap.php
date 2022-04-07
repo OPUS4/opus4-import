@@ -55,6 +55,7 @@ $application = new Zend_Application(
     [
         "config" => [
             APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
+            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'test.ini',
         ],
     ]
 );
