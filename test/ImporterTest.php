@@ -36,6 +36,7 @@
 namespace OpusTest\Import;
 
 use Opus\Document;
+use Opus\EnrichmentKey;
 use Opus\Import\Importer;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Log;
@@ -46,6 +47,35 @@ use function file_get_contents;
 class ImporterTest extends TestCase
 {
     protected $additionalResources = 'database';
+
+    public function setUp()
+    {
+        parent::setUp();
+
+        $enrichmentKey = EnrichmentKey::new();
+        $enrichmentKey->setName('City');
+        $enrichmentKey->store();
+
+        $enrichmentKey = EnrichmentKey::new();
+        $enrichmentKey->setName('validtestkey');
+        $enrichmentKey->store();
+    }
+
+    public function tearDown()
+    {
+        $enrichmentKey = EnrichmentKey::fetchByName('City');
+        if ($enrichmentKey !== null) {
+            $enrichmentKey->delete();
+        }
+
+        $enrichmentKey = EnrichmentKey::fetchByName('validtestkey');
+        if ($enrichmentKey !== null) {
+            $enrichmentKey->delete();
+        }
+
+
+        parent::tearDown();
+    }
 
     public function testImportEnrichmentWithoutValue()
     {
