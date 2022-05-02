@@ -25,12 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2012, OPUS 4 development team
+ * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Import
- * @author      Sascha Szott <szott@zib.de>
  */
 
 /**
@@ -46,10 +42,12 @@ namespace Opus\Import;
 use Exception;
 use Opus\Collection;
 use Opus\Document;
+use Opus\DocumentInterface;
 use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Identifier;
 use Opus\Licence;
+use Opus\Model\ModelException;
 use Opus\Model\NotFoundException;
 use Opus\Person;
 use Opus\Series;
@@ -62,7 +60,6 @@ use function fclose;
 use function fgetcsv;
 use function file_exists;
 use function fopen;
-use function is_null;
 use function is_readable;
 use function lcfirst;
 use function preg_match;
@@ -114,10 +111,13 @@ class CsvImporter
     const ENRICHMENT_RELEVANCE         = 31;
     const FILENAME                     = 32;
 
-    private $_seriesIdsMap = [];
-    private $_fulltextDir;
-    private $_guestRole;
+    private $seriesIdsMap = [];
+    private $fulltextDir;
+    private $guestRole;
 
+    /**
+     * @param array $argv
+     */
     public function run($argv)
     {
         if (count($argv) < 2) {
@@ -134,8 +134,8 @@ class CsvImporter
             if (! is_readable($argv[2])) {
                 echo "fulltext directory '" . $argv[2] . "' is not readable -- check path or permissions\n";
             } else {
-                $this->_fulltextDir = $argv[2];
-                $this->_guestRole   = UserRole::fetchByName('guest');
+                $this->fulltextDir = $argv[2];
+                $this->guestRole   = UserRole::fetchByName('guest');
             }
         }
 
@@ -176,13 +176,17 @@ class CsvImporter
         echo "number of skipped docs: $errorCounter\n";
 
         // Informationen zu den vergebenen Bandnummern
-        foreach ($this->_seriesIdsMap as $seriesId => $number) {
+        foreach ($this->seriesIdsMap as $seriesId => $number) {
             echo "series # $seriesId : max. number is $number\n";
         }
 
         fclose($file);
     }
 
+    /**
+     * @param array $row
+     * @return bool
+     */
     private function processRow($row)
     {
         $doc = Document::new();
@@ -227,9 +231,9 @@ class CsvImporter
 
             $doc->store();
 
-            if (! is_null($file) && $file instanceof File && ! is_null($this->_guestRole)) {
-                $this->_guestRole->appendAccessFile($file->getId());
-                $this->_guestRole->store();
+            if ($file !== null && $file instanceof File && $this->guestRole !== null) {
+                $this->guestRole->appendAccessFile($file->getId());
+                $this->guestRole->store();
             }
         } catch (Exception $e) {
             echo "import of document " . $oldId . " was not successful: " . $e->getMessage() . "\n";
@@ -246,6 +250,11 @@ class CsvImporter
         return false;
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     */
     private function processTitlesAndAbstract($row, $doc, $oldId)
     {
         $t = $doc->addTitleMain();
@@ -289,6 +298,12 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     * @throws Exception
+     */
     private function processPersons($row, $doc, $oldId)
     {
         // Personen sind nicht Pflicht
@@ -336,6 +351,13 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param DocumentInterface $doc
+     * @param string            $type
+     * @param string            $firstname
+     * @param string            $lastname
+     * @param int               $oldId
+     */
     private function addPerson($doc, $type, $firstname, $lastname, $oldId)
     {
         $p = new Person();
@@ -350,6 +372,11 @@ class CsvImporter
         $doc->$method($p);
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     */
     private function processDate($row, $doc, $oldId)
     {
         // TODO aktuell nur Unterstützung für Jahreszahlen
@@ -362,6 +389,12 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     * @throws Exception
+     */
     private function processIdentifier($row, $doc, $oldId)
     {
         // ist kein Pflichtfeld
@@ -384,6 +417,11 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param DocumentInterface $doc
+     * @param string            $type
+     * @param string            $value
+     */
     private function addIdentifier($doc, $type, $value)
     {
         $identifier = new Identifier();
@@ -393,6 +431,11 @@ class CsvImporter
         $doc->$method($identifier);
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     */
     private function processNote($row, $doc, $oldId)
     {
         // TODO aktuell nur Unterstützung für *eine* Note
@@ -409,6 +452,11 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @throws ModelException
+     */
     private function processCollections($row, $doc)
     {
         // TODO mehrere Collection-IDs können innerhalb des Felds durch || getrennt werden
@@ -428,6 +476,12 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     * @throws ModelException
+     */
     private function processLicence($row, $doc, $oldId)
     {
         // TODO aktuell nur Unterstützung für *eine* Lizenz
@@ -478,6 +532,13 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param string            $enrichmentkey
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param null|int          $oldId
+     * @throws ModelException
+     */
     private function processEnrichment($enrichmentkey, $row, $doc, $oldId = null)
     {
         // aktuell hat der Feldinhalt die Struktur '{ ekey: evalue }'
@@ -509,6 +570,12 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param null|int          $oldId
+     * @throws Exception
+     */
     private function processEnrichmentKindofpublication($row, $doc, $oldId = null)
     {
         // Spezial-Workaround fuer Fromm, um die Inhalte aus der
@@ -523,6 +590,11 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @throws ModelException
+     */
     private function processSeries($row, $doc)
     {
         // ist kein Pflichtfeld
@@ -535,12 +607,12 @@ class CsvImporter
                     $series = new Series($seriesIdTrimmed);
 
                     $seriesNumber = 0;
-                    if (array_key_exists($seriesIdTrimmed, $this->_seriesIdsMap)) {
-                        $seriesNumber = $this->_seriesIdsMap[$seriesIdTrimmed];
+                    if (array_key_exists($seriesIdTrimmed, $this->seriesIdsMap)) {
+                        $seriesNumber = $this->seriesIdsMap[$seriesIdTrimmed];
                     }
                     $seriesNumber++;
                     $doc->addSeries($series)->setNumber($seriesNumber);
-                    $this->_seriesIdsMap[$seriesIdTrimmed] = $seriesNumber;
+                    $this->seriesIdsMap[$seriesIdTrimmed] = $seriesNumber;
                 } catch (NotFoundException $e) {
                     throw new Exception('series id ' . $seriesIdTrimmed . ' does not exist: ' . $e->getMessage());
                 }
@@ -548,6 +620,13 @@ class CsvImporter
         }
     }
 
+    /**
+     * @param array             $row
+     * @param DocumentInterface $doc
+     * @param int               $oldId
+     * @param string            $extension
+     * @return mixed|null
+     */
     private function processFile($row, $doc, $oldId, $extension = 'pdf')
     {
         $format   = trim($row[self::ENRICHMENT_FORMAT]);
@@ -594,14 +673,14 @@ class CsvImporter
         }
 
         // Dateiname ist gesetzt und format-Enrichment mit 'to download' oder 'upon request'
-        if (is_null($this->_fulltextDir)) {
+        if ($this->fulltextDir === null) {
             echo "Dokument $oldId: [ERR004] zugeordnete Datei wurden nicht importiert, da Importverzeichnis nicht"
                 . " lesbar oder nicht existent\n";
             return null;
         }
 
         $filename .= '.' . $extension;
-        $tempfile  = $this->_fulltextDir . DIRECTORY_SEPARATOR . $filename;
+        $tempfile  = $this->fulltextDir . DIRECTORY_SEPARATOR . $filename;
 
         if (! file_exists($tempfile)) {
             echo "Dokument $oldId: [ERR006] zugeordnete Datei wurden nicht importiert, da sie nicht im angegebenen"

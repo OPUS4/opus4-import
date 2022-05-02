@@ -61,6 +61,7 @@ class XmlValidation
      * Can validate DOMDocument objects or XML provided as string.
      *
      * @param DOMDocument|string $xml
+     * @return bool
      */
     public function validate($xml)
     {

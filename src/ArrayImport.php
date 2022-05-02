@@ -25,12 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020
+ * @copyright   Copyright (c) 2020-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Application_Import
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace Opus\Import;
@@ -40,7 +36,7 @@ use Opus\Document;
 class ArrayImport
 {
     /**
-     * @param $data
+     * @param array $data
      *
      * TODO handling of collections
      */

@@ -25,12 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Module_Sword
- * @author      Sascha Szott
  */
 
 namespace Opus\Import\Sword;
@@ -41,7 +37,6 @@ use Opus\Config;
 use Opus\Log;
 
 use function count;
-use function is_null;
 use function trim;
 
 class ImportCollection
@@ -62,7 +57,7 @@ class ImportCollection
         }
 
         $collectionRole = CollectionRole::fetchByName('Import');
-        if (is_null($collectionRole)) {
+        if ($collectionRole === null) {
             $logger->warn('collection role "Import" does not exist -- documents that are imported via SWORD API will not be associated to OPUS collection');
             return;
         }
@@ -82,26 +77,41 @@ class ImportCollection
         $this->roleName         = $collectionRole->getName();
     }
 
+    /**
+     * @return bool
+     */
     public function exists()
     {
-        return ! is_null($this->importCollection);
+        return $this->importCollection !== null;
     }
 
+    /**
+     * @return string
+     */
     public function getName()
     {
         return $this->importCollection->getName();
     }
 
+    /**
+     * @return string
+     */
     public function getNumber()
     {
         return $this->importCollection->getNumber();
     }
 
+    /**
+     * @return string
+     */
     public function getRoleName()
     {
         return $this->roleName;
     }
 
+    /**
+     * @return Collection
+     */
     public function getCollection()
     {
         return $this->importCollection;

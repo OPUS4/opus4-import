@@ -25,12 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2018, OPUS 4 development team
+ * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application Unit Tests
- * @package     Application
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace OpusTest\Import;
@@ -55,7 +51,7 @@ class XmlValidationTest extends TestCase
                     && strpos($fileInfo->getBasename(), 'import') === 0
             ) {
                 $xml = file_get_contents($fileInfo->getRealPath());
-                $this->_checkValid($xml, $fileInfo->getBasename());
+                $this->checkValid($xml, $fileInfo->getBasename());
             }
         }
     }
@@ -63,7 +59,7 @@ class XmlValidationTest extends TestCase
     public function testValidation2()
     {
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import2.xml');
-        $this->_checkValid($xml, 'import2.xml');
+        $this->checkValid($xml, 'import2.xml');
     }
 
     /**
@@ -131,7 +127,11 @@ class XmlValidationTest extends TestCase
         $this->assertTrue($validator->validate($xml));
     }
 
-    private function _checkValid($xml, $name)
+    /**
+     * @param string $xml
+     * @param string $name
+     */
+    private function checkValid($xml, $name)
     {
         $validator = new XmlValidation();
 

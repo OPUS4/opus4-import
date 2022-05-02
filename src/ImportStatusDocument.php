@@ -25,15 +25,13 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2018
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Import
- * @author      Sascha Szott
  */
 
 namespace Opus\Import;
+
+use Opus\DocumentInterface;
 
 /**
  * Contains document objects during import.
@@ -42,16 +40,25 @@ class ImportStatusDocument
 {
     private $docs = [];
 
+    /**
+     * @param DocumentInterface $doc
+     */
     public function addDoc($doc)
     {
         $this->docs[] = $doc;
     }
 
+    /**
+     * @return array
+     */
     public function getDocs()
     {
         return $this->docs;
     }
 
+    /**
+     * @return bool
+     */
     public function noDocImported()
     {
         return empty($this->docs);

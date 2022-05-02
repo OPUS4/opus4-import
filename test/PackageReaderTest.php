@@ -25,23 +25,18 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
+ * @copyright   Copyright (c) 2018-2022, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application Unit Tests
- * @package     Application
- * @author      Jens Schwidder <schwidder@zib.de>
- * @author      Sascha Szott <opus-development@saschaszott.de>
  */
 
 namespace OpusTest\Import;
 
-use Opus\Import\PackageReader;
+use Opus\Import\AbstractPackageReader;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use OpusTest\Import\TestAsset\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
+use ReflectionException;
+use ReflectionMethod;
 
 use function file_put_contents;
 use function is_dir;
@@ -63,7 +58,7 @@ class PackageReaderTest extends TestCase
     {
         parent::setUp();
 
-        $this->mockReader = $this->getMockForAbstractClass(PackageReader::class);
+        $this->mockReader = $this->getMockForAbstractClass(AbstractPackageReader::class);
     }
 
     public function testCreateExtractionDir()
@@ -105,7 +100,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_2';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . PackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
         touch($metadataFile);
 
         $statusDoc = $method->invokeArgs($this->mockReader, [$extractDir]);
@@ -122,7 +117,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_3';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . PackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
         touch($metadataFile);
         file_put_contents($metadataFile, '<import><opusDocument></opusDocument></import>');
 
@@ -142,7 +137,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_4';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . PackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
         touch($metadataFile);
 
         $xml = <<<XML
@@ -177,25 +172,25 @@ XML;
         rmdir($extractDir);
     }
 
+    /**
+     * @param string $name
+     * @return ReflectionMethod
+     * @throws ReflectionException
+     */
     protected static function getMethod($name)
     {
-        $class  = new ReflectionClass(PackageReader::class);
+        $class  = new ReflectionClass(AbstractPackageReader::class);
         $method = $class->getMethod($name);
         $method->setAccessible(true);
         return $method;
     }
 
+    /**
+     * @param string $tmpDirName
+     */
     public static function cleanupTmpDir($tmpDirName)
     {
-        $it    = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
-        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-        foreach ($files as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($tmpDirName);
+        parent::cleanupTmpDir($tmpDirName);
+        rmdir($tmpDirName); // TODO is this necessary - should it be moved to parent function?
     }
 }

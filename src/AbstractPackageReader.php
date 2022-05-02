@@ -25,18 +25,13 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2019
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
  * Reads an OPUS import package containing one or more documents and imports
  * the documents.
  *
  * Currently ZIP and TAR files are supported by extending classes.
- *
- * @category    Application
- * @package     Application_Import
- * @author      Sascha Szott <opus-development@saschaszott.de>
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace Opus\Import;
@@ -51,7 +46,6 @@ use Opus\Security\SecurityException;
 
 use function file_get_contents;
 use function is_dir;
-use function is_null;
 use function is_readable;
 use function is_writable;
 use function mkdir;
@@ -62,7 +56,7 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @package Opus\Import
  */
-abstract class PackageReader
+abstract class AbstractPackageReader
 {
     const METADATA_FILENAME = 'opus.xml';
 
@@ -73,7 +67,7 @@ abstract class PackageReader
     /**
      * Sets additional enrichments that will be added to every imported document.
      *
-     * @param $additionalEnrichments
+     * @param array $additionalEnrichments
      */
     public function setAdditionalEnrichments($additionalEnrichments)
     {
@@ -84,8 +78,8 @@ abstract class PackageReader
      * Verarbeitet das XML-Metadatendokument, dessen Inhalt in $xml übergeben wird.
      * Zugehörige Volltextdateien werden aus dem Verzeichnis $dirName gelesen.
      *
-     * @param $xml string Ausgelesener Inhalt der XML-Metadatendatei
-     * @param $dirName string Pfad zum Extraktionsverzeichnis
+     * @param string $xml Ausgelesener Inhalt der XML-Metadatendatei
+     * @param string $dirName Pfad zum Extraktionsverzeichnis
      * @return ImportStatusDocument Statusdokument mit Informationen zum Ergebnis des Imports
      * @throws MetadataImportInvalidXmlException
      * @throws MetadataImportSkippedDocumentsException
@@ -109,6 +103,9 @@ abstract class PackageReader
         return $importer->getStatusDoc();
     }
 
+    /**
+     * @param string $dirName
+     */
     abstract protected function extractPackage($dirName);
 
     /**
@@ -137,7 +134,7 @@ abstract class PackageReader
         }
 
         $extractDir = $this->createExtractionDir($dirName);
-        if (is_null($extractDir)) {
+        if ($extractDir === null) {
             $errMsg = 'could not create extraction directory ' . $dirName;
             $this->getLogger()->err($errMsg);
             throw new Exception($errMsg);
@@ -148,6 +145,10 @@ abstract class PackageReader
         return $this->processPackage($extractDir);
     }
 
+    /**
+     * @return Log
+     * @throws Zend_Exception
+     */
     public function getLogger()
     {
         return Log::get();
@@ -159,7 +160,7 @@ abstract class PackageReader
      * dieses leer ist.
      *
      * @param string $extractDir Pfad zum Extraktionsverzeichnis
-     * @return ImportStatusDocument
+     * @return null|ImportStatusDocument
      * @throws Zend_Exception
      */
     private function processPackage($extractDir)

@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2019
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
  * This class holds OPUS specific enrichments that are associated with every
@@ -39,10 +39,6 @@
  *                        Content-Disposition header)
  * opus.import.checksum : md5 checksum of SWORD package (as specified in HTTP
  *                        Content-MD5 header)
- *
- * @category    Application
- * @package     Import
- * @author      Sascha Szott <opus-development@saschaszott.de>
  */
 
 namespace Opus\Import;
@@ -52,7 +48,6 @@ use Opus\EnrichmentKey;
 
 use function array_key_exists;
 use function gmdate;
-use function is_null;
 use function trim;
 
 /**
@@ -89,7 +84,7 @@ class AdditionalEnrichments
      */
     const OPUS_SOURCE = 'opus.source';
 
-    /** @var */
+    /** @var array */
     private $enrichmentMap;
 
     public function __construct()
@@ -102,6 +97,9 @@ class AdditionalEnrichments
         $this->addEnrichment(self::OPUS_SOURCE, 'sword');
     }
 
+    /**
+     * @return bool
+     */
     private function checkKeysExist()
     {
         return $this->keyExist(self::OPUS_IMPORT_USER)
@@ -111,37 +109,60 @@ class AdditionalEnrichments
             && $this->keyExist(self::OPUS_SOURCE);
     }
 
+    /**
+     * @param string $key
+     * @return bool
+     */
     private function keyExist($key)
     {
         $enrichmentkey = EnrichmentKey::fetchByName($key);
-        return ! is_null($enrichmentkey);
+        return $enrichmentkey !== null;
     }
 
+    /**
+     * @param string $key
+     * @param string $value
+     */
     public function addEnrichment($key, $value)
     {
         $this->enrichmentMap[$key] = $value;
     }
 
+    /**
+     * @return array
+     */
     public function getEnrichments()
     {
         return $this->enrichmentMap;
     }
 
+    /**
+     * @param string $value
+     */
     public function addUser($value)
     {
         $this->addEnrichment(self::OPUS_IMPORT_USER, trim($value));
     }
 
+    /**
+     * @param string $value
+     */
     public function addFile($value)
     {
         $this->addEnrichment(self::OPUS_IMPORT_FILE, trim($value));
     }
 
+    /**
+     * @param string $value
+     */
     public function addChecksum($value)
     {
         $this->addEnrichment(self::OPUS_IMPORT_CHECKSUM, trim($value));
     }
 
+    /**
+     * @return null|string
+     */
     public function getChecksum()
     {
         if (! array_key_exists(self::OPUS_IMPORT_CHECKSUM, $this->enrichmentMap)) {
@@ -150,6 +171,9 @@ class AdditionalEnrichments
         return $this->enrichmentMap[self::OPUS_IMPORT_CHECKSUM];
     }
 
+    /**
+     * @return null|string
+     */
     public function getFileName()
     {
         if (! array_key_exists(self::OPUS_IMPORT_FILE, $this->enrichmentMap)) {

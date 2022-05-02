@@ -25,13 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2019
+ * @copyright   Copyright (c) 2018-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Application_Import
- * @author      Sascha Szott <opus-development@saschaszott.de>
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace Opus\Import;
@@ -43,8 +38,12 @@ use function is_readable;
 
 use const DIRECTORY_SEPARATOR;
 
-class ZipPackageReader extends PackageReader
+class ZipPackageReader extends AbstractPackageReader
 {
+    /**
+     * @param string $dirName
+     * @throws Exception
+     */
     protected function extractPackage($dirName)
     {
         $filename = $dirName . DIRECTORY_SEPARATOR . 'package.zip';

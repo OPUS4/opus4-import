@@ -25,13 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2020
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Import
- * @author      Sascha Szott
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace Opus\Import;
@@ -44,8 +39,10 @@ use DOMNodeList;
 use Exception;
 use finfo;
 use Opus\Collection;
+use Opus\Config\FileTypes;
 use Opus\DnbInstitute;
 use Opus\Document;
+use Opus\DocumentInterface;
 use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
@@ -57,14 +54,13 @@ use Opus\Person;
 use Opus\Security\SecurityException;
 use Opus\Series;
 use Opus\Subject;
-use Zend_Controller_Action_HelperBroker;
+use Zend_Log;
 
 use function array_diff;
 use function array_key_exists;
 use function basename;
 use function hash_file;
 use function intval;
-use function is_null;
 use function is_readable;
 use function libxml_clear_errors;
 use function libxml_use_internal_errors;
@@ -101,7 +97,7 @@ class Importer
     private $swordContext = false;
     private $importDir;
 
-    /** @var null */
+    /** @var mixed */
     private $statusDoc;
 
     /**
@@ -125,6 +121,12 @@ class Importer
      */
     private $document;
 
+    /**
+     * @param string        $xml
+     * @param bool          $isFile
+     * @param null|Zend_Log $logger
+     * @param null|string   $logfile
+     */
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
         $this->logger  = $logger;
@@ -136,6 +138,9 @@ class Importer
         }
     }
 
+    /**
+     * @return mixed
+     */
     public function getStatusDoc()
     {
         return $this->statusDoc;
@@ -147,6 +152,9 @@ class Importer
         $this->statusDoc    = new ImportStatusDocument();
     }
 
+    /**
+     * @param string $imporDir
+     */
     public function setImportDir($imporDir)
     {
         $this->importDir = trim($imporDir);
@@ -156,16 +164,25 @@ class Importer
         }
     }
 
+    /**
+     * @param array|null $additionalEnrichments
+     */
     public function setAdditionalEnrichments($additionalEnrichments)
     {
         $this->additionalEnrichments = $additionalEnrichments;
     }
 
+    /**
+     * @param Collection $importCollection
+     */
     public function setImportCollection($importCollection)
     {
         $this->importCollection = $importCollection;
     }
 
+    /**
+     * @return DocumentInterface
+     */
     private function initDocument()
     {
         $doc = Document::new();
@@ -254,21 +271,21 @@ class Importer
                 continue;
             }
 
-            if (! is_null($this->additionalEnrichments)) {
+            if ($this->additionalEnrichments !== null) {
                 $enrichments = $this->additionalEnrichments->getEnrichments();
                 foreach ($enrichments as $key => $value) {
                     $this->addEnrichment($doc, $key, $value);
                 }
             }
 
-            if (! is_null($this->importCollection)) {
+            if ($this->importCollection !== null) {
                 $doc->addCollection($this->importCollection);
             }
 
             try {
                 $doc->store();
                 $this->document = $doc;
-                if (! is_null($this->statusDoc)) {
+                if ($this->statusDoc !== null) {
                     $this->statusDoc->addDoc($doc);
                 }
             } catch (Exception $e) {
@@ -292,9 +309,12 @@ class Importer
         }
     }
 
+    /**
+     * @param string $message
+     */
     private function log($message)
     {
-        if (is_null($this->logger)) {
+        if ($this->logger === null) {
             return;
         }
         $this->logger->debug($message);
@@ -309,7 +329,7 @@ class Importer
         $this->log("Load XML ...");
         $xml = null;
 
-        if (! is_null($this->xmlFile)) {
+        if ($this->xmlFile !== null) {
             $xml = new DOMDocument();
             $xml->load($this->xmlFile);
             if (! $xml) {
@@ -343,10 +363,13 @@ class Importer
         throw new MetadataImportInvalidXmlException();
     }
 
+    /**
+     * @param int $docId
+     */
     private function appendDocIdToRejectList($docId)
     {
         $this->log('... SKIPPED');
-        if (is_null($this->logfile)) {
+        if ($this->logfile === null) {
             return;
         }
         $this->logfile->log($docId);
@@ -492,7 +515,7 @@ class Importer
                         break;
                     case 'files':
                         $filesElementPresent = true;
-                        if (! is_null($this->importDir)) {
+                        if ($this->importDir !== null) {
                             $baseDir = trim($node->getAttribute('basedir'));
                             $this->handleFiles($node, $doc, $baseDir);
                         }
@@ -784,9 +807,9 @@ class Importer
     /**
      * Adds an enrichment to the document.
      *
-     * @param $doc Document
-     * @param $key string Name of enrichment
-     * @param $value string Value of enrichment
+     * @param DocumentInterface $doc
+     * @param string            $key   Name of enrichment
+     * @param string            $value Value of enrichment
      */
     private function addEnrichment($doc, $key, $value)
     {
@@ -882,11 +905,11 @@ class Importer
     /**
      * Add a single file to the given Document.
      *
-     * @param Document                                                                   $doc the given document
-     * @param $name string Name of the file that should be imported (relative to baseDir)
-     * @param string                                                                     $baseDir (optional) path of the file that should be imported (relative to the import directory)
-     * @param string                                                                     $path (optional) path (and name) of the file that should be imported (relative to baseDir)
-     * @param null|DOMNodeList                                                           $childNode (optional) additional metadata of the file (taken from import XML)
+     * @param Document         $doc the given document
+     * @param string           $name Name of the file that should be imported (relative to baseDir)
+     * @param string           $baseDir (optional) path of the file that should be imported (relative to the import directory)
+     * @param string           $path (optional) path (and name) of the file that should be imported (relative to baseDir)
+     * @param null|DOMNodeList $childNode (optional) additional metadata of the file (taken from import XML)
      */
     private function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
     {
@@ -906,16 +929,16 @@ class Importer
             return;
         }
 
-        if (! is_null($childNode) && ! $this->checksumValidation($childNode, $fullPath)) {
+        if ($childNode !== null && ! $this->checksumValidation($childNode, $fullPath)) {
             $this->log('Checksum validation of file ' . $fullPath . ' was not successful: check import package');
             return;
         }
 
         $file = new File();
-        if (! is_null($childNode)) {
+        if ($childNode !== null) {
             $this->handleFileAttributes($childNode, $file);
         }
-        if (is_null($file->getLanguage())) {
+        if ($file->getLanguage() === null) {
             $file->setLanguage($doc->getLanguage());
         }
 
@@ -927,7 +950,7 @@ class Importer
         }
         $file->setPathName(basename($pathName));
 
-        if (! is_null($childNode)) {
+        if ($childNode !== null) {
             $comments = $childNode->getElementsByTagName('comment');
             if ($comments->length === 1) {
                 $comment = $comments->item(0);
@@ -942,7 +965,8 @@ class Importer
      * Prüft, ob die übergebene Datei überhaupt importiert werden darf.
      * Dazu gibt es in der Konfiguration die Schlüssel filetypes.mimetypes.*
      *
-     * @param $fullPath string
+     * @param string $fullPath
+     * @return bool
      *
      * TODO move check to file types helper?
      */
@@ -952,7 +976,7 @@ class Importer
         $finfo         = new finfo(FILEINFO_MIME_TYPE);
         $mimeTypeFound = $finfo->file($fullPath);
 
-        $fileTypes = Zend_Controller_Action_HelperBroker::getStaticHelper('fileTypes');
+        $fileTypes = new FileTypes();
 
         return $fileTypes->isValidMimeType($mimeTypeFound, $extension);
     }
@@ -967,6 +991,7 @@ class Importer
      *
      * @param DOMElement $childNode
      * @param string     $fullPath
+     * @return bool
      */
     private function checksumValidation($childNode, $fullPath)
     {
