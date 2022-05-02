@@ -100,6 +100,7 @@ class TestCase extends SimpleTestCase
         parent::setUp();
 
         $this->clearDatabase();
+        $this->clearFiles();
     }
 
     protected function tearDown()
@@ -121,7 +122,7 @@ class TestCase extends SimpleTestCase
     /**
      * Empties the workspace tmp directory.
      *
-     * @param $tmpDirName
+     * @param string $tmpDirName
      */
     public static function cleanupTmpDir($tmpDirName)
     {
