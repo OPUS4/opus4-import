@@ -25,44 +25,33 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2020, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ *
+ * @category    Application Unit Tests
+ * @package     Application
+ * @author      Jens Schwidder <schwidder@zib.de>
  */
 
-// Setup error reporting.
-// TODO leave to Zend and config?
-error_reporting(E_ALL | E_STRICT);
-ini_set('display_errors', 1);
+namespace OpusTest\Import;
 
-// Define path to application directory
-defined('APPLICATION_PATH')
-|| define('APPLICATION_PATH', realpath(dirname(dirname(dirname(__FILE__)))));
+use Opus\Import\ArrayImport;
 
-// Define application environment (use 'production' by default)
-define('APPLICATION_ENV', 'testing');
+class ArrayImportTest
+{
+    public function testImport()
+    {
+        $importer = new ArrayImport();
 
-// Configure include path.
-$scriptDir = dirname(__FILE__);
-
-require_once APPLICATION_PATH . '/vendor/autoload.php';
-
-// TODO OPUSVIER-4420 remove after switching to Laminas/ZF3
-require_once APPLICATION_PATH . '/vendor/opus4-repo/framework/library/OpusDb/Mysqlutf8.php';
-
-// Do test environment initializiation.
-$application = new Zend_Application(
-    APPLICATION_ENV,
-    [
-        "config" => [
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'test.ini',
-        ],
-    ]
-);
-
-// TODO should not be necessary for search tests
-$options                                        = $application->getOptions();
-$options['opus']['disableDatabaseVersionCheck'] = true;
-$application->setOptions($options);
-
-$application->bootstrap(['Database', 'Temp', 'OpusLocale']);
+        $importer->import([
+            'Type'      => 'article',
+            'TitleMain' => [
+                [
+                    'Type'     => 'Main',
+                    'Language' => 'eng',
+                    'Value'    => 'Document Test Title',
+                ],
+            ],
+        ]);
+    }
+}

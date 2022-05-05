@@ -25,44 +25,42 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2016-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-// Setup error reporting.
-// TODO leave to Zend and config?
-error_reporting(E_ALL | E_STRICT);
-ini_set('display_errors', 1);
+namespace Opus\Import;
 
-// Define path to application directory
-defined('APPLICATION_PATH')
-|| define('APPLICATION_PATH', realpath(dirname(dirname(dirname(__FILE__)))));
+use Opus\DocumentInterface;
 
-// Define application environment (use 'production' by default)
-define('APPLICATION_ENV', 'testing');
+/**
+ * Contains document objects during import.
+ */
+class ImportStatusDocument
+{
+    private $docs = [];
 
-// Configure include path.
-$scriptDir = dirname(__FILE__);
+    /**
+     * @param DocumentInterface $doc
+     */
+    public function addDoc($doc)
+    {
+        $this->docs[] = $doc;
+    }
 
-require_once APPLICATION_PATH . '/vendor/autoload.php';
+    /**
+     * @return array
+     */
+    public function getDocs()
+    {
+        return $this->docs;
+    }
 
-// TODO OPUSVIER-4420 remove after switching to Laminas/ZF3
-require_once APPLICATION_PATH . '/vendor/opus4-repo/framework/library/OpusDb/Mysqlutf8.php';
-
-// Do test environment initializiation.
-$application = new Zend_Application(
-    APPLICATION_ENV,
-    [
-        "config" => [
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'test.ini',
-        ],
-    ]
-);
-
-// TODO should not be necessary for search tests
-$options                                        = $application->getOptions();
-$options['opus']['disableDatabaseVersionCheck'] = true;
-$application->setOptions($options);
-
-$application->bootstrap(['Database', 'Temp', 'OpusLocale']);
+    /**
+     * @return bool
+     */
+    public function noDocImported()
+    {
+        return empty($this->docs);
+    }
+}

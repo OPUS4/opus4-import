@@ -31,7 +31,11 @@
 
 namespace OpusTest\Import\TestAsset;
 
+use Opus\Config;
 use Opus\Db\Util\DatabaseHelper;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Zend_Config;
 
 use function array_diff;
 use function is_dir;
@@ -96,10 +100,40 @@ class TestCase extends SimpleTestCase
         parent::setUp();
 
         $this->clearDatabase();
+        $this->clearFiles();
     }
 
     protected function tearDown()
     {
         parent::tearDown();
+
+        self::cleanupTmpDir(APPLICATION_PATH . '/build/workspace/tmp');
+    }
+
+    /**
+     * TODO adjustConfiguration also makes it configurable - so maybe not needed anymore
+     */
+    public function makeConfigurationModifiable()
+    {
+        $config = new Zend_Config([], true);
+        Config::set($config->merge(Config::get()));
+    }
+
+    /**
+     * Empties the workspace tmp directory.
+     *
+     * @param string $tmpDirName
+     */
+    public static function cleanupTmpDir($tmpDirName)
+    {
+        $it    = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
+        }
     }
 }

@@ -25,44 +25,39 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2018-2022
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-// Setup error reporting.
-// TODO leave to Zend and config?
-error_reporting(E_ALL | E_STRICT);
-ini_set('display_errors', 1);
+namespace Opus\Import;
 
-// Define path to application directory
-defined('APPLICATION_PATH')
-|| define('APPLICATION_PATH', realpath(dirname(dirname(dirname(__FILE__)))));
+use Exception;
+use ZipArchive;
 
-// Define application environment (use 'production' by default)
-define('APPLICATION_ENV', 'testing');
+use function is_readable;
 
-// Configure include path.
-$scriptDir = dirname(__FILE__);
+use const DIRECTORY_SEPARATOR;
 
-require_once APPLICATION_PATH . '/vendor/autoload.php';
+class ZipPackageReader extends AbstractPackageReader
+{
+    /**
+     * @param string $dirName
+     * @throws Exception
+     */
+    protected function extractPackage($dirName)
+    {
+        $filename = $dirName . DIRECTORY_SEPARATOR . 'package.zip';
+        $this->getLogger()->info('processing ZIP package in file system ' . $filename);
 
-// TODO OPUSVIER-4420 remove after switching to Laminas/ZF3
-require_once APPLICATION_PATH . '/vendor/opus4-repo/framework/library/OpusDb/Mysqlutf8.php';
+        if (! is_readable($filename)) {
+            $errMsg = 'ZIP package ' . $filename . ' is not readable!';
+            $this->getLogger()->err($errMsg);
+            throw new Exception($errMsg);
+        }
 
-// Do test environment initializiation.
-$application = new Zend_Application(
-    APPLICATION_ENV,
-    [
-        "config" => [
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'test.ini',
-        ],
-    ]
-);
-
-// TODO should not be necessary for search tests
-$options                                        = $application->getOptions();
-$options['opus']['disableDatabaseVersionCheck'] = true;
-$application->setOptions($options);
-
-$application->bootstrap(['Database', 'Temp', 'OpusLocale']);
+        $zip = new ZipArchive();
+        $zip->open($filename);
+        $zip->extractTo($dirName . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
+        $zip->close();
+    }
+}

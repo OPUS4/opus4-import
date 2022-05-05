@@ -62,7 +62,7 @@ class MetadataImportTest extends TestCase
         parent::setUp();
 
         $this->documentImported = false;
-        $this->xmlDir           = dirname(dirname(__FILE__)) . '/_files/';
+        $this->xmlDir           = dirname(dirname(__FILE__)) . '/_files/xml/';
     }
 
     public function tearDown()

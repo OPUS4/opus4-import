@@ -61,7 +61,7 @@ class MetadataImportWorkerTest extends TestCase
         $this->job    = new Job();
         $this->worker = new MetadataImportWorker();
         $this->xml    = null;
-        $this->xmlDir = dirname(dirname(__FILE__)) . '/_files/';
+        $this->xmlDir = dirname(dirname(__FILE__)) . '/_files/xml/';
     }
 
     public function testActivationLabel()
