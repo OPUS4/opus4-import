@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2022
+ * @copyright   Copyright (c) 2016
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
  * Reads an OPUS import package containing one or more documents and imports
@@ -37,11 +37,11 @@
 namespace Opus\Import;
 
 use Exception;
+use Opus\Common\Log;
+use Opus\Common\Model\ModelException;
 use Opus\Import\Sword\ImportCollection;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Log;
-use Opus\Model\ModelException;
 use Opus\Security\SecurityException;
 
 use function file_get_contents;

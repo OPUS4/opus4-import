@@ -33,8 +33,8 @@ namespace Opus\Import\Sword;
 
 use Opus\Collection;
 use Opus\CollectionRole;
-use Opus\Config;
-use Opus\Log;
+use Opus\Common\Config;
+use Opus\Common\Log;
 
 use function count;
 use function trim;

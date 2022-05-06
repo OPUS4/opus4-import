@@ -31,7 +31,7 @@
 
 namespace Opus\Import;
 
-use Opus\DocumentInterface;
+use Opus\Common\DocumentInterface;
 
 /**
  * Contains document objects during import.

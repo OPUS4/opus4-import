@@ -41,13 +41,13 @@ namespace Opus\Import;
 
 use Exception;
 use Opus\Collection;
+use Opus\Common\DocumentInterface;
+use Opus\Common\Model\ModelException;
 use Opus\Document;
-use Opus\DocumentInterface;
 use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Identifier;
 use Opus\Licence;
-use Opus\Model\ModelException;
 use Opus\Model\NotFoundException;
 use Opus\Person;
 use Opus\Series;

@@ -31,7 +31,7 @@
 
 namespace OpusTest\Import\TestAsset;
 
-use Opus\Config;
+use Opus\Common\Config;
 use Opus\Db\Util\DatabaseHelper;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

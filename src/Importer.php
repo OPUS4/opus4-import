@@ -39,16 +39,16 @@ use DOMNodeList;
 use Exception;
 use finfo;
 use Opus\Collection;
-use Opus\Config\FileTypes;
+use Opus\Common\Config\FileTypes;
+use Opus\Common\DocumentInterface;
+use Opus\Common\Model\ModelException;
 use Opus\DnbInstitute;
 use Opus\Document;
-use Opus\DocumentInterface;
 use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Licence;
-use Opus\Model\ModelException;
 use Opus\Model\NotFoundException;
 use Opus\Person;
 use Opus\Security\SecurityException;
@@ -105,7 +105,7 @@ class Importer
      *
      * This could be for instance a timestamp and other information about the import.
      *
-     * @var array
+     * @var AdditionalEnrichments
      */
     private $additionalEnrichments;
 
