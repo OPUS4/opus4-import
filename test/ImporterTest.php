@@ -31,11 +31,11 @@
 
 namespace OpusTest\Import;
 
+use Opus\Common\Log;
 use Opus\Document;
 use Opus\EnrichmentKey;
 use Opus\Import\Importer;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Log;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function file_get_contents;
