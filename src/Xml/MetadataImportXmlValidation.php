@@ -62,7 +62,7 @@ class MetadataImportXmlValidation
         libxml_clear_errors();
         $useInternalErrors = libxml_use_internal_errors(true);
 
-        if (! $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus_import.xsd')) {
+        if (! $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd')) {
             throw new MetadataImportInvalidXmlException(self::getErrorMessage());
         }
         libxml_use_internal_errors($useInternalErrors);
