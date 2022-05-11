@@ -3,7 +3,7 @@
 
 <import 
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:noNamespaceSchemaLocation="opus_import.xsd">
+  xsi:noNamespaceSchemaLocation="opus-import.xsd">
 
   <opusDocument oldId="00" language="deu" type="doctoralthesis" 
   pageFirst="1" pageLast="4"

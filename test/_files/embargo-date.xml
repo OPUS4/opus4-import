@@ -2,7 +2,7 @@
 
 <import
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="opus_import.xsd">
+        xsi:noNamespaceSchemaLocation="opus-import.xsd">
 
     <opusDocument oldId="999" language="eng" type="preprint" serverState="inprogress">
 

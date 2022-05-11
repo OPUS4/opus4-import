@@ -76,7 +76,7 @@ class XmlValidation
         libxml_clear_errors();
         libxml_use_internal_errors(true);
 
-        $valid = $xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+        $valid = $xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'Xml' . DIRECTORY_SEPARATOR . 'opus-import.xsd');
 
         $this->errors = libxml_get_errors();
         libxml_clear_errors();
