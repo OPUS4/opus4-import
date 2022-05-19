@@ -36,7 +36,8 @@ SCRIPT
 $opus = <<SCRIPT
 cd /vagrant
 ant prepare-workspace prepare-config -DdbUserPassword=root -DdbAdminPassword=root
-php test/TestAsset/createdb.php
+export APPLICATION_PATH=/vagrant
+php vendor/opus4-repo/framework/db/createdb.php
 SCRIPT
 
 $environment = <<SCRIPT

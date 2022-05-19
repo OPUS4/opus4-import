@@ -29,7 +29,7 @@ jobs:
         run: bash vendor/opus4-repo/framework/scripts/prepare-database.sh --admin_pwd root --user_pwd root
 
       - name: Prepare
-        run: ant prepare-workspace prepare-config lint -DdbUserPassword=root -DdbAdminPassword=root && php test/TestAsset/createdb.php
+        run: ant prepare-workspace prepare-config lint -DdbUserPassword=root -DdbAdminPassword=root && export APPLICATION_PATH=. && php vendor/opus4-repo/framework/db/createdb.php
 
       - name: Tests
         run: php composer.phar test
