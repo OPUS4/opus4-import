@@ -77,6 +77,11 @@ class MetadataImport
     /** @var array */
     private $fieldsToKeepOnUpdate = [];
 
+    /**
+     * @var XmlValidator
+     */
+    private $xmlValidator;
+
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
         if ($logger !== null) {
@@ -90,6 +95,8 @@ class MetadataImport
         } else {
             $this->xmlString = $xml;
         }
+
+        $this->xmlValidator = new XmlValidator();
     }
 
     public function run()
@@ -172,48 +179,38 @@ class MetadataImport
 
     private function __getXML()
     {
-        // Enable user error handling while validating input
-        libxml_clear_errors();
-        $useInternalErrors = libxml_use_internal_errors(true);
-
         $this->log("Load XML ...");
-        $xml = new DOMDocument();
 
-        if ($this->xmlFile !== null) {
-            if (! $xml->load($this->xmlFile)) {
-                $errMsg = MetadataImportXmlValidation::getErrorMessage();
-                $this->log(
-                    "... ERROR: Cannot load XML document $this->xmlFile: make sure it is well-formed. $errMsg"
-                );
-                throw new MetadataImportInvalidXmlException('XML is not well-formed.');
+        try {
+            if ($this->xmlFile !== null) {
+                $xml = $this->xmlValidator->loadXML($this->xmlFile, true);
+            } else {
+                $xml = $this->xmlValidator->loadXML($this->xmlString);
             }
-        } else {
-            if (! $xml->loadXML($this->xmlString)) {
-                $errMsg = MetadataImportXmlValidation::getErrorMessage();
-                $this->log("... ERROR: Cannot load XML document: make sure it is well-formed. $errMsg");
-                throw new MetadataImportInvalidXmlException('XML is not well-formed.');
-            }
+
+            $this->log('... OK');
+            return $xml;
+        } catch (MetadataImportInvalidXmlException $exception) {
+            $this->log("... ERROR: Cannot load XML document "
+                . ($this->xmlFile? $this->xmlFile : "")
+                . ": make sure it is well-formed."
+                . $this->xmlValidator->getErrorMessage()
+            );
+            throw new MetadataImportInvalidXmlException('XML is not well-formed.');;
         }
-
-        $this->log('... OK');
-        libxml_use_internal_errors($useInternalErrors);
-        libxml_clear_errors();
-        return $xml;
     }
 
     private function __validateXML()
     {
         $this->log("Validate XML ...");
 
-        $validation = new MetadataImportXmlValidation($this->xml);
         try {
-            $validation->checkValidXml();
-        } catch (MetadataImportInvalidXmlException $e) {
-            $this->log("... ERROR: XML document is not valid: " . $e->getMessage());
-            throw $e;
+            $this->xmlValidator->validateXml();
+            $this->log('... OK');
+        } catch (MetadataImportInvalidXmlException $exception) {
+            $this->log("... ERROR: XML document is not valid: " . $exception->getMessage());
+            throw $exception;
         }
-
-        $this->log('... OK');
     }
 
     /**
