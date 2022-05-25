@@ -72,8 +72,9 @@ class XmlValidationTest extends TestCase
 
         $this->expectException(MetadataImportInvalidXmlException::class);
 
-        $validator = new XmlValidator($xml);
-        $validator->checkValidXml();
+        $validator = new XmlValidator();
+        $validator->loadXML($xml);
+        $validator->validateXml();
 
         //$this->assertFalse($validator->validate($xml));
 
@@ -86,10 +87,11 @@ class XmlValidationTest extends TestCase
     {
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/enrichment-without-value.xml');
 
-        $validator = new XmlValidator($xml);
+        $validator = new XmlValidator();
 
         try {
-            $validator->checkValidXml();
+            $validator->loadXML($xml);
+            $validator->validateXml();
         } catch (MetadataImportInvalidXmlException $e) {
             $this->fail("XML is not valid.");
         }
@@ -108,10 +110,11 @@ class XmlValidationTest extends TestCase
     {
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-date.xml');
 
-        $validator = new XmlValidator($xml);
+        $validator = new XmlValidator();
 
         try {
-            $validator->checkValidXml();
+            $validator->loadXML($xml);
+            $validator->validateXml();
         } catch (MetadataImportInvalidXmlException $e) {
             $this->fail("XML is not valid.");
         }
@@ -123,11 +126,12 @@ class XmlValidationTest extends TestCase
     {
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-year.xml');
 
-        $validator = new XmlValidator($xml);
+        $validator = new XmlValidator();
 
         $this->expectException(MetadataImportInvalidXmlException::class);
 
-        $validator->checkValidXml($xml);
+        $validator->loadXML($xml);
+        $validator->validateXml();
 
         $this->assertCount(1, $validator->getErrors());
     }
@@ -136,10 +140,11 @@ class XmlValidationTest extends TestCase
     {
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/embargo-date.xml');
 
-        $validator = new XmlValidator($xml);
+        $validator = new XmlValidator();
 
         try {
-            $validator->checkValidXml();
+            $validator->loadXML($xml);
+            $validator->validateXml();
         } catch (MetadataImportInvalidXmlException $e) {
             $this->fail("XML is not valid.");
         }
@@ -153,10 +158,11 @@ class XmlValidationTest extends TestCase
      */
     private function checkValid($xml, $name)
     {
-        $validator = new XmlValidator($xml);
+        $validator = new XmlValidator();
 
         try {
-            $validator->checkValidXml();
+            $validator->loadXML($xml);
+            $validator->validateXml();
         } catch (MetadataImportInvalidXmlException $e) {
             $this->fail("Import XML file '$name' not valid.");
         }

@@ -45,26 +45,20 @@ use const LIBXML_ERR_WARNING;
 
 class XmlValidator
 {
-    /** @var mixed|null */
+    /** @var DOMDocument|null */
     private $xml;
-
-    /** @var bool */
-    private $isFile;
 
     /** @var array|null */
     private $errors;
 
     /**
-     * @param null|string|DOMDocument $xml
-     * @param bool                    $isFile
+     * Loads an XML string or XML from a file
+     *
+     * @param  string $xml XML string ot file path
+     * @param  bool   $isFile
+     * @return DOMDocument
      */
-    public function __construct($xml = null, $isFile = false)
-    {
-        $this->xml    = $xml;
-        $this->isFile = $isFile;
-    }
-
-    public function checkValidXml()
+    public function loadXML($xml, $isFile = false)
     {
         // Enable user error handling while validating input file
         libxml_clear_errors();
@@ -73,21 +67,33 @@ class XmlValidator
         if (! $this->xml instanceof DOMDocument) {
             $doc = new DOMDocument();
 
-            if ($this->isFile) {
-                $doc->load($this->xml);
+            if ($isFile) {
+                $success = $doc->load($xml);
             } else {
-                $doc->loadXML($this->xml);
+                $success = $doc->loadXML($xml);
             }
 
-            if (! $doc) {
+            if (! $success) {
                 $this->errors = libxml_get_errors();
                 throw new MetadataImportInvalidXmlException($this->getErrorMessage());
             }
-        } else {
-            $doc = $this->xml;
+
+            $this->xml = $doc;
+            return $doc;
         }
 
-        if (! $doc->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd')) {
+        $this->errors = libxml_get_errors();
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
+    }
+
+    public function validateXml()
+    {
+        // Enable user error handling while validating input file
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        if (! $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd')) {
             $this->errors = libxml_get_errors();
             throw new MetadataImportInvalidXmlException($this->getErrorMessage());
         }
