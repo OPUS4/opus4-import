@@ -49,8 +49,6 @@ use Opus\Series;
 use Opus\Subject;
 
 use function array_diff;
-use function libxml_clear_errors;
-use function libxml_use_internal_errors;
 use function substr;
 use function trim;
 use function ucfirst;

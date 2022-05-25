@@ -31,7 +31,6 @@
 
 namespace Opus\Import;
 
-use DOMDocument;
 use DOMElement;
 use DOMNamedNodeMap;
 use DOMNode;
@@ -63,8 +62,6 @@ use function basename;
 use function hash_file;
 use function intval;
 use function is_readable;
-use function libxml_clear_errors;
-use function libxml_use_internal_errors;
 use function pathinfo;
 use function scandir;
 use function strcasecmp;
@@ -122,9 +119,7 @@ class Importer
      */
     private $document;
 
-    /**
-     * @var XmlValidator
-     */
+    /** @var XmlValidator */
     private $xmlValidator;
 
     /**
@@ -345,9 +340,8 @@ class Importer
             $this->log('Loading Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlValidator->getErrorMessage()
-            );
-            throw new MetadataImportInvalidXmlException('XML is not well-formed.');;
+                . $this->xmlValidator->getErrorMessage());
+            throw new MetadataImportInvalidXmlException('XML is not well-formed.');
         }
     }
 
@@ -363,8 +357,7 @@ class Importer
             $this->log('Validation Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlValidator->getErrorMessage()
-            );
+                . $this->xmlValidator->getErrorMessage());
             throw $exception;
         }
     }
