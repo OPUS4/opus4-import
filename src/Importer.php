@@ -47,7 +47,7 @@ use Opus\EnrichmentKey;
 use Opus\File;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Import\Xml\XmlValidator;
+use Opus\Import\Xml\XmlDocument;
 use Opus\Licence;
 use Opus\Model\NotFoundException;
 use Opus\Person;
@@ -119,8 +119,8 @@ class Importer
      */
     private $document;
 
-    /** @var XmlValidator */
-    private $xmlValidator;
+    /** @var XmlDocument */
+    private $xmlDocument;
 
     /**
      * @param string        $xml
@@ -138,7 +138,7 @@ class Importer
             $this->xmlString = $xml;
         }
 
-        $this->xmlValidator = new XmlValidator();
+        $this->xmlDocument = new XmlDocument();
     }
 
     /**
@@ -332,15 +332,15 @@ class Importer
 
         try {
             if ($this->xmlFile !== null) {
-                $this->xml = $this->xmlValidator->loadXML($this->xmlFile, true);
+                $this->xml = $this->xmlDocument->load($this->xmlFile);
             } else {
-                $this->xml = $this->xmlValidator->loadXML($this->xmlString);
+                $this->xml = $this->xmlDocument->loadXML($this->xmlString);
             }
 
             $this->log('Loading Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlValidator->getErrorMessage());
+                . $this->xmlDocument->getErrorMessage());
             throw new MetadataImportInvalidXmlException('XML is not well-formed.');
         }
     }
@@ -353,11 +353,11 @@ class Importer
         $this->log("Validate XML ...");
 
         try {
-            $this->xmlValidator->validateXml();
+            $this->xmlDocument->validate();
             $this->log('Validation Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlValidator->getErrorMessage());
+                . $this->xmlDocument->getErrorMessage());
             throw $exception;
         }
     }

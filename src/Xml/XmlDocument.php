@@ -43,64 +43,85 @@ use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_ERR_WARNING;
 
-class XmlValidator
+/**
+ * A class for loading and validating XML
+ * (replaces/merges two previous separate validation classes).
+ */
+class XmlDocument
 {
     /** @var DOMDocument|null */
     private $xml;
 
-    /** @var array|null */
-    private $errors;
+    /** @var bool */
+    private $useInternalErrors;
 
     /**
-     * Loads an XML string or XML from a file
+     * Constructor of the class
      *
-     * @param  string $xml XML string ot file path
-     * @param  bool   $isFile
-     * @return DOMDocument
+     * @param DOMDocument|null $doc
      */
-    public function loadXML($xml, $isFile = false)
+    public function __construct($doc = null)
     {
-        // Enable user error handling while validating input file
+        // Enable user error handling
         libxml_clear_errors();
-        $useInternalErrors = libxml_use_internal_errors(true);
+        $this->useInternalErrors = libxml_use_internal_errors(true);
 
-        if (! $this->xml instanceof DOMDocument) {
-            $doc = new DOMDocument();
-
-            if ($isFile) {
-                $success = $doc->load($xml);
-            } else {
-                $success = $doc->loadXML($xml);
-            }
-
-            if (! $success) {
-                $this->errors = libxml_get_errors();
-                throw new MetadataImportInvalidXmlException($this->getErrorMessage());
-            }
-
+        if ($doc) {
             $this->xml = $doc;
-            return $doc;
         }
+    }
 
-        $this->errors = libxml_get_errors();
-        libxml_use_internal_errors($useInternalErrors);
+    /**
+     * Destructotr of the class
+     */
+    public function __destruct()
+    {
+        // Disable user error handling
+        libxml_use_internal_errors($this->useInternalErrors);
         libxml_clear_errors();
     }
 
-    public function validateXml()
+    /**
+     * Loads an XML string
+     *
+     * @param  string $xml XML string
+     * @return DOMDocument
+     */
+    public function loadXML($xml)
     {
-        // Enable user error handling while validating input file
-        libxml_clear_errors();
-        $useInternalErrors = libxml_use_internal_errors(true);
-
-        if (! $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd')) {
-            $this->errors = libxml_get_errors();
+        $doc = new DOMDocument();
+        if (! $doc->loadXML($xml)) {
             throw new MetadataImportInvalidXmlException($this->getErrorMessage());
         }
 
-        $this->errors = libxml_get_errors();
-        libxml_use_internal_errors($useInternalErrors);
-        libxml_clear_errors();
+        $this->xml = $doc;
+        return $doc;
+    }
+
+    /**
+     * Loads XML from a file
+     *
+     * @param  string $xmlFilePath Path to the xml file
+     * @return DOMDocument
+     */
+    public function load($xmlFilePath)
+    {
+        $doc = new DOMDocument();
+        if (! $doc->loadXML($xmlFilePath)) {
+            throw new MetadataImportInvalidXmlException($this->getErrorMessage());
+        }
+
+        $this->xml = $doc;
+        return $doc;
+    }
+
+    public function validate()
+    {
+        $success = $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+
+        if (! $success) {
+            throw new MetadataImportInvalidXmlException($this->getErrorMessage());
+        }
     }
 
     /**
@@ -108,7 +129,7 @@ class XmlValidator
      */
     public function getErrors()
     {
-        return $this->errors;
+        return libxml_get_errors();
     }
 
     /**
@@ -117,7 +138,7 @@ class XmlValidator
     public function getErrorMessage()
     {
         $errorMsg = '';
-        foreach ($this->errors as $error) {
+        foreach (libxml_get_errors() as $error) {
             $errorMsg .= "\non line $error->line ";
             switch ($error->level) {
                 case LIBXML_ERR_WARNING:
