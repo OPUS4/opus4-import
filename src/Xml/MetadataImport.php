@@ -53,9 +53,6 @@ use function substr;
 use function trim;
 use function ucfirst;
 
-/**
- * phpcs:disable
- */
 class MetadataImport
 {
     use LoggingTrait;
@@ -75,11 +72,15 @@ class MetadataImport
     /** @var array */
     private $fieldsToKeepOnUpdate = [];
 
-    /**
-     * @var XmlDocument
-     */
-    private $XmlDocument;
+    /** @var XmlDocument */
+    private $xmlDocument;
 
+    /**
+     * @param string     $xml
+     * @param bool       $isFile
+     * @param null|mixed $logger
+     * @param null|mixed $logfile
+     */
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
         if ($logger !== null) {
@@ -167,6 +168,9 @@ class MetadataImport
         }
     }
 
+    /**
+     * @param string $string
+     */
     private function log($string)
     {
         if ($this->logger === null) {
@@ -175,6 +179,9 @@ class MetadataImport
         $this->logger->log($string);
     }
 
+    /**
+     * @return DOMDocument
+     */
     private function __getXML()
     {
         $this->log("Load XML ...");
@@ -190,11 +197,10 @@ class MetadataImport
             return $xml;
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document "
-                . ($this->xmlFile? $this->xmlFile : "")
+                . ($this->xmlFile ? $this->xmlFile : "")
                 . ": make sure it is well-formed."
-                . $this->xmlDocument->getErrorMessage()
-            );
-            throw new MetadataImportInvalidXmlException('XML is not well-formed.');;
+                . $this->xmlDocument->getErrorMessage());
+            throw new MetadataImportInvalidXmlException('XML is not well-formed.');
         }
     }
 
