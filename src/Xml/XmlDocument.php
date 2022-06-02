@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -75,24 +75,7 @@ class XmlDocument
      */
     public function loadXML($xml)
     {
-        // Enable user error handling
-        libxml_clear_errors();
-        $useInternalErrors = libxml_use_internal_errors(true);
-
-        $doc          = new DOMDocument();
-        $success      = $doc->loadXML($xml);
-        $this->errors = libxml_get_errors();
-
-        // Disable user error handling
-        libxml_use_internal_errors($useInternalErrors);
-        libxml_clear_errors();
-
-        if (! $success) {
-            throw new MetadataImportInvalidXmlException($this->getErrorMessage());
-        }
-
-        $this->xml = $doc;
-        return $doc;
+        return $this->loadXmlData($xml, false);
     }
 
     /**
@@ -103,12 +86,29 @@ class XmlDocument
      */
     public function load($xmlFilePath)
     {
+        return $this->loadXmlData($xmlFilePath, true);
+    }
+
+    /**
+     * Loads XML from a string or a file
+     *
+     * @param  string $xml Xml string or a path to an xml file
+     * @param  bool   $isFile True if the given $xml is a file path
+     * @return DOMDocument
+     */
+    protected function loadXmlData($xml, $isFile = false)
+    {
         // Enable user error handling
         libxml_clear_errors();
         $useInternalErrors = libxml_use_internal_errors(true);
 
-        $doc          = new DOMDocument();
-        $success      = $doc->loadXML($xmlFilePath);
+        $doc = new DOMDocument();
+        if ($isFile) {
+            $success = $doc->load($xml);
+        } else {
+            $success = $doc->loadXML($xml);
+        }
+
         $this->errors = libxml_get_errors();
 
         // Disable user error handling
