@@ -86,6 +86,8 @@ class XmlDocument
      */
     public function load($xmlFilePath)
     {
+        // TODO: Error handling for missing files etc.
+
         return $this->loadXmlData($xmlFilePath, true);
     }
 
@@ -104,6 +106,7 @@ class XmlDocument
 
         $doc = new DOMDocument();
         if ($isFile) {
+            // TODO: Error handling for missing files etc.
             $success = $doc->load($xml);
         } else {
             $success = $doc->loadXML($xml);
