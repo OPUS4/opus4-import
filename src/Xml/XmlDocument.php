@@ -52,8 +52,8 @@ class XmlDocument
     /** @var DOMDocument|null */
     private $xml;
 
-    /** @var bool */
-    private $useInternalErrors;
+    /** @var array|null */
+    private $errors;
 
     /**
      * Constructor of the class
@@ -62,23 +62,9 @@ class XmlDocument
      */
     public function __construct($doc = null)
     {
-        // Enable user error handling
-        libxml_clear_errors();
-        $this->useInternalErrors = libxml_use_internal_errors(true);
-
         if ($doc) {
             $this->xml = $doc;
         }
-    }
-
-    /**
-     * Destructotr of the class
-     */
-    public function __destruct()
-    {
-        // Disable user error handling
-        libxml_use_internal_errors($this->useInternalErrors);
-        libxml_clear_errors();
     }
 
     /**
@@ -89,8 +75,19 @@ class XmlDocument
      */
     public function loadXML($xml)
     {
-        $doc = new DOMDocument();
-        if (! $doc->loadXML($xml)) {
+        // Enable user error handling
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        $doc          = new DOMDocument();
+        $success      = $doc->loadXML($xml);
+        $this->errors = libxml_get_errors();
+
+        // Disable user error handling
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
+
+        if (! $success) {
             throw new MetadataImportInvalidXmlException($this->getErrorMessage());
         }
 
@@ -106,8 +103,19 @@ class XmlDocument
      */
     public function load($xmlFilePath)
     {
-        $doc = new DOMDocument();
-        if (! $doc->loadXML($xmlFilePath)) {
+        // Enable user error handling
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        $doc          = new DOMDocument();
+        $success      = $doc->loadXML($xmlFilePath);
+        $this->errors = libxml_get_errors();
+
+        // Disable user error handling
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
+
+        if (! $success) {
             throw new MetadataImportInvalidXmlException($this->getErrorMessage());
         }
 
@@ -117,7 +125,16 @@ class XmlDocument
 
     public function validate()
     {
-        $success = $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+        // Enable user error handling
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        $success      = $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+        $this->errors = libxml_get_errors();
+
+        // Disable user error handling
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
 
         if (! $success) {
             throw new MetadataImportInvalidXmlException($this->getErrorMessage());
@@ -129,7 +146,7 @@ class XmlDocument
      */
     public function getErrors()
     {
-        return libxml_get_errors();
+        return $this->errors;
     }
 
     /**
@@ -138,7 +155,7 @@ class XmlDocument
     public function getErrorMessage()
     {
         $errorMsg = '';
-        foreach (libxml_get_errors() as $error) {
+        foreach ($this->getErrors() as $error) {
             $errorMsg .= "\non line $error->line ";
             switch ($error->level) {
                 case LIBXML_ERR_WARNING:
