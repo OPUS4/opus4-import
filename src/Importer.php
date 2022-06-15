@@ -340,7 +340,7 @@ class Importer
             $this->log('Loading Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlDocument->getErrorMessage());
+                . $this->xmlDocument->getErrorsPrettyPrinted());
             throw new MetadataImportInvalidXmlException('XML is not well-formed.');
         }
     }
@@ -357,7 +357,7 @@ class Importer
             $this->log('Validation Result: OK');
         } catch (MetadataImportInvalidXmlException $exception) {
             $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlDocument->getErrorMessage());
+                . $this->xmlDocument->getErrorsPrettyPrinted());
             throw $exception;
         }
     }

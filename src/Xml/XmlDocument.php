@@ -119,7 +119,7 @@ class XmlDocument
         libxml_clear_errors();
 
         if (! $success) {
-            throw new MetadataImportInvalidXmlException($this->getErrorMessage());
+            throw new MetadataImportInvalidXmlException($this->getErrorsPrettyPrinted());
         }
 
         $this->xml = $doc;
@@ -140,7 +140,7 @@ class XmlDocument
         libxml_clear_errors();
 
         if (! $success) {
-            throw new MetadataImportInvalidXmlException($this->getErrorMessage());
+            throw new MetadataImportInvalidXmlException($this->getErrorsPrettyPrinted());
         }
     }
 
@@ -155,7 +155,7 @@ class XmlDocument
     /**
      * @return string
      */
-    public function getErrorMessage()
+    public function getErrorsPrettyPrinted()
     {
         $errorMsg = '';
         foreach ($this->getErrors() as $error) {

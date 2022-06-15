@@ -199,7 +199,7 @@ class MetadataImport
             $this->log("... ERROR: Cannot load XML document "
                 . ($this->xmlFile ? $this->xmlFile : "")
                 . ": make sure it is well-formed."
-                . $this->xmlDocument->getErrorMessage());
+                . $this->xmlDocument->getErrorsPrettyPrinted());
             throw new MetadataImportInvalidXmlException('XML is not well-formed.');
         }
     }
