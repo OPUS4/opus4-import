@@ -45,7 +45,6 @@ use const LIBXML_ERR_WARNING;
 
 /**
  * A class for loading and validating XML
- * (replaces/merges two previous separate validation classes).
  */
 class XmlDocument
 {
