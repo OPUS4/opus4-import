@@ -32,13 +32,14 @@
 namespace OpusTest\Import;
 
 use DirectoryIterator;
-use Opus\Import\XmlValidation;
+use Opus\Import\Xml\MetadataImportInvalidXmlException;
+use Opus\Import\Xml\XmlDocument;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function file_get_contents;
 use function strpos;
 
-class XmlValidationTest extends TestCase
+class XmlDocumentTest extends TestCase
 {
     /**
      * Check if all 'import*.xml' files are valid.
@@ -67,28 +68,30 @@ class XmlValidationTest extends TestCase
      */
     public function testInvalid()
     {
-        $validator = new XmlValidation();
-
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/invalid-import1.xml');
 
-        $this->assertFalse($validator->validate($xml));
+        $this->expectException(MetadataImportInvalidXmlException::class);
 
-        $errors = $validator->getErrors();
-
-        $this->assertCount(1, $errors);
+        $xmlDocument = new XmlDocument();
+        $xmlDocument->loadXML($xml);
+        $xmlDocument->validate();
+        $this->assertCount(1, $xmlDocument->getErrors());
     }
 
     public function testEnrichmentWithoutValueValid()
     {
-        $validator = new XmlValidation();
-
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/enrichment-without-value.xml');
 
-        $this->assertTrue($validator->validate($xml));
+        $xmlDocument = new XmlDocument();
 
-        $errors = $validator->getErrors();
+        try {
+            $xmlDocument->loadXML($xml);
+            $xmlDocument->validate();
+        } catch (MetadataImportInvalidXmlException $e) {
+            $this->fail("XML is not valid.");
+        }
 
-        $this->assertCount(0, $errors);
+        $this->assertCount(0, $xmlDocument->getErrors());
     }
 
     /**
@@ -100,31 +103,48 @@ class XmlValidationTest extends TestCase
      */
     public function testIncompleteEmbargoDateMissingMonthDay()
     {
-        $validator = new XmlValidation();
-
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-date.xml');
 
-        $this->assertTrue($validator->validate($xml));
+        $xmlDocument = new XmlDocument();
+
+        try {
+            $xmlDocument->loadXML($xml);
+            $xmlDocument->validate();
+        } catch (MetadataImportInvalidXmlException $e) {
+            $this->fail("XML is not valid.");
+        }
+
+        $this->assertCount(0, $xmlDocument->getErrors());
     }
 
     public function testIncompleteEmbargoDateMissingYear()
     {
-        $validator = new XmlValidation();
-
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/incomplete-embargo-year.xml');
 
-        $this->assertFalse($validator->validate($xml));
+        $xmlDocument = new XmlDocument();
 
-        $this->assertCount(1, $validator->getErrors());
+        $this->expectException(MetadataImportInvalidXmlException::class);
+
+        $xmlDocument->loadXML($xml);
+        $xmlDocument->validate();
+
+        $this->assertCount(1, $xmlDocument->getErrors());
     }
 
     public function testCompleteEmbargoDate()
     {
-        $validator = new XmlValidation();
-
         $xml = file_get_contents(APPLICATION_PATH . '/test/_files/embargo-date.xml');
 
-        $this->assertTrue($validator->validate($xml));
+        $xmlDocument = new XmlDocument();
+
+        try {
+            $xmlDocument->loadXML($xml);
+            $xmlDocument->validate();
+        } catch (MetadataImportInvalidXmlException $e) {
+            $this->fail("XML is not valid.");
+        }
+
+        $this->assertCount(0, $xmlDocument->getErrors());
     }
 
     /**
@@ -133,8 +153,15 @@ class XmlValidationTest extends TestCase
      */
     private function checkValid($xml, $name)
     {
-        $validator = new XmlValidation();
+        $xmlDocument = new XmlDocument();
 
-        $this->assertTrue($validator->validate($xml), "Import XML file '$name' not valid.");
+        try {
+            $xmlDocument->loadXML($xml);
+            $xmlDocument->validate();
+        } catch (MetadataImportInvalidXmlException $e) {
+            $this->fail("Import XML file '$name' not valid.");
+        }
+
+        $this->assertCount(0, $xmlDocument->getErrors());
     }
 }

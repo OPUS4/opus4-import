@@ -25,15 +25,11 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2016, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application
- * @package     Import
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Xml;
 
 use DOMDocument;
 
@@ -48,41 +44,103 @@ use const LIBXML_ERR_FATAL;
 use const LIBXML_ERR_WARNING;
 
 /**
- * Class for validating OPUS import xml.
+ * A class for loading and validating XML
  */
-class XmlValidation
+class XmlDocument
 {
+    /** @var DOMDocument|null */
+    private $xml;
+
     /** @var array|null */
     private $errors;
 
     /**
-     * Validates import XML based on schema.
+     * Constructor of the class
      *
-     * Can validate DOMDocument objects or XML provided as string.
-     *
-     * @param DOMDocument|string $xml
-     * @return bool
+     * @param DOMDocument|null $doc
      */
-    public function validate($xml)
+    public function __construct($doc = null)
     {
-        $this->errors = null;
+        if ($doc) {
+            $this->xml = $doc;
+        }
+    }
 
-        // TODO check for null|empty
+    /**
+     * Loads an XML string
+     *
+     * @param  string $xml XML string
+     * @return DOMDocument
+     */
+    public function loadXML($xml)
+    {
+        return $this->loadXmlData($xml, false);
+    }
 
-        if (! $xml instanceof DOMDocument) {
-            $xml = $this->getDocument($xml);
+    /**
+     * Loads XML from a file
+     *
+     * @param  string $xmlFilePath Path to the xml file
+     * @return DOMDocument
+     */
+    public function load($xmlFilePath)
+    {
+        // TODO: Error handling for missing files etc.
+
+        return $this->loadXmlData($xmlFilePath, true);
+    }
+
+    /**
+     * Loads XML from a string or a file
+     *
+     * @param  string $xml Xml string or a path to an xml file
+     * @param  bool   $isFile True if the given $xml is a file path
+     * @return DOMDocument
+     */
+    protected function loadXmlData($xml, $isFile = false)
+    {
+        // Enable user error handling
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        $doc = new DOMDocument();
+        if ($isFile) {
+            // TODO: Error handling for missing files etc.
+            $success = $doc->load($xml);
+        } else {
+            $success = $doc->loadXML($xml);
         }
 
-        libxml_clear_errors();
-        libxml_use_internal_errors(true);
-
-        $valid = $xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'Xml' . DIRECTORY_SEPARATOR . 'opus-import.xsd');
-
         $this->errors = libxml_get_errors();
-        libxml_clear_errors();
-        libxml_use_internal_errors(false);
 
-        return $valid;
+        // Disable user error handling
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
+
+        if (! $success) {
+            throw new MetadataImportInvalidXmlException($this->getErrorsPrettyPrinted());
+        }
+
+        $this->xml = $doc;
+        return $doc;
+    }
+
+    public function validate()
+    {
+        // Enable user error handling
+        libxml_clear_errors();
+        $useInternalErrors = libxml_use_internal_errors(true);
+
+        $success      = $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+        $this->errors = libxml_get_errors();
+
+        // Disable user error handling
+        libxml_use_internal_errors($useInternalErrors);
+        libxml_clear_errors();
+
+        if (! $success) {
+            throw new MetadataImportInvalidXmlException($this->getErrorsPrettyPrinted());
+        }
     }
 
     /**
@@ -94,33 +152,12 @@ class XmlValidation
     }
 
     /**
-     * @param string $xml
-     * @return DOMDocument
-     */
-    private function getDocument($xml)
-    {
-        libxml_clear_errors();
-        libxml_use_internal_errors(true);
-
-        $doc = new DOMDocument();
-
-        $doc->loadXML($xml);
-
-        // TODO error processing
-
-        libxml_use_internal_errors(false);
-        libxml_clear_errors();
-
-        return $doc;
-    }
-
-    /**
      * @return string
      */
     public function getErrorsPrettyPrinted()
     {
         $errorMsg = '';
-        foreach ($this->errors as $error) {
+        foreach ($this->getErrors() as $error) {
             $errorMsg .= "\non line $error->line ";
             switch ($error->level) {
                 case LIBXML_ERR_WARNING:
