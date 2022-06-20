@@ -38,6 +38,9 @@ ini_set('display_errors', 1);
 defined('APPLICATION_PATH')
 || define('APPLICATION_PATH', realpath(dirname(dirname(dirname(__FILE__)))));
 
+defined('FRAMEWORK_PATH')
+|| define('FRAMEWORK_PATH', APPLICATION_PATH . '/vendor/opus4-repo/framework');
+
 // Define application environment (use 'production' by default)
 define('APPLICATION_ENV', 'testing');
 
