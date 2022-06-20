@@ -54,8 +54,9 @@ $application = new Zend_Application(
     APPLICATION_ENV,
     [
         "config" => [
-            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
+            APPLICATION_PATH . '/vendor/opus4-repo/framework/tests/application.ini',
             APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'test.ini',
+            APPLICATION_PATH . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR . 'config.ini',
         ],
     ]
 );
