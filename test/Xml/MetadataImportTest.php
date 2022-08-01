@@ -36,7 +36,6 @@ use Exception;
 use Opus\Common\Repository;
 use Opus\Db\Util\DatabaseHelper;
 use Opus\Document;
-use Opus\DocumentFinder;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
@@ -129,8 +128,8 @@ class MetadataImportTest extends TestCase
         $importer = new MetadataImport($this->xml);
         $importer->run();
 
-        $finder = new DocumentFinder();
-        $docId  = $finder->ids()[0];
+        $finder = Repository::getInstance()->getDocumentFinder();
+        $docId  = $finder->getIds()[0];
         $doc    = Document::get($docId);
         $this->assertEquals(1, $doc->getPageFirst());
         $this->assertEquals(2, $doc->getPageLast());
