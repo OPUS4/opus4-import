@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2019, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -33,6 +33,7 @@ namespace OpusTest\Import\Xml;
 
 use DOMDocument;
 use Exception;
+use Opus\Common\Repository;
 use Opus\Db\Util\DatabaseHelper;
 use Opus\Document;
 use Opus\DocumentFinder;
@@ -67,8 +68,10 @@ class MetadataImportTest extends TestCase
 
     public function tearDown()
     {
+        $finder = Repository::getInstance()->getDocumentFinder();
+
         if ($this->documentImported) {
-            $ids    = Document::getAllIds();
+            $ids    = $finder->getIds();
             $lastId = array_pop($ids);
             $doc    = Document::new($lastId);
             $doc->delete();
