@@ -25,15 +25,16 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
 
+use Opus\Common\Document;
+use Opus\Common\DocumentInterface;
+use Opus\Common\EnrichmentKey;
 use Opus\Common\Log;
-use Opus\Document;
-use Opus\EnrichmentKey;
 use Opus\Import\Importer;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\Import\TestAsset\TestCase;
@@ -83,7 +84,7 @@ class ImporterTest extends TestCase
         $document = $importer->getDocument();
 
         $this->assertNotNull($document);
-        $this->assertInstanceOf(Document::class, $document);
+        $this->assertInstanceOf(DocumentInterface::class, $document);
 
         $this->assertCount(1, $document->getEnrichment());
         $this->assertEquals('Berlin', $document->getEnrichmentValue('City'));
@@ -114,7 +115,7 @@ class ImporterTest extends TestCase
         $document = $importer->getDocument();
 
         $this->assertNotNull($document);
-        $this->assertInstanceOf(Document::class, $document);
+        $this->assertInstanceOf(DocumentInterface::class, $document);
 
         $embargoDate = $document->getEmbargoDate();
         $this->assertEquals(12, $embargoDate->getDay());

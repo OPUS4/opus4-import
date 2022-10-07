@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2022
+ * @copyright   Copyright (c) 2016, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
  * This class holds OPUS specific enrichments that are associated with every
@@ -44,7 +44,7 @@
 namespace Opus\Import;
 
 use Exception;
-use Opus\EnrichmentKey;
+use Opus\Common\EnrichmentKey;
 
 use function array_key_exists;
 use function gmdate;

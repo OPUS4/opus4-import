@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -38,11 +38,11 @@ use DOMNode;
 use DOMNodeList;
 use Exception;
 use Opus\Collection;
+use Opus\Common\Document;
+use Opus\Common\EnrichmentKey;
 use Opus\Common\LoggingTrait;
 use Opus\Common\Model\NotFoundException;
 use Opus\DnbInstitute;
-use Opus\Document;
-use Opus\EnrichmentKey;
 use Opus\Licence;
 use Opus\Person;
 use Opus\Series;
@@ -122,7 +122,7 @@ class MetadataImport
                 // perform metadata update on given document
                 $docId = $opusDocumentElement->getAttribute('docId');
                 try {
-                    $doc = new Document($docId);
+                    $doc = Document::get($docId);
                     $opusDocumentElement->removeAttribute('docId');
                 } catch (NotFoundException $e) {
                     $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
@@ -134,7 +134,7 @@ class MetadataImport
                 $this->resetDocument($doc);
             } else {
                 // create new document
-                $doc = new Document();
+                $doc = Document::new();
             }
 
             try {

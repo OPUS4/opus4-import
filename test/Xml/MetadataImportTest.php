@@ -33,10 +33,10 @@ namespace OpusTest\Import\Xml;
 
 use DOMDocument;
 use Exception;
+use Opus\Common\Document;
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\Repository;
 use Opus\Db\Util\DatabaseHelper;
-use Opus\Document;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
