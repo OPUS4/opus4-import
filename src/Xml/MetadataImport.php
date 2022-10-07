@@ -574,7 +574,7 @@ class MetadataImport
                 $key = trim($childNode->getAttribute('key'));
                 // check if enrichment key exists
                 try {
-                    new EnrichmentKey($key);
+                    EnrichmentKey::get($key);
                 } catch (NotFoundException $e) {
                     throw new Exception('enrichment key ' . $key . ' does not exist: ' . $e->getMessage());
                 }

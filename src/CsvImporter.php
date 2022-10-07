@@ -556,7 +556,7 @@ class CsvImporter
             $key = trim($matches[1]);
             // check if enrichment key exists
             try {
-                new EnrichmentKey($key);
+                EnrichmentKey::get($key);
             } catch (NotFoundException $e) {
                 throw new Exception('enrichment key ' . $key . ' does not exist: ' . $e->getMessage());
             }
@@ -584,7 +584,9 @@ class CsvImporter
         if ($value !== '') {
             preg_match('/^{([A-Za-z]+):(.+)}$/', $value, $matches);
             if (count($matches) !== 3) {
-                throw new Exception("unerwarteter Wert '$value' fuer Enrichment in Spalte $enrichmentkey"); // TODO bug
+                throw new Exception(
+                    "unerwarteter Wert '$value' fuer Enrichment in Spalte " . self::ENRICHMENT_KINDOFPUBLICATION
+                );
             }
             $this->addIdentifier($doc, 'serial', trim($matches[2]));
         }

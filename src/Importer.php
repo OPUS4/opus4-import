@@ -788,7 +788,7 @@ class Importer
                 $key = trim($childNode->getAttribute('key'));
                 // check if enrichment key exists
                 try {
-                    new EnrichmentKey($key);
+                    EnrichmentKey::get($key);
                 } catch (NotFoundException $e) {
                     $msg = 'enrichment key ' . $key . ' does not exist: ' . $e->getMessage();
                     if ($this->swordContext) {
