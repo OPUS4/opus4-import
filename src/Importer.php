@@ -81,6 +81,9 @@ use const PATHINFO_EXTENSION;
  *      With every new context, every new use case this code will get more complicated. It would be better if the
  *      different context would be implemented in separate classes that extend a base class providing common
  *      functionality.
+ *
+ * TODO all those private functions make testing difficult and prevent this class from being extended to customize
+ *      the import process - revisit the design of this class
  */
 class Importer
 {
@@ -780,6 +783,8 @@ class Importer
      *
      * @param DOMNode  $node
      * @param Document $doc
+     *
+     * TODO add unit test - a bug that prevented the NotFoundException was not automatically detected
      */
     private function handleEnrichments($node, $doc)
     {
