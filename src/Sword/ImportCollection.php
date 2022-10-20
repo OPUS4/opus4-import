@@ -31,7 +31,7 @@
 
 namespace Opus\Import\Sword;
 
-use Opus\Collection;
+use Opus\Common\Collection;
 use Opus\Common\CollectionRole;
 use Opus\Common\Config;
 use Opus\Common\Log;

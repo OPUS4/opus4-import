@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -33,10 +33,10 @@ namespace OpusTest\Job\Worker;
 
 use DOMDocument;
 use Exception;
+use Opus\Common\Job;
 use Opus\Import\Worker\MetadataImportWorker;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Job;
 use Opus\Job\Worker\InvalidJobException;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -58,7 +58,7 @@ class MetadataImportWorkerTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $this->job    = new Job();
+        $this->job    = Job::new();
         $this->worker = new MetadataImportWorker();
         $this->xml    = null;
         $this->xmlDir = dirname(dirname(__FILE__)) . '/_files/xml/';
