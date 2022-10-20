@@ -25,14 +25,14 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
 */
 
 namespace Opus\Import\Worker;
 
+use Opus\Common\JobInterface;
 use Opus\Import\Xml\MetadataImport;
-use Opus\Job;
 use Opus\Job\Worker\AbstractWorker;
 use Opus\Job\Worker\InvalidJobException;
 use Zend_Log;
@@ -69,9 +69,9 @@ class MetadataImportWorker extends AbstractWorker
     /**
      * Perfom work.
      *
-     * @param Job $job Job description and attached data.
+     * @param JobInterface $job Job description and attached data.
      */
-    public function work(Job $job)
+    public function work($job)
     {
         if ($job->getLabel() !== $this->getActivationLabel()) {
             throw new InvalidJobException($job->getLabel() . " is not a suitable job for this worker.");

@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -37,16 +37,16 @@ use DOMNamedNodeMap;
 use DOMNode;
 use DOMNodeList;
 use Exception;
-use Opus\Collection;
+use Opus\Common\Collection;
+use Opus\Common\DnbInstitute;
+use Opus\Common\Document;
+use Opus\Common\EnrichmentKey;
+use Opus\Common\Licence;
 use Opus\Common\LoggingTrait;
-use Opus\DnbInstitute;
-use Opus\Document;
-use Opus\EnrichmentKey;
-use Opus\Licence;
-use Opus\Model\NotFoundException;
-use Opus\Person;
-use Opus\Series;
-use Opus\Subject;
+use Opus\Common\Model\NotFoundException;
+use Opus\Common\Person;
+use Opus\Common\Series;
+use Opus\Common\Subject;
 
 use function array_diff;
 use function substr;
@@ -122,7 +122,7 @@ class MetadataImport
                 // perform metadata update on given document
                 $docId = $opusDocumentElement->getAttribute('docId');
                 try {
-                    $doc = new Document($docId);
+                    $doc = Document::get($docId);
                     $opusDocumentElement->removeAttribute('docId');
                 } catch (NotFoundException $e) {
                     $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
@@ -134,7 +134,7 @@ class MetadataImport
                 $this->resetDocument($doc);
             } else {
                 // create new document
-                $doc = new Document();
+                $doc = Document::new();
             }
 
             try {
@@ -421,7 +421,7 @@ class MetadataImport
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $p = new Person();
+                $p = Person::new();
 
                 // mandatory fields
                 $p->setFirstName(trim($childNode->getAttribute('firstName')));
@@ -454,7 +454,7 @@ class MetadataImport
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $s = new Subject();
+                $s = Subject::new();
                 $s->setLanguage(trim($childNode->getAttribute('language')));
                 $s->setType($childNode->getAttribute('type'));
                 $s->setValue(trim($childNode->textContent));
@@ -475,7 +475,7 @@ class MetadataImport
                 $instRole = $childNode->getAttribute('role');
                 // check if dnbInstitute with given id and role exists
                 try {
-                    $inst = new DnbInstitute($instId);
+                    $inst = DnbInstitute::get($instId);
 
                     // check if dnbInstitute supports given role
                     $method = 'getIs' . ucfirst($instRole);
@@ -533,7 +533,7 @@ class MetadataImport
                 $collectionId = trim($childNode->getAttribute('id'));
                 // check if collection with given id exists
                 try {
-                    $c = new Collection($collectionId);
+                    $c = Collection::get($collectionId);
                     $doc->addCollection($c);
                 } catch (NotFoundException $e) {
                     throw new Exception('collection id ' . $collectionId . ' does not exist: ' . $e->getMessage());
@@ -553,7 +553,7 @@ class MetadataImport
                 $seriesId = trim($childNode->getAttribute('id'));
                 // check if document set with given id exists
                 try {
-                    $s    = new Series($seriesId);
+                    $s    = Series::get($seriesId);
                     $link = $doc->addSeries($s);
                     $link->setNumber(trim($childNode->getAttribute('number')));
                 } catch (NotFoundException $e) {
@@ -574,7 +574,7 @@ class MetadataImport
                 $key = trim($childNode->getAttribute('key'));
                 // check if enrichment key exists
                 try {
-                    new EnrichmentKey($key);
+                    EnrichmentKey::get($key);
                 } catch (NotFoundException $e) {
                     throw new Exception('enrichment key ' . $key . ' does not exist: ' . $e->getMessage());
                 }
@@ -596,7 +596,7 @@ class MetadataImport
             if ($childNode instanceof DOMElement) {
                 $licenceId = trim($childNode->getAttribute('id'));
                 try {
-                    $l = new Licence($licenceId);
+                    $l = Licence::get($licenceId);
                     $doc->addLicence($l);
                 } catch (NotFoundException $e) {
                     throw new Exception('licence id ' . $licenceId . ' does not exist: ' . $e->getMessage());

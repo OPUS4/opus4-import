@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008-2022, OPUS 4 development team
+ * @copyright   Copyright (c) 2008, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -40,18 +40,18 @@
 namespace Opus\Import;
 
 use Exception;
-use Opus\Collection;
+use Opus\Common\Collection;
+use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
+use Opus\Common\EnrichmentKey;
+use Opus\Common\File;
+use Opus\Common\Identifier;
+use Opus\Common\Licence;
 use Opus\Common\Model\ModelException;
-use Opus\Document;
-use Opus\EnrichmentKey;
-use Opus\File;
-use Opus\Identifier;
-use Opus\Licence;
-use Opus\Model\NotFoundException;
-use Opus\Person;
-use Opus\Series;
-use Opus\UserRole;
+use Opus\Common\Model\NotFoundException;
+use Opus\Common\Person;
+use Opus\Common\Series;
+use Opus\Common\UserRole;
 
 use function array_key_exists;
 use function count;
@@ -360,7 +360,7 @@ class CsvImporter
      */
     private function addPerson($doc, $type, $firstname, $lastname, $oldId)
     {
-        $p = new Person();
+        $p = Person::new();
         if (trim($firstname) === '') {
             echo "Datensatz $oldId ohne Wert für $type.firstname\n";
         } else {
@@ -424,7 +424,7 @@ class CsvImporter
      */
     private function addIdentifier($doc, $type, $value)
     {
-        $identifier = new Identifier();
+        $identifier = Identifier::new();
         $identifier->setValue(trim($value));
         $identifier->setType(trim($type));
         $method = 'addIdentifier' . ucfirst(trim($type));
@@ -467,7 +467,7 @@ class CsvImporter
                 $collectionId = trim($collId);
                 // check if collection with given id exists
                 try {
-                    $c = new Collection($collectionId);
+                    $c = Collection::get($collectionId);
                     $doc->addCollection($c);
                 } catch (NotFoundException $e) {
                     throw new Exception('collection id ' . $collectionId . ' does not exist: ' . $e->getMessage());
@@ -488,7 +488,7 @@ class CsvImporter
         if (trim($row[self::LICENCE_ID]) !== '') {
             $licenceId = trim($row[self::LICENCE_ID]);
             try {
-                $l = new Licence($licenceId);
+                $l = Licence::get($licenceId);
                 $doc->addLicence($l);
             } catch (NotFoundException $e) {
                 throw new Exception('licence id ' . $licenceId . ' does not exist: ' . $e->getMessage());
@@ -498,31 +498,31 @@ class CsvImporter
             $format = trim($row[self::ENRICHMENT_FORMAT]);
 
             if (! (strpos($format, 'no download') === false) || ! (strpos($format, 'no copy') === false)) {
-                $l = new Licence(11);
+                $l = Licence::get(11);
                 $doc->addLicence($l);
                 return;
             }
 
             if (! (strpos($format, 'xerox') === false)) {
-                $l = new Licence(13);
+                $l = Licence::get(13);
                 $doc->addLicence($l);
                 return;
             }
 
             if (! (strpos($format, 'to download') === false)) {
-                $l = new Licence(9);
+                $l = Licence::get(9);
                 $doc->addLicence($l);
                 return;
             }
 
             if (! (strpos($format, 'upon request') === false)) {
-                $l = new Licence(10);
+                $l = Licence::get(10);
                 $doc->addLicence($l);
                 return;
             }
 
             if (! (strpos($format, 'to purchase') === false)) {
-                $l = new Licence(12);
+                $l = Licence::get(12);
                 $doc->addLicence($l);
                 return;
             }
@@ -556,7 +556,7 @@ class CsvImporter
             $key = trim($matches[1]);
             // check if enrichment key exists
             try {
-                new EnrichmentKey($key);
+                EnrichmentKey::get($key);
             } catch (NotFoundException $e) {
                 throw new Exception('enrichment key ' . $key . ' does not exist: ' . $e->getMessage());
             }
@@ -584,7 +584,9 @@ class CsvImporter
         if ($value !== '') {
             preg_match('/^{([A-Za-z]+):(.+)}$/', $value, $matches);
             if (count($matches) !== 3) {
-                throw new Exception("unerwarteter Wert '$value' fuer Enrichment in Spalte $enrichmentkey"); // TODO bug
+                throw new Exception(
+                    "unerwarteter Wert '$value' fuer Enrichment in Spalte " . self::ENRICHMENT_KINDOFPUBLICATION
+                );
             }
             $this->addIdentifier($doc, 'serial', trim($matches[2]));
         }
@@ -604,7 +606,7 @@ class CsvImporter
                 $seriesIdTrimmed = trim($seriesId);
                 // check if series with given id exists
                 try {
-                    $series = new Series($seriesIdTrimmed);
+                    $series = Series::get($seriesIdTrimmed);
 
                     $seriesNumber = 0;
                     if (array_key_exists($seriesIdTrimmed, $this->seriesIdsMap)) {

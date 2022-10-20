@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016-2022
+ * @copyright   Copyright (c) 2016, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
@@ -37,23 +37,23 @@ use DOMNode;
 use DOMNodeList;
 use Exception;
 use finfo;
-use Opus\Collection;
+use Opus\Common\Collection;
 use Opus\Common\Config\FileTypes;
+use Opus\Common\DnbInstitute;
+use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
+use Opus\Common\EnrichmentKey;
+use Opus\Common\File;
+use Opus\Common\Licence;
 use Opus\Common\Model\ModelException;
-use Opus\DnbInstitute;
-use Opus\Document;
-use Opus\EnrichmentKey;
-use Opus\File;
+use Opus\Common\Model\NotFoundException;
+use Opus\Common\Person;
+use Opus\Common\Series;
+use Opus\Common\Subject;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Import\Xml\XmlDocument;
-use Opus\Licence;
-use Opus\Model\NotFoundException;
-use Opus\Person;
 use Opus\Security\SecurityException;
-use Opus\Series;
-use Opus\Subject;
 use Zend_Log;
 
 use function array_diff;
@@ -81,6 +81,9 @@ use const PATHINFO_EXTENSION;
  *      With every new context, every new use case this code will get more complicated. It would be better if the
  *      different context would be implemented in separate classes that extend a base class providing common
  *      functionality.
+ *
+ * TODO all those private functions make testing difficult and prevent this class from being extended to customize
+ *      the import process - revisit the design of this class
  */
 class Importer
 {
@@ -581,7 +584,7 @@ class Importer
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $p = new Person();
+                $p = Person::new();
 
                 // mandatory fields
                 $p->setFirstName(trim($childNode->getAttribute('firstName')));
@@ -651,7 +654,7 @@ class Importer
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $s = new Subject();
+                $s = Subject::new();
                 $s->setLanguage(trim($childNode->getAttribute('language')));
                 $s->setType($childNode->getAttribute('type'));
                 $s->setValue(trim($childNode->textContent));
@@ -672,7 +675,7 @@ class Importer
                 $instRole = $childNode->getAttribute('role');
                 // check if dnbInstitute with given id and role exists
                 try {
-                    $inst = new DnbInstitute($instId);
+                    $inst = DnbInstitute::get($instId);
 
                     // check if dnbInstitute supports given role
                     $method = 'getIs' . ucfirst($instRole);
@@ -735,7 +738,7 @@ class Importer
                 $collectionId = trim($childNode->getAttribute('id'));
                 // check if collection with given id exists
                 try {
-                    $c = new Collection($collectionId);
+                    $c = Collection::get($collectionId);
                     $doc->addCollection($c);
                 } catch (NotFoundException $e) {
                     $msg = 'collection id ' . $collectionId . ' does not exist: ' . $e->getMessage();
@@ -760,7 +763,7 @@ class Importer
                 $seriesId = trim($childNode->getAttribute('id'));
                 // check if document set with given id exists
                 try {
-                    $s    = new Series($seriesId);
+                    $s    = Series::get($seriesId);
                     $link = $doc->addSeries($s);
                     $link->setNumber(trim($childNode->getAttribute('number')));
                 } catch (NotFoundException $e) {
@@ -780,6 +783,8 @@ class Importer
      *
      * @param DOMNode  $node
      * @param Document $doc
+     *
+     * TODO add unit test - a bug that prevented the NotFoundException was not automatically detected
      */
     private function handleEnrichments($node, $doc)
     {
@@ -788,7 +793,7 @@ class Importer
                 $key = trim($childNode->getAttribute('key'));
                 // check if enrichment key exists
                 try {
-                    new EnrichmentKey($key);
+                    EnrichmentKey::get($key);
                 } catch (NotFoundException $e) {
                     $msg = 'enrichment key ' . $key . ' does not exist: ' . $e->getMessage();
                     if ($this->swordContext) {
@@ -832,7 +837,7 @@ class Importer
             if ($childNode instanceof DOMElement) {
                 $licenceId = trim($childNode->getAttribute('id'));
                 try {
-                    $l = new Licence($licenceId);
+                    $l = Licence::get($licenceId);
                     $doc->addLicence($l);
                 } catch (NotFoundException $e) {
                     $msg = 'licence id ' . $licenceId . ' does not exist: ' . $e->getMessage();
@@ -933,7 +938,7 @@ class Importer
             return;
         }
 
-        $file = new File();
+        $file = File::new();
         if ($childNode !== null) {
             $this->handleFileAttributes($childNode, $file);
         }
