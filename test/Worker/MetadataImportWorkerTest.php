@@ -37,7 +37,7 @@ use Opus\Common\Job;
 use Opus\Import\Worker\MetadataImportWorker;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Job\Worker\InvalidJobException;
+use Opus\Job\InvalidJobException;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function dirname;
