@@ -48,12 +48,12 @@ use Opus\Common\Licence;
 use Opus\Common\Model\ModelException;
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\Person;
+use Opus\Common\Security\SecurityException;
 use Opus\Common\Series;
 use Opus\Common\Subject;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Import\Xml\XmlDocument;
-use Opus\Security\SecurityException;
 use Zend_Log;
 
 use function array_diff;

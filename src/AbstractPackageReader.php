@@ -39,10 +39,10 @@ namespace Opus\Import;
 use Exception;
 use Opus\Common\Log;
 use Opus\Common\Model\ModelException;
+use Opus\Common\Security\SecurityException;
 use Opus\Import\Sword\ImportCollection;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Security\SecurityException;
 
 use function file_get_contents;
 use function is_dir;
@@ -53,9 +53,6 @@ use function trim;
 
 use const DIRECTORY_SEPARATOR;
 
-/**
- * @package Opus\Import
- */
 abstract class AbstractPackageReader
 {
     const METADATA_FILENAME = 'opus.xml';
