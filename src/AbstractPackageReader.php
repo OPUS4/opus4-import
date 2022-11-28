@@ -25,7 +25,7 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016
+ * @copyright   Copyright (c) 2016, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  *
  * Reads an OPUS import package containing one or more documents and imports
@@ -59,6 +59,7 @@ abstract class AbstractPackageReader
 
     const EXTRACTION_DIR_NAME = 'extracted';
 
+    /** @var array */
     private $additionalEnrichments;
 
     /**

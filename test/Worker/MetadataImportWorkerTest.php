@@ -29,7 +29,7 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Job\Worker;
+namespace OpusTest\Import\Worker;
 
 use DOMDocument;
 use Exception;
@@ -45,17 +45,22 @@ use function get_class;
 
 class MetadataImportWorkerTest extends TestCase
 {
+    /** @var string */
     private $filename;
 
+    /** @var Job */
     private $job;
 
+    /** @var MetadataImportWorker */
     private $worker;
 
+    /** @var string|null */
     private $xml;
 
+    /** @var string */
     private $xmlDir;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->job    = Job::new();

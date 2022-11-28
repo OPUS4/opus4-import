@@ -30,7 +30,7 @@ bin/composer update
 SCRIPT
 
 $database = <<SCRIPT
-/vagrant/vendor/opus4-repo/framework/bin/prepare-database.sh --admin_pwd root --user_pwd root
+/vagrant/vendor/bin/opus4db --adminpwd root --userpwd root --sqlpwd root
 SCRIPT
 
 $opus = <<SCRIPT
@@ -59,7 +59,7 @@ echo "'composer cs-fix' to automatically fix basic style problems"
 SCRIPT
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-20.04"
+  config.vm.box = "bento/ubuntu-22.04"
 
   config.vm.provision "Install required software...", type: "shell", inline: $software
   config.vm.provision "Install Composer dependencies...", type: "shell", privileged: false, inline: $composer

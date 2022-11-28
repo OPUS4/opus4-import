@@ -38,6 +38,7 @@ use DOMNodeList;
 use Exception;
 use finfo;
 use Opus\Common\Collection;
+use Opus\Common\CollectionInterface;
 use Opus\Common\Config\FileTypes;
 use Opus\Common\DnbInstitute;
 use Opus\Common\Document;
@@ -87,15 +88,29 @@ use const PATHINFO_EXTENSION;
  */
 class Importer
 {
+    /** @var string|null */
     private $logfile;
+
+    /** @var Zend_Log|null */
     private $logger;
+
+    /** @var string */
     private $xml;
+
+    /** @var string */
     private $xmlFile;
+
+    /** @var string */
     private $xmlString;
+
+    /** @var array */
     private $fieldsToKeepOnUpdate = [];
 
     // variables used in SWORD context
+    /** @var bool */
     private $swordContext = false;
+
+    /** @var string */
     private $importDir;
 
     /** @var mixed */
@@ -110,7 +125,10 @@ class Importer
      */
     private $additionalEnrichments;
 
+    /** @var CollectionInterface */
     private $importCollection;
+
+    /** @var bool */
     private $singleDocImport = false;
 
     /**

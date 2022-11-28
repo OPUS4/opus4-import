@@ -43,9 +43,10 @@ use function file_get_contents;
 
 class ImporterTest extends TestCase
 {
+    /** @var string */
     protected $additionalResources = 'database';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -58,7 +59,7 @@ class ImporterTest extends TestCase
         $enrichmentKey->store();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $enrichmentKey = EnrichmentKey::fetchByName('City');
         if ($enrichmentKey !== null) {
