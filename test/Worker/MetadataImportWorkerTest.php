@@ -130,7 +130,8 @@ class MetadataImportWorkerTest extends TestCase
         } catch (Exception $ex) {
             $e = $ex;
         }
-        $this->assertNull($e, 'unexpected exception was thrown: ' . get_class($e));
+        $exceptionClass = $e !== null ? get_class($e) : '';
+        $this->assertNull($e, 'unexpected exception was thrown: ' . $exceptionClass);
     }
 
     private function loadInputFile()

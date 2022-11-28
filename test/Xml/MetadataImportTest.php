@@ -123,7 +123,14 @@ class MetadataImportTest extends TestCase
         } catch (MetadataImportSkippedDocumentsException $ex) {
             $e = $ex;
         }
-        $this->assertNull($e, 'unexpected exception was thrown: ' . get_class($e));
+
+        if ($e !== null) {
+            $exceptionClass = get_class($e);
+        } else {
+            $exceptionClass = '';
+        }
+
+        $this->assertNull($e, 'unexpected exception was thrown: ' . $exceptionClass);
 
         $this->documentImported = true;
     }
