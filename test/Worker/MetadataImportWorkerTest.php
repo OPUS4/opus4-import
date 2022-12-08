@@ -85,6 +85,7 @@ class MetadataImportWorkerTest extends TestCase
     public function testMissingDataException()
     {
         $this->job->setLabel('opus-metadata-import');
+        $this->job->setData([]);
         $this->expectException(InvalidJobException::class);
         $this->worker->work($this->job);
     }
