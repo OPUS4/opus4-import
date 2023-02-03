@@ -13,14 +13,14 @@
     "ext-fileinfo": "*",
     "ext-libxml": "*",
     "ext-zip": "*",
-    "opus4-repo/opus4-common": "dev-4.7.2-zf1f",
-    "opus4-repo/opus4-job": "dev-4.7.2-zf1f"
+    "opus4-repo/opus4-common": "4.7.2.x-dev",
+    "opus4-repo/opus4-job": "4.7.2.x-dev"
   },
   "require-dev": {
     "phpunit/phpunit": "<9",
     "opus4-repo/codesniffer": "dev-laminas",
     "phpmetrics/phpmetrics": "2.7.4",
-    "opus4-repo/framework": "dev-4.7.2-zf1f"
+    "opus4-repo/framework": "4.7.2.x-dev"
   },
   "config": {
     "allow-plugins": {
