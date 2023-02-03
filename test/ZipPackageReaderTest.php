@@ -25,12 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2019, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application Unit Tests
- * @package     Application
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace OpusTest\Import;
@@ -45,9 +41,10 @@ use const DIRECTORY_SEPARATOR;
 
 class ZipPackageReaderTest extends TestCase
 {
+    /** @var string */
     protected $additionalResources = 'database';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->makeConfigurationModifiable();

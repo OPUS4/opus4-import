@@ -52,12 +52,19 @@ use function get_class;
  */
 class MetadataImportTest extends TestCase
 {
+    /** @var bool */
     private $documentImported;
+
+    /** @var string */
     private $filename;
+
+    /** @var string */
     private $xml;
+
+    /** @var string */
     private $xmlDir;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -65,7 +72,7 @@ class MetadataImportTest extends TestCase
         $this->xmlDir           = dirname(dirname(__FILE__)) . '/_files/xml/';
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $finder = Repository::getInstance()->getDocumentFinder();
 
@@ -116,7 +123,14 @@ class MetadataImportTest extends TestCase
         } catch (MetadataImportSkippedDocumentsException $ex) {
             $e = $ex;
         }
-        $this->assertNull($e, 'unexpected exception was thrown: ' . get_class($e));
+
+        if ($e !== null) {
+            $exceptionClass = get_class($e);
+        } else {
+            $exceptionClass = '';
+        }
+
+        $this->assertNull($e, 'unexpected exception was thrown: ' . $exceptionClass);
 
         $this->documentImported = true;
     }

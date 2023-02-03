@@ -32,6 +32,7 @@
 namespace Opus\Import\Sword;
 
 use Opus\Common\Collection;
+use Opus\Common\CollectionInterface;
 use Opus\Common\CollectionRole;
 use Opus\Common\Config;
 use Opus\Common\Log;
@@ -41,8 +42,10 @@ use function trim;
 
 class ImportCollection
 {
+    /** @var CollectionInterface */
     private $importCollection;
 
+    /** @var string */
     private $roleName;
 
     public function __construct()
