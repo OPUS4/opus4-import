@@ -697,7 +697,7 @@ class Importer
 
                     // check if dnbInstitute supports given role
                     $method = 'getIs' . ucfirst($instRole);
-                    if ($inst->$method() === '1') {
+                    if ($inst->$method()) {
                         $method = 'addThesis' . ucfirst($instRole);
                         $doc->$method($inst);
                     } else {
