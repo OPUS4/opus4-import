@@ -35,19 +35,6 @@
         <mkdir dir="${basedir}/build/workspace/files" />
     </target>
 
-    <target name="prepare-config">
-        <copy file="${basedir}/test/config.ini.template" toFile="${basedir}/test/config.ini" filtering="true"
-                overwrite="true">
-            <filterset>
-                <filter token="db.user.name" value="${dbUserName}" />
-                <filter token="db.user.password" value="${dbUserPassword}" />
-                <filter token="db.admin.name" value="${dbAdminName}" />
-                <filter token="db.admin.password" value="${dbAdminPassword}" />
-                <filter token="db.name" value="${dbName}" />
-            </filterset>
-        </copy>
-    </target>
-
     <target name="lint">
         <apply executable="php" dir="${basedir}" failonerror="on" logerror="on">
             <arg line="-l"/>
