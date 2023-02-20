@@ -2,14 +2,6 @@
 <project name="opus4-import">
 
     <property environment="env" />
-    <property name="bindir" value="${basedir}/vendor/bin" />
-
-    <!-- Properties for configuration files (tests/config.ini) used for testing. -->
-    <property name="dbName" value="opusdb" />
-    <property name="dbUserName" value="opus4" />
-    <property name="dbUserPassword" value="" />
-    <property name="dbAdminName" value="opus4admin" />
-    <property name="dbAdminPassword" value="" />
 
     <target name="clean">
         <delete dir="${basedir}/build/logs" />
