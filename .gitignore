@@ -14,7 +14,7 @@ nbproject
 
 # Build files
 build
-test/config.ini
+database.ini*
 
 # Other
 **/.DS_Store
