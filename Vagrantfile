@@ -29,15 +29,13 @@ bin/install-composer.sh
 bin/composer update
 SCRIPT
 
-$database = <<SCRIPT
-/vagrant/vendor/opus4-repo/framework/bin/prepare-database.sh --admin_pwd root --user_pwd root
+$workspace = <<SCRIPT
+cd /vagrant
+ant prepare-workspace
 SCRIPT
 
-$opus = <<SCRIPT
-cd /vagrant
-ant prepare-workspace prepare-config -DdbUserPassword=root -DdbAdminPassword=root
-export APPLICATION_PATH=/vagrant
-php vendor/opus4-repo/framework/db/createdb.php
+$database = <<SCRIPT
+/vagrant/vendor/bin/opus4db --adminpwd root --userpwd root --sqlpwd root
 SCRIPT
 
 $environment = <<SCRIPT
@@ -59,12 +57,12 @@ echo "'composer cs-fix' to automatically fix basic style problems"
 SCRIPT
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-20.04"
+  config.vm.box = "bento/ubuntu-22.04"
 
   config.vm.provision "Install required software...", type: "shell", inline: $software
   config.vm.provision "Install Composer dependencies...", type: "shell", privileged: false, inline: $composer
+  config.vm.provision "Create workspace...", type: "shell", privileged: false, inline: $workspace
   config.vm.provision "Create database...", type: "shell", inline: $database
-  config.vm.provision "Configure OPUS 4...", type: "shell", privileged: false, inline: $opus
   config.vm.provision "Setup environment...", type: "shell", inline: $environment
   config.vm.provision "Information", type: "shell", privileged: false, run: "always", inline: $help
 end

@@ -33,8 +33,8 @@ namespace Opus\Import\Worker;
 
 use Opus\Common\JobInterface;
 use Opus\Import\Xml\MetadataImport;
-use Opus\Job\Worker\AbstractWorker;
-use Opus\Job\Worker\InvalidJobException;
+use Opus\Job\AbstractWorker;
+use Opus\Job\InvalidJobException;
 use Zend_Log;
 
 use function is_object;

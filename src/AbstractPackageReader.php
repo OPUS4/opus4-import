@@ -25,13 +25,8 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2016
+ * @copyright   Copyright (c) 2016, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * Reads an OPUS import package containing one or more documents and imports
- * the documents.
- *
- * Currently ZIP and TAR files are supported by extending classes.
  */
 
 namespace Opus\Import;
@@ -39,10 +34,11 @@ namespace Opus\Import;
 use Exception;
 use Opus\Common\Log;
 use Opus\Common\Model\ModelException;
+use Opus\Common\Security\SecurityException;
 use Opus\Import\Sword\ImportCollection;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Security\SecurityException;
+use Zend_Exception;
 
 use function file_get_contents;
 use function is_dir;
@@ -54,7 +50,10 @@ use function trim;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * @package Opus\Import
+ * Reads an OPUS import package containing one or more documents and imports
+ * the documents.
+ *
+ * Currently ZIP and TAR files are supported by extending classes.
  */
 abstract class AbstractPackageReader
 {
@@ -62,12 +61,13 @@ abstract class AbstractPackageReader
 
     const EXTRACTION_DIR_NAME = 'extracted';
 
+    /** @var AdditionalEnrichments */
     private $additionalEnrichments;
 
     /**
      * Sets additional enrichments that will be added to every imported document.
      *
-     * @param array $additionalEnrichments
+     * @param AdditionalEnrichments $additionalEnrichments
      */
     public function setAdditionalEnrichments($additionalEnrichments)
     {

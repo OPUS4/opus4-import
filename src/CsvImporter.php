@@ -111,8 +111,13 @@ class CsvImporter
     const ENRICHMENT_RELEVANCE         = 31;
     const FILENAME                     = 32;
 
+    /** @var array */
     private $seriesIdsMap = [];
+
+    /** @var string */
     private $fulltextDir;
+
+    /** @var string */
     private $guestRole;
 
     /**

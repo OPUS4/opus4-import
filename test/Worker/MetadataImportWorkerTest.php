@@ -29,7 +29,7 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Job\Worker;
+namespace OpusTest\Import\Worker;
 
 use DOMDocument;
 use Exception;
@@ -37,7 +37,7 @@ use Opus\Common\Job;
 use Opus\Import\Worker\MetadataImportWorker;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Job\Worker\InvalidJobException;
+use Opus\Job\InvalidJobException;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function dirname;
@@ -45,17 +45,22 @@ use function get_class;
 
 class MetadataImportWorkerTest extends TestCase
 {
+    /** @var string */
     private $filename;
 
+    /** @var Job */
     private $job;
 
+    /** @var MetadataImportWorker */
     private $worker;
 
+    /** @var string|null */
     private $xml;
 
+    /** @var string */
     private $xmlDir;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->job    = Job::new();
@@ -80,6 +85,7 @@ class MetadataImportWorkerTest extends TestCase
     public function testMissingDataException()
     {
         $this->job->setLabel('opus-metadata-import');
+        $this->job->setData([]);
         $this->expectException(InvalidJobException::class);
         $this->worker->work($this->job);
     }
@@ -125,7 +131,8 @@ class MetadataImportWorkerTest extends TestCase
         } catch (Exception $ex) {
             $e = $ex;
         }
-        $this->assertNull($e, 'unexpected exception was thrown: ' . get_class($e));
+        $exceptionClass = $e !== null ? get_class($e) : '';
+        $this->assertNull($e, 'unexpected exception was thrown: ' . $exceptionClass);
     }
 
     private function loadInputFile()

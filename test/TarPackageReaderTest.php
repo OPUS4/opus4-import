@@ -27,10 +27,6 @@
  *
  * @copyright   Copyright (c) 2019, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application Unit Tests
- * @package     Application
- * @author      Sascha Szott <opus-development@saschaszott.de>
  */
 
 namespace OpusTest\Import;
@@ -45,9 +41,10 @@ use const DIRECTORY_SEPARATOR;
 
 class TarPackageReaderTest extends TestCase
 {
+    /** @var string */
     protected $additionalResources = 'database';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->makeConfigurationModifiable();

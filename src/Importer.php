@@ -31,6 +31,7 @@
 
 namespace Opus\Import;
 
+use DOMDocument;
 use DOMElement;
 use DOMNamedNodeMap;
 use DOMNode;
@@ -38,6 +39,7 @@ use DOMNodeList;
 use Exception;
 use finfo;
 use Opus\Common\Collection;
+use Opus\Common\CollectionInterface;
 use Opus\Common\Config\FileTypes;
 use Opus\Common\DnbInstitute;
 use Opus\Common\Document;
@@ -48,12 +50,13 @@ use Opus\Common\Licence;
 use Opus\Common\Model\ModelException;
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\Person;
+use Opus\Common\PersonInterface;
+use Opus\Common\Security\SecurityException;
 use Opus\Common\Series;
 use Opus\Common\Subject;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Import\Xml\XmlDocument;
-use Opus\Security\SecurityException;
 use Zend_Log;
 
 use function array_diff;
@@ -75,8 +78,6 @@ use const FILEINFO_MIME_TYPE;
 use const PATHINFO_EXTENSION;
 
 /**
- * @package Opus\Import
- *
  * TODO behavior of this importer changes depending swordContext - It means special handling code in various places.
  *      With every new context, every new use case this code will get more complicated. It would be better if the
  *      different context would be implemented in separate classes that extend a base class providing common
@@ -87,15 +88,29 @@ use const PATHINFO_EXTENSION;
  */
 class Importer
 {
+    /** @var Zend_Log|null */
     private $logfile;
+
+    /** @var Zend_Log|null */
     private $logger;
+
+    /** @var DOMDocument */
     private $xml;
+
+    /** @var string */
     private $xmlFile;
+
+    /** @var string */
     private $xmlString;
+
+    /** @var array */
     private $fieldsToKeepOnUpdate = [];
 
     // variables used in SWORD context
+    /** @var bool */
     private $swordContext = false;
+
+    /** @var string */
     private $importDir;
 
     /** @var mixed */
@@ -110,7 +125,10 @@ class Importer
      */
     private $additionalEnrichments;
 
+    /** @var CollectionInterface */
     private $importCollection;
+
+    /** @var bool */
     private $singleDocImport = false;
 
     /**
@@ -118,7 +136,7 @@ class Importer
      *
      * Contains the document object if the import was successful.
      *
-     * @var Document
+     * @var DocumentInterface
      */
     private $document;
 
@@ -171,7 +189,7 @@ class Importer
     }
 
     /**
-     * @param array|null $additionalEnrichments
+     * @param AdditionalEnrichments $additionalEnrichments
      */
     public function setAdditionalEnrichments($additionalEnrichments)
     {
@@ -388,7 +406,7 @@ class Importer
     }
 
     /**
-     * @param Document $doc
+     * @param DocumentInterface $doc
      */
     private function resetDocument($doc)
     {
@@ -463,8 +481,8 @@ class Importer
     }
 
     /**
-     * @param DOMNodeList $elements
-     * @param Document    $doc
+     * @param DOMNodeList       $elements
+     * @param DocumentInterface $doc
      * @return bool returns true if the import XML definition of the
      *                 currently processed document contains the first level
      *                 element files
@@ -531,8 +549,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleTitleMain($node, $doc)
     {
@@ -546,8 +564,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleTitles($node, $doc)
     {
@@ -562,8 +580,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleAbstracts($node, $doc)
     {
@@ -577,8 +595,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handlePersons($node, $doc)
     {
@@ -621,8 +639,8 @@ class Importer
     }
 
     /**
-     * @param DOMNodeList $identifiers
-     * @param Person      $person
+     * @param DOMNode         $identifiers
+     * @param PersonInterface $person
      */
     private function handlePersonIdentifiers($identifiers, $person)
     {
@@ -647,8 +665,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleKeywords($node, $doc)
     {
@@ -664,8 +682,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleDnbInstitutions($node, $doc)
     {
@@ -679,7 +697,7 @@ class Importer
 
                     // check if dnbInstitute supports given role
                     $method = 'getIs' . ucfirst($instRole);
-                    if ($inst->$method() === '1') {
+                    if ($inst->$method()) {
                         $method = 'addThesis' . ucfirst($instRole);
                         $doc->$method($inst);
                     } else {
@@ -698,23 +716,23 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleIdentifiers($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $i = $doc->addIdentifier();
-                $i->setValue(trim($childNode->textContent));
-                $i->setType($childNode->getAttribute('type'));
+                $identifier = $doc->addIdentifier();
+                $identifier->setValue(trim($childNode->textContent));
+                $identifier->setType($childNode->getAttribute('type'));
             }
         }
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleNotes($node, $doc)
     {
@@ -728,8 +746,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleCollections($node, $doc)
     {
@@ -753,8 +771,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleSeries($node, $doc)
     {
@@ -781,8 +799,8 @@ class Importer
     /**
      * Processes the enrichments in the document xml.
      *
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      *
      * TODO add unit test - a bug that prevented the NotFoundException was not automatically detected
      */
@@ -828,8 +846,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleLicences($node, $doc)
     {
@@ -852,8 +870,8 @@ class Importer
     }
 
     /**
-     * @param DOMNode  $node
-     * @param Document $doc
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
      */
     private function handleDates($node, $doc)
     {
@@ -886,9 +904,9 @@ class Importer
     /**
      * Handling of files was introduced with OPUS 4.6.
      *
-     * @param DOMNode  $node
-     * @param Document $doc
-     * @param string   $baseDir
+     * @param DOMNode           $node
+     * @param DocumentInterface $doc
+     * @param string            $baseDir
      */
     private function handleFiles($node, $doc, $baseDir)
     {
@@ -909,11 +927,11 @@ class Importer
     /**
      * Add a single file to the given Document.
      *
-     * @param Document         $doc the given document
-     * @param string           $name Name of the file that should be imported (relative to baseDir)
-     * @param string           $baseDir (optional) path of the file that should be imported (relative to the import directory)
-     * @param string           $path (optional) path (and name) of the file that should be imported (relative to baseDir)
-     * @param null|DOMNodeList $childNode (optional) additional metadata of the file (taken from import XML)
+     * @param DocumentInterface $doc the given document
+     * @param string            $name Name of the file that should be imported (relative to baseDir)
+     * @param string            $baseDir (optional) path of the file that should be imported (relative to the import directory)
+     * @param string            $path (optional) path (and name) of the file that should be imported (relative to baseDir)
+     * @param null|DOMNode      $childNode (optional) additional metadata of the file (taken from import XML)
      */
     private function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
     {
@@ -993,8 +1011,8 @@ class Importer
      * Wurde im Import-XML keine Prüfsumme für die Datei angegeben, so liefert
      * die Methode ebenfalls true zurück.
      *
-     * @param DOMElement $childNode
-     * @param string     $fullPath
+     * @param DOMNode $childNode
+     * @param string  $fullPath
      * @return bool
      */
     private function checksumValidation($childNode, $fullPath)
@@ -1012,8 +1030,8 @@ class Importer
     }
 
     /**
-     * @param DOMElement $node
-     * @param File       $file
+     * @param DOMNode $node
+     * @param File    $file
      */
     private function handleFileAttributes($node, $file)
     {
@@ -1051,7 +1069,7 @@ class Importer
      * Add all files in the root level of the import package to the given
      * document.
      *
-     * @param Document $doc document
+     * @param DocumentInterface $doc document
      */
     private function importFilesDirectly($doc)
     {
@@ -1064,7 +1082,7 @@ class Importer
     /**
      * Returns the imported document.
      *
-     * @return Document
+     * @return DocumentInterface
      */
     public function getDocument()
     {
