@@ -49,4 +49,12 @@ class AccountCondition implements ImportRuleConditionInterface
     public function setOptions($options)
     {
     }
+
+    /**
+     * @return bool
+     */
+    public function applies()
+    {
+        return true;
+    }
 }

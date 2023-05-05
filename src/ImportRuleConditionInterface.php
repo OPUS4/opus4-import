@@ -33,4 +33,8 @@ namespace Opus\Import;
 
 interface ImportRuleConditionInterface
 {
+    /**
+     * @return bool
+     */
+    public function applies();
 }

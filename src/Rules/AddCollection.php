@@ -67,4 +67,12 @@ class AddCollection implements ImportRuleInterface
     {
         return $this->collection->getCollection() ?? null;
     }
+
+    public function apply()
+    {
+        if ($this->condition->applies()) {
+            $col = $this->getCollection();
+            // TODO apply collection to document
+        }
+    }
 }
