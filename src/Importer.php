@@ -306,6 +306,8 @@ class Importer
                 $doc->addCollection($this->importCollection);
             }
 
+            // TODO add aditional collections
+
             try {
                 $doc->store();
                 $this->document = $doc;
