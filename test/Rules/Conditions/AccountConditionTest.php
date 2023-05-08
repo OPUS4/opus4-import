@@ -29,54 +29,66 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Rules;
+namespace OpusTest\Import\Rules\Conditions;
 
-use Opus\Common\CollectionInterface;
-use Opus\Import\ImportRuleInterface;
 use Opus\Import\Rules\Conditions\AccountCondition;
-use Opus\Import\Rules\Options\CollectionOption;
+use OpusTest\Import\TestAsset\MockAuthAdapter;
+use OpusTest\Import\TestAsset\TestCase;
+use Zend_Auth;
+use Zend_Auth_Storage_NonPersistent;
 
-/**
- * TODO add base class for common code
- */
-class AddCollection implements ImportRuleInterface
+class AccountConditionTest extends TestCase
 {
-    /** @var CollectionOption */
-    private $collection;
+    private $authStorage;
 
-    /** @var ImportRuleConditionInterface */
-    private $condition;
-
-    /**
-     * @param array $options
-     */
-    public function setOptions($options)
+    public function setUp(): void
     {
-        if (isset($options['condition'])) {
-            $condition = $options['condition'];
-            if (isset($condition['account'])) {
-                $this->condition = new AccountCondition($condition);
-            }
-        }
+        parent::setUp();
 
-        if (isset($options['collection'])) {
-            $this->collection = new CollectionOption($options['collection']);
-        }
+        $this->authStorage = new Zend_Auth_Storage_NonPersistent();
+        Zend_Auth::getInstance()->setStorage($this->authStorage);
     }
 
-    /**
-     * @return CollectionInterface|null
-     */
-    public function getCollection()
+    public function tearDown(): void
     {
-        return $this->collection->getCollection() ?? null;
+        Zend_Auth::getInstance()
+            ->setStorage($this->authStorage)
+            ->clearIdentity();
+        parent::tearDown();
     }
 
-    public function apply()
+    public function testConstruct()
     {
-        if ($this->condition->applies()) {
-            $col = $this->getCollection();
-            // TODO apply collection to document
-        }
+        $condition = new AccountCondition([
+            'account' => 'sword1'
+        ]);
+
+        $this->assertEquals('sword1', $condition->getExpectedUser());
+    }
+
+    public function testAppliesTrue()
+    {
+        Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword1'));
+
+        $condition = new AccountCondition([
+            'account' => 'sword1'
+        ]);
+
+        $this->assertTrue($condition->applies());
+    }
+
+    public function testAppliesFalse()
+    {
+        Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword2'));
+
+        $condition = new AccountCondition([
+            'account' => 'sword1'
+        ]);
+
+        $this->assertFalse($condition->applies());
+
+        $condition->setExpectedUser('sword2');
+
+        $this->assertTrue($condition->applies());
     }
 }

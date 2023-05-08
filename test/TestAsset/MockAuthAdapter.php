@@ -29,54 +29,30 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Rules;
+namespace OpusTest\Import\TestAsset;
 
-use Opus\Common\CollectionInterface;
-use Opus\Import\ImportRuleInterface;
-use Opus\Import\Rules\Conditions\AccountCondition;
-use Opus\Import\Rules\Options\CollectionOption;
+use Zend_Auth_Adapter_Interface;
+use Zend_Auth_Result;
 
-/**
- * TODO add base class for common code
- */
-class AddCollection implements ImportRuleInterface
+class MockAuthAdapter implements Zend_Auth_Adapter_Interface
 {
-    /** @var CollectionOption */
-    private $collection;
-
-    /** @var ImportRuleConditionInterface */
-    private $condition;
+    /** @var string */
+    protected $user;
 
     /**
-     * @param array $options
+     * @param string $user
      */
-    public function setOptions($options)
+    public function __construct($user)
     {
-        if (isset($options['condition'])) {
-            $condition = $options['condition'];
-            if (isset($condition['account'])) {
-                $this->condition = new AccountCondition($condition);
-            }
-        }
-
-        if (isset($options['collection'])) {
-            $this->collection = new CollectionOption($options['collection']);
-        }
+        $this->user = $user;
     }
 
     /**
-     * @return CollectionInterface|null
+     * @return Zend_Auth_Result
      */
-    public function getCollection()
+    public function authenticate()
     {
-        return $this->collection->getCollection() ?? null;
-    }
-
-    public function apply()
-    {
-        if ($this->condition->applies()) {
-            $col = $this->getCollection();
-            // TODO apply collection to document
-        }
+        $identity = ['username'=> $this->user];
+        return new Zend_Auth_Result(Zend_Auth_Result::SUCCESS, $identity);
     }
 }
