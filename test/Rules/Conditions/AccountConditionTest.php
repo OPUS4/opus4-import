@@ -35,10 +35,12 @@ use Opus\Import\Rules\Conditions\AccountCondition;
 use OpusTest\Import\TestAsset\MockAuthAdapter;
 use OpusTest\Import\TestAsset\TestCase;
 use Zend_Auth;
+use Zend_Auth_Storage_Interface;
 use Zend_Auth_Storage_NonPersistent;
 
 class AccountConditionTest extends TestCase
 {
+    /** @var Zend_Auth_Storage_Interface */
     private $authStorage;
 
     public function setUp(): void
@@ -60,7 +62,7 @@ class AccountConditionTest extends TestCase
     public function testConstruct()
     {
         $condition = new AccountCondition([
-            'account' => 'sword1'
+            'account' => 'sword1',
         ]);
 
         $this->assertEquals('sword1', $condition->getExpectedUser());
@@ -71,7 +73,7 @@ class AccountConditionTest extends TestCase
         Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword1'));
 
         $condition = new AccountCondition([
-            'account' => 'sword1'
+            'account' => 'sword1',
         ]);
 
         $this->assertTrue($condition->applies());
@@ -82,7 +84,7 @@ class AccountConditionTest extends TestCase
         Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword2'));
 
         $condition = new AccountCondition([
-            'account' => 'sword1'
+            'account' => 'sword1',
         ]);
 
         $this->assertFalse($condition->applies());

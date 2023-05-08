@@ -52,7 +52,7 @@ class MockAuthAdapter implements Zend_Auth_Adapter_Interface
      */
     public function authenticate()
     {
-        $identity = ['username'=> $this->user];
+        $identity = ['username' => $this->user];
         return new Zend_Auth_Result(Zend_Auth_Result::SUCCESS, $identity);
     }
 }

@@ -32,7 +32,11 @@
 namespace Opus\Import\Rules\Conditions;
 
 use Opus\Import\ImportRuleConditionInterface;
-use Zend_Auth; // TODO SECURITY depend on OPUS classes instead
+use Zend_Auth;
+
+use function strcasecmp;
+
+// TODO SECURITY depend on OPUS classes instead
 
 class AccountCondition implements ImportRuleConditionInterface
 {
