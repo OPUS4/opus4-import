@@ -77,6 +77,40 @@ class ImportRulesTest extends TestCase
         $this->assertEquals('col1', $col->getName());
     }
 
+    public function testConfigFullClassname()
+    {
+        $this->prepareCollections();
+
+        $this->adjustConfiguration([
+            'import' => [
+                'rules' => [
+                    'addCol' => [
+                        'type'       => AddCollection::class,
+                        'collection' => [
+                            'id' => $this->colId,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $importRules = new ImportRules();
+        $importRules->init();
+
+        $rules = $importRules->getRules();
+
+        $this->assertCount(1, $rules);
+
+        $rule = $rules[0];
+
+        $this->assertInstanceOf(AddCollection::class, $rule);
+
+        $col = $rule->getCollection();
+
+        $this->assertInstanceOf(CollectionInterface::class, $col);
+        $this->assertEquals('col1', $col->getName());
+    }
+
     protected function prepareCollections()
     {
         $role = CollectionRole::new();

@@ -32,10 +32,15 @@
 namespace Opus\Import;
 
 use Opus\Common\ConfigTrait;
+use Opus\Common\DocumentInterface;
+
+use function class_exists;
 
 class ImportRules
 {
     use ConfigTrait;
+
+    public const IMPORT_RULE_CLASS_PREFIX = 'Opus\\Import\\Rules\\';
 
     /** @var ImportRuleInterface[] */
     private $rules = [];
@@ -75,11 +80,25 @@ class ImportRules
      */
     public function createRule($type, $options)
     {
-        $ruleClass = "Opus\Import\Rules\\${type}";
+        if (class_exists($type, false)) {
+            $ruleClass = $type;
+        } else {
+            $ruleClass = self::IMPORT_RULE_CLASS_PREFIX . $type;
+        }
 
         $rule = new $ruleClass();
         $rule->setOptions($options);
 
         return $rule;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function apply($document)
+    {
+        foreach ($this->rules as $rule) {
+            $rule->apply($document);
+        }
     }
 }

@@ -32,6 +32,8 @@
 namespace Opus\Import\Rules;
 
 use Opus\Common\CollectionInterface;
+use Opus\Common\DocumentInterface;
+use Opus\Import\ImportRuleConditionInterface;
 use Opus\Import\ImportRuleInterface;
 use Opus\Import\Rules\Conditions\AccountCondition;
 use Opus\Import\Rules\Options\CollectionOption;
@@ -72,11 +74,16 @@ class AddCollection implements ImportRuleInterface
         return $this->collection->getCollection() ?? null;
     }
 
-    public function apply()
+    /**
+     * @param DocumentInterface $document
+     */
+    public function apply($document)
     {
-        if ($this->condition->applies()) {
+        if ($this->condition === null || $this->condition->applies()) {
             $col = $this->getCollection();
-            // TODO apply collection to document
+            if ($col !== null) {
+                $document->addCollection($col);
+            }
         }
     }
 }
