@@ -56,6 +56,7 @@ class AddCollection implements ImportRuleInterface
     {
         if (isset($options['condition'])) {
             $condition = $options['condition'];
+            // TODO support KeywordCondition
             if (isset($condition['account'])) {
                 $this->condition = new AccountCondition($condition);
             }

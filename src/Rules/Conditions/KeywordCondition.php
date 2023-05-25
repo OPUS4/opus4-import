@@ -33,16 +33,18 @@ namespace Opus\Import\Rules\Conditions;
 
 use Opus\Common\DocumentInterface;
 use Opus\Import\ImportRuleConditionInterface;
-use Zend_Auth;
 
 use function strcasecmp;
 
-// TODO SECURITY depend on OPUS classes instead
-
-class AccountCondition implements ImportRuleConditionInterface
+/**
+ * Checks if a keyword/subject is present in a document.
+ *
+ * If no keyword/subject type is specified all keywords are checked.
+ */
+class KeywordCondition implements ImportRuleConditionInterface
 {
     /** @var string|null */
-    protected $expectedUser;
+    protected $expectedKeyword;
 
     /**
      * @param array|null $options
@@ -57,8 +59,8 @@ class AccountCondition implements ImportRuleConditionInterface
      */
     public function setOptions($options)
     {
-        if (isset($options['account'])) {
-            $this->expectedUser = $options['account'];
+        if (isset($options['keyword'])) {
+            $this->expectedUser = $options['keyword'];
         }
     }
 
@@ -68,40 +70,48 @@ class AccountCondition implements ImportRuleConditionInterface
      */
     public function applies($document)
     {
-        $currentUser = $this->getUserName();
-        if ($this->expectedUser !== null && $currentUser !== null) {
-            return strcasecmp($this->expectedUser, $currentUser) === 0;
-        } else {
-            return false;
+        $keywords = $this->getKeywords($document);
+
+        if ($this->expectedKeyword !== null && $keywords !== null) {
+            foreach ($keywords as $keyword) {
+                if (strcasecmp($this->expectedKeyword, $keyword) === 0) {
+                    return true;
+                }
+            }
         }
+
+        return false;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     * @return string[]
+     */
+    protected function getKeywords($document)
+    {
+        $keywords = [];
+        $subjects = $document->getSubject();
+
+        foreach ($subjects as $subject) {
+            $keywords[] = $subject->getValue();
+        }
+
+        return $keywords;
     }
 
     /**
      * @return string|null
      */
-    protected function getUserName()
+    public function getExpectedKeyword()
     {
-        $identity = Zend_Auth::getInstance()->getIdentity();
-        if (isset($identity['username'])) {
-            return $identity['username'];
-        } else {
-            return null;
-        }
+        return $this->expectedKeyword;
     }
 
     /**
-     * @return string|null
+     * @param string|null $keyword
      */
-    public function getExpectedUser()
+    public function setExpectedKeyword($keyword)
     {
-        return $this->expectedUser;
-    }
-
-    /**
-     * @param string|null $user
-     */
-    public function setExpectedUser($user)
-    {
-        $this->expectedUser = $user;
+        $this->expectedKeyword = $keyword;
     }
 }

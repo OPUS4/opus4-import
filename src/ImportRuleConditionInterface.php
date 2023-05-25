@@ -31,10 +31,13 @@
 
 namespace Opus\Import;
 
+use Opus\Common\DocumentInterface;
+
 interface ImportRuleConditionInterface
 {
     /**
+     * @param DocumentInterface $document
      * @return bool
      */
-    public function applies();
+    public function applies($document);
 }
