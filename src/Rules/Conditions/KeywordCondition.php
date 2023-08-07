@@ -34,7 +34,10 @@ namespace Opus\Import\Rules\Conditions;
 use Opus\Common\DocumentInterface;
 use Opus\Import\ImportRuleConditionInterface;
 
-use function strcasecmp;
+use function filter_var;
+use function is_array;
+
+use const FILTER_VALIDATE_BOOLEAN;
 
 /**
  * Checks if a keyword/subject is present in a document.
@@ -44,7 +47,16 @@ use function strcasecmp;
 class KeywordCondition implements ImportRuleConditionInterface
 {
     /** @var string|null */
-    protected $expectedKeyword;
+    private $expectedKeyword;
+
+    /** @var string|null  */
+    private $keywordType;
+
+    /** @var bool */
+    private $removeKeyword = false;
+
+    /** @var bool */
+    private $caseSensitive = false;
 
     /**
      * @param array|null $options
@@ -60,43 +72,42 @@ class KeywordCondition implements ImportRuleConditionInterface
     public function setOptions($options)
     {
         if (isset($options['keyword'])) {
-            $this->expectedUser = $options['keyword'];
+            $keyword = $options['keyword'];
+            if (is_array($keyword)) {
+                $this->expectedKeyword = $keyword['value'] ?? null;
+                $this->keywordType     = $keyword['type'] ?? null;
+                if (isset($keyword['remove'])) {
+                    $this->removeKeyword = filter_var($keyword['remove'], FILTER_VALIDATE_BOOLEAN);
+                }
+                if (isset($keyword['caseSensitive'])) {
+                    $this->caseSensitive = filter_var($keyword['caseSensitive'], FILTER_VALIDATE_BOOLEAN);
+                }
+            } else {
+                $this->expectedKeyword = $options['keyword'];
+            }
         }
     }
 
     /**
      * @param DocumentInterface $document
      * @return bool
+     *
+     * TODO remove keywords
      */
     public function applies($document)
     {
-        $keywords = $this->getKeywords($document);
+        $caseSensitive   = $this->isCaseSensitive();
+        $expectedKeyword = $this->getExpectedKeyword();
+        $keywordType     = $this->getKeywordType();
 
-        if ($this->expectedKeyword !== null && $keywords !== null) {
-            foreach ($keywords as $keyword) {
-                if (strcasecmp($this->expectedKeyword, $keyword) === 0) {
-                    return true;
-                }
+        if ($document->hasSubject($expectedKeyword, $keywordType, $caseSensitive)) {
+            if ($this->isRemoveEnabled()) {
+                $document->removeSubject($expectedKeyword, $keywordType, $caseSensitive);
             }
+            return true;
         }
 
         return false;
-    }
-
-    /**
-     * @param DocumentInterface $document
-     * @return string[]
-     */
-    protected function getKeywords($document)
-    {
-        $keywords = [];
-        $subjects = $document->getSubject();
-
-        foreach ($subjects as $subject) {
-            $keywords[] = $subject->getValue();
-        }
-
-        return $keywords;
     }
 
     /**
@@ -109,9 +120,65 @@ class KeywordCondition implements ImportRuleConditionInterface
 
     /**
      * @param string|null $keyword
+     * @return $this
      */
     public function setExpectedKeyword($keyword)
     {
         $this->expectedKeyword = $keyword;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRemoveEnabled()
+    {
+        return $this->removeKeyword;
+    }
+
+    /**
+     * @param bool $enabled
+     * @return $this
+     */
+    public function setRemoveEnabled($enabled)
+    {
+        $this->removeKeyword = $enabled;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCaseSensitive()
+    {
+        return $this->caseSensitive;
+    }
+
+    /**
+     * @param bool $enabled
+     * @return $this
+     */
+    public function setCaseSensitive($enabled)
+    {
+        $this->caseSensitive = $enabled;
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getKeywordType()
+    {
+        return $this->keywordType;
+    }
+
+    /**
+     * @param string|null $type
+     * @return $this
+     */
+    public function setKeywordType($type)
+    {
+        $this->keywordType = $type;
+        return $this;
     }
 }

@@ -35,9 +35,14 @@ use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
 use Opus\Common\EnrichmentKey;
 use Opus\Common\Log;
+use Opus\Common\Model\ModelException;
+use Opus\Common\Security\SecurityException;
+use Opus\Common\Subject;
 use Opus\Import\Importer;
+use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\Import\TestAsset\TestCase;
+use Zend_Exception;
 
 use function file_get_contents;
 
@@ -130,5 +135,92 @@ class ImporterTest extends TestCase
         $doc = Document::get(146);
 
         // var_dump($doc->toArray());
+    }
+
+    /**
+     * @return DocumentInterface
+     * @throws MetadataImportSkippedDocumentsException
+     * @throws ModelException
+     * @throws SecurityException
+     * @throws MetadataImportInvalidXmlException
+     * @throws Zend_Exception
+     */
+    protected function getTestImportDocument()
+    {
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import-rules-test.xml');
+
+        $importer = new Importer($xml, false, Log::get());
+
+        $importer->run();
+
+        $document = $importer->getDocument();
+
+        $this->assertNotNull($document);
+        $this->assertInstanceOf(DocumentInterface::class, $document);
+
+        return $document;
+    }
+
+    public function testImport()
+    {
+        $document = $this->getTestImportDocument();
+
+        $authors = $document->getPersonAuthor();
+
+        $this->assertCount(1, $authors);
+
+        $this->assertEquals('deu', $document->getLanguage());
+        $this->assertEquals('Der Titel', $document->getMainTitle()->getValue());
+    }
+
+    public function testImportRulesAddCollectionByAccount()
+    {
+        $doc = $this->getTestImportDocument();
+    }
+
+    public function testImportRulesAddCollectionForKeyword()
+    {
+        // TODO add/enable rules (use global config fallback?)
+    }
+
+    public function testImportRulesAddLicenceForKeyword()
+    {
+    }
+
+    public function testImportRulesRemoveKeyword()
+    {
+    }
+
+    public function testImportRulesAddCollectionAndRemoveKeyword()
+    {
+    }
+
+    public function testImportRulesDisabled()
+    {
+        $doc = $this->getTestImportDocument();
+        $this->assertFalse($doc->hasSubject('RulesEnabled'));
+    }
+
+    public function testImportRulesEnabled()
+    {
+        $this->adjustConfiguration([
+            'sword' => [
+                'enableImportRules' => true,
+            ],
+        ]);
+        $doc = $this->getTestImportDocument();
+        $this->assertTrue($doc->hasSubject('RulesEnabled'));
+    }
+
+    public function testKeywordTypeDefaultUncontrolled()
+    {
+        $doc = $this->getTestImportDocument();
+
+        $keywords = $doc->getSubject();
+
+        $this->assertCount(3, $keywords);
+
+        $this->assertTrue($doc->hasSubject('oa-green', Subject::TYPE_UNCONTROLLED));
+        $this->assertTrue($doc->hasSubject('oa-gold', Subject::TYPE_UNCONTROLLED));
     }
 }

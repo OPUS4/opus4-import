@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<import>
+    <opusDocument language="deu" type="article">
+        <titlesMain>
+            <titleMain language="deu">Der Titel</titleMain>
+        </titlesMain>
+        <titles>
+            <title language="eng" type="additional">The Title</title>
+        </titles>
+        <abstracts>
+            <abstract language="deu">Deutsch Zusammenfassung</abstract>
+        </abstracts>
+        <persons>
+            <person role="author" firstName="John" lastName="Doe" />
+        </persons>
+        <keywords>
+            <keyword type="swd" language="deu">Test</keyword>
+            <keyword type="uncontrolled" language="eng">oa-green</keyword>
+            <keyword language="eng">oa-gold</keyword>
+        </keywords>
+        <dates>
+            <date type="published" monthDay="--02-14" year="2011" />
+        </dates>
+        <files>
+            <file name="fulltext.pdf" language="deu"/>
+        </files>
+    </opusDocument>
+</import>

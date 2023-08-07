@@ -38,6 +38,9 @@ use Opus\Import\ImportRules;
 use Opus\Import\Rules\AddCollection;
 use OpusTest\Import\TestAsset\TestCase;
 
+/**
+ * TODO sword.enableImportRules should not matter for ImportRules class
+ */
 class ImportRulesTest extends TestCase
 {
     /** @var int */
@@ -49,7 +52,7 @@ class ImportRulesTest extends TestCase
 
         $this->adjustConfiguration([
             'import' => [
-                'rules' => [
+                'rules'           => [
                     'addCol' => [
                         'type'       => 'AddCollection',
                         'collection' => [
@@ -57,6 +60,10 @@ class ImportRulesTest extends TestCase
                         ],
                     ],
                 ],
+                'rulesConfigFile' => null,
+            ],
+            'sword'  => [
+                'enableImportRules' => true,
             ],
         ]);
 
@@ -83,7 +90,7 @@ class ImportRulesTest extends TestCase
 
         $this->adjustConfiguration([
             'import' => [
-                'rules' => [
+                'rules'           => [
                     'addCol' => [
                         'type'       => AddCollection::class,
                         'collection' => [
@@ -91,6 +98,10 @@ class ImportRulesTest extends TestCase
                         ],
                     ],
                 ],
+                'rulesConfigFile' => null,
+            ],
+            'sword'  => [
+                'enableImportRules' => true,
             ],
         ]);
 
@@ -109,6 +120,22 @@ class ImportRulesTest extends TestCase
 
         $this->assertInstanceOf(CollectionInterface::class, $col);
         $this->assertEquals('col1', $col->getName());
+    }
+
+    public function testLoadConfigIni()
+    {
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules.ini'],
+        ]);
+
+        $importRules = new ImportRules();
+        $importRules->init();
+
+        $rules = $importRules->getRules();
+
+        $this->assertCount(2, $rules);
+        $this->assertInstanceOf(AddCollection::class, $rules[0]);
     }
 
     protected function prepareCollections()

@@ -29,73 +29,52 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Rules\Conditions;
+namespace Opus\Import\Rules;
 
-use Opus\Common\Document;
+use Opus\Common\DocumentInterface;
+use Opus\Import\ImportRuleConditionInterface;
+use Opus\Import\ImportRuleInterface;
 use Opus\Import\Rules\Conditions\AccountCondition;
-use OpusTest\Import\TestAsset\MockAuthAdapter;
-use OpusTest\Import\TestAsset\TestCase;
-use Zend_Auth;
-use Zend_Auth_Storage_Interface;
-use Zend_Auth_Storage_NonPersistent;
+use Opus\Import\Rules\Conditions\KeywordCondition;
 
-class AccountConditionTest extends TestCase
+/**
+ * TODO add base class for common code
+ */
+abstract class AbstractImportRule implements ImportRuleInterface
 {
-    /** @var Zend_Auth_Storage_Interface */
-    private $authStorage;
+    /** @var ImportRuleConditionInterface */
+    private $condition;
 
-    public function setUp(): void
+    /**
+     * @param array $options
+     */
+    public function setOptions($options)
     {
-        parent::setUp();
-
-        $this->authStorage = new Zend_Auth_Storage_NonPersistent();
-        Zend_Auth::getInstance()->setStorage($this->authStorage);
+        if (isset($options['condition'])) {
+            $condition = $options['condition'];
+            // TODO support multiple conditions
+            if (isset($condition['account'])) {
+                $this->condition = new AccountCondition($condition);
+            }
+            if (isset($condition['keyword'])) {
+                $this->condition = new KeywordCondition($condition);
+            }
+        }
     }
 
-    public function tearDown(): void
+    /**
+     * @return ImportRuleConditionInterface
+     */
+    public function getCondition()
     {
-        Zend_Auth::getInstance()
-            ->setStorage($this->authStorage)
-            ->clearIdentity();
-        parent::tearDown();
+        return $this->condition;
     }
 
-    public function testConstruct()
+    /**
+     * @param DocumentInterface $document
+     */
+    public function apply($document)
     {
-        $condition = new AccountCondition([
-            'account' => 'sword1',
-        ]);
-
-        $this->assertEquals('sword1', $condition->getExpectedUser());
-    }
-
-    public function testAppliesTrue()
-    {
-        Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword1'));
-
-        $condition = new AccountCondition([
-            'account' => 'sword1',
-        ]);
-
-        $doc = Document::new();
-
-        $this->assertTrue($condition->applies($doc));
-    }
-
-    public function testAppliesFalse()
-    {
-        Zend_Auth::getInstance()->authenticate(new MockAuthAdapter('sword2'));
-
-        $condition = new AccountCondition([
-            'account' => 'sword1',
-        ]);
-
-        $doc = Document::new();
-
-        $this->assertFalse($condition->applies($doc));
-
-        $condition->setExpectedUser('sword2');
-
-        $this->assertTrue($condition->applies($doc));
+        // TODO condition check in base class?
     }
 }

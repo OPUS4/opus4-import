@@ -33,8 +33,14 @@ namespace Opus\Import;
 
 use Opus\Common\ConfigTrait;
 use Opus\Common\DocumentInterface;
+use Zend_Config_Ini;
 
 use function class_exists;
+use function filter_var;
+use function is_array;
+use function is_readable;
+
+use const FILTER_VALIDATE_BOOLEAN;
 
 class ImportRules
 {
@@ -52,15 +58,38 @@ class ImportRules
     {
         $config = $this->getConfig();
 
-        if (isset($config->import->rules)) {
-            $rulesConfig = $config->import->rules->toArray();
+        if (
+            ! isset($config->sword->enableImportRules) ||
+            ! filter_var($config->sword->enableImportRules, FILTER_VALIDATE_BOOLEAN)
+        ) {
+            // TODO does this belong here? There should not be anything SWORD specific here!
+            return; // don't load any rules
+        }
 
+        $rulesConfig = null;
+
+        if (isset($config->import->rulesConfigFile)) {
+            $rulesConfigFile = $config->import->rulesConfigFile;
+            if (is_readable($rulesConfigFile)) {
+                $rulesConfig = new Zend_Config_Ini($rulesConfigFile);
+                $rulesConfig = $rulesConfig->toArray();
+            }
+        }
+
+        // Get rules from main configuration as fallback
+        if ($rulesConfig === null && isset($config->import->rules)) {
+            $rulesConfig = $config->import->rules->toArray();
+        }
+
+        if (is_array($rulesConfig)) {
             foreach ($rulesConfig as $name => $options) {
                 $type = $options['type'];
 
                 $rule = $this->createRule($type, $options);
 
-                $this->rules[] = $rule;
+                if ($rule !== null) {
+                    $this->rules[] = $rule;
+                }
             }
         }
     }
@@ -80,10 +109,14 @@ class ImportRules
      */
     public function createRule($type, $options)
     {
-        if (class_exists($type, false)) {
+        if (class_exists($type)) {
             $ruleClass = $type;
         } else {
             $ruleClass = self::IMPORT_RULE_CLASS_PREFIX . $type;
+            if (! class_exists($ruleClass)) {
+                // TODO throw exception
+                return null;
+            }
         }
 
         $rule = new $ruleClass();

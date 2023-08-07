@@ -31,14 +31,21 @@
 
 namespace Opus\Import\Rules;
 
-use Opus\Common\CollectionInterface;
 use Opus\Common\DocumentInterface;
-use Opus\Import\Rules\Options\CollectionOption;
 
-class AddCollection extends AbstractImportRule
+/**
+ * TODO logging, error handling
+ */
+class RemoveKeyword extends AbstractImportRule
 {
-    /** @var CollectionOption */
-    private $collection;
+    /** @var string */
+    private $keyword;
+
+    /** @var string */
+    private $keywordType;
+
+    /** @var bool */
+    private $caseSensitive = false;
 
     /**
      * @param array $options
@@ -47,17 +54,9 @@ class AddCollection extends AbstractImportRule
     {
         parent::setOptions($options);
 
-        if (isset($options['collection'])) {
-            $this->collection = new CollectionOption($options['collection']);
+        if (isset($options['licenceId'])) {
+            $this->licence = Licence::get($options['licenceId']);
         }
-    }
-
-    /**
-     * @return CollectionInterface|null
-     */
-    public function getCollection()
-    {
-        return $this->collection->getCollection() ?? null;
     }
 
     /**
@@ -66,12 +65,8 @@ class AddCollection extends AbstractImportRule
     public function apply($document)
     {
         $condition = $this->getCondition();
-
         if ($condition === null || $condition->applies($document)) {
-            $col = $this->getCollection();
-            if ($col !== null) {
-                $document->addCollection($col);
-            }
+            // TODO remove keyword
         }
     }
 }
