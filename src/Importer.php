@@ -143,6 +143,9 @@ class Importer
     /** @var XmlDocument */
     private $xmlDocument;
 
+    /** @var ImportRules */
+    private $importRules;
+
     /**
      * @param string        $xml
      * @param bool          $isFile
@@ -306,7 +309,8 @@ class Importer
                 $doc->addCollection($this->importCollection);
             }
 
-            // TODO add aditional collections
+            $importRules = $this->getImportRules();
+            $importRules->apply($doc);
 
             try {
                 $doc->store();
@@ -676,7 +680,8 @@ class Importer
             if ($childNode instanceof DOMElement) {
                 $s = Subject::new();
                 $s->setLanguage(trim($childNode->getAttribute('language')));
-                $s->setType($childNode->getAttribute('type'));
+                $type = $childNode->getAttribute('type');
+                $s->setType($type ?: 'uncontrolled');
                 $s->setValue(trim($childNode->textContent));
                 $doc->addSubject($s);
             }
@@ -1089,5 +1094,18 @@ class Importer
     public function getDocument()
     {
         return $this->document;
+    }
+
+    /**
+     * @return ImportRules
+     */
+    public function getImportRules()
+    {
+        if ($this->importRules === null) {
+            $this->importRules = new ImportRules();
+            $this->importRules->init();
+        }
+
+        return $this->importRules;
     }
 }
