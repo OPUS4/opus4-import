@@ -31,9 +31,12 @@
 
 namespace OpusTest\Import;
 
+use Opus\Common\Collection;
+use Opus\Common\CollectionRole;
 use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
 use Opus\Common\EnrichmentKey;
+use Opus\Common\Licence;
 use Opus\Common\Log;
 use Opus\Common\Model\ModelException;
 use Opus\Common\Security\SecurityException;
@@ -62,6 +65,8 @@ class ImporterTest extends TestCase
         $enrichmentKey = EnrichmentKey::new();
         $enrichmentKey->setName('validtestkey');
         $enrichmentKey->store();
+
+        // TODO enable import rules here?
     }
 
     public function tearDown(): void
@@ -180,36 +185,84 @@ class ImporterTest extends TestCase
 
     public function testImportRulesAddCollectionForKeyword()
     {
-        // TODO add/enable rules (use global config fallback?)
+        $this->prepareCollections();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $collections = $doc->getCollection();
+
+        $this->assertCount(1, $collections);
+        $this->assertEquals('col1', $collections[0]->getName());
     }
 
     public function testImportRulesAddLicenceForKeyword()
     {
+        $licence = Licence::new();
+        $licence->setName('CC BY');
+        $licence->setNameLong('CC BY Test Licence');
+        $licence->setLinkLicence('URL');
+        $licenceId = $licence->store();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => [
+                'rulesConfigFile' => null,
+                'rules'           => [
+                    'licence' => [
+                        'type'      => 'AddLicence',
+                        'condition' => [
+                            'keyword' => 'ccby',
+                        ],
+                        'licenceId' => $licenceId,
+                    ],
+                ],
+            ],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $licences = $doc->getLicence();
+
+        $this->assertCount(1, $licences);
+        $this->assertEquals('CC BY', $licences[0]->getName());
     }
 
     public function testImportRulesRemoveKeyword()
     {
+        $this->markTestIncomplete('TODO implement test');
     }
 
     public function testImportRulesAddCollectionAndRemoveKeyword()
     {
+        $this->prepareCollections();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $collections = $doc->getCollection();
+
+        $this->assertCount(1, $collections);
+
+        $this->markTestIncomplete('TODO check if collection was added and keyword removed');
     }
 
     public function testImportRulesDisabled()
     {
-        $doc = $this->getTestImportDocument();
-        $this->assertFalse($doc->hasSubject('RulesEnabled'));
-    }
-
-    public function testImportRulesEnabled()
-    {
         $this->adjustConfiguration([
-            'sword' => [
-                'enableImportRules' => true,
-            ],
+            'sword'  => ['enableImportRules' => false],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
         ]);
         $doc = $this->getTestImportDocument();
-        $this->assertTrue($doc->hasSubject('RulesEnabled'));
+        $this->assertFalse($doc->hasSubject('RulesEnabled'));
     }
 
     public function testKeywordTypeDefaultUncontrolled()
@@ -218,9 +271,45 @@ class ImporterTest extends TestCase
 
         $keywords = $doc->getSubject();
 
-        $this->assertCount(3, $keywords);
+        $this->assertCount(4, $keywords);
 
         $this->assertTrue($doc->hasSubject('oa-green', Subject::TYPE_UNCONTROLLED));
         $this->assertTrue($doc->hasSubject('oa-gold', Subject::TYPE_UNCONTROLLED));
+    }
+
+    public function testAddKeyword()
+    {
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $this->assertTrue($doc->hasSubject('RulesEnabled'));
+    }
+
+    protected function prepareCollections()
+    {
+        $role = CollectionRole::new();
+        $role->setName('import');
+        $role->setOaiName('oaiImport');
+        $role->addRootCollection();
+        $this->roleId = $role->store();
+
+        $rootCol = $role->getRootCollection();
+
+        $col = Collection::new();
+        $col->setName('col1');
+        $col->setNumber('col1number');
+        $rootCol->addFirstChild($col);
+
+        $col = Collection::new();
+        $col->setName('green');
+        $col->setNumber('col2number');
+        $rootCol->addLastChild($col);
+        $role->store();
+
+        $this->colId = $col->getId();
     }
 }

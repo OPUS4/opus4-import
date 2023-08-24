@@ -130,7 +130,7 @@ class ImportRules
      */
     public function apply($document)
     {
-        foreach ($this->rules as $rule) {
+        foreach ($this->getRules() as $rule) {
             $rule->apply($document);
         }
     }

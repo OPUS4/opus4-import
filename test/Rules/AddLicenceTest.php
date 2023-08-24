@@ -46,6 +46,17 @@ class AddLicenceTest extends TestCase
     /** @var int */
     private $licenceId2;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->adjustConfiguration([
+            'sword' => [
+                'enableImportRules' => true,
+            ],
+        ]);
+    }
+
     public function testAddLicence()
     {
         $this->prepareLicences();

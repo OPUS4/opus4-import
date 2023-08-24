@@ -35,6 +35,7 @@ use Opus\Common\DocumentInterface;
 
 /**
  * TODO logging, error handling
+ * TODO support list of keywords (or should that be a RemoveKeywords rule?)
  */
 class RemoveKeyword extends AbstractImportRule
 {
@@ -48,25 +49,14 @@ class RemoveKeyword extends AbstractImportRule
     private $caseSensitive = false;
 
     /**
-     * @param array $options
-     */
-    public function setOptions($options)
-    {
-        parent::setOptions($options);
-
-        if (isset($options['licenceId'])) {
-            $this->licence = Licence::get($options['licenceId']);
-        }
-    }
-
-    /**
      * @param DocumentInterface $document
      */
     public function apply($document)
     {
         $condition = $this->getCondition();
         if ($condition === null || $condition->applies($document)) {
-            // TODO remove keyword
+            // TODO remove keyword (that was matched in condition)
+            $keyword = 'TODO';
         }
     }
 }
