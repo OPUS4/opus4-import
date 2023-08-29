@@ -33,14 +33,18 @@ namespace Opus\Import\Rules;
 
 use Opus\Common\DocumentInterface;
 
+use function array_map;
+use function is_array;
+use function mb_split;
+
 /**
  * TODO logging, error handling
  * TODO support list of keywords (or should that be a RemoveKeywords rule?)
  */
-class RemoveKeyword extends AbstractImportRule
+class RemoveKeywords extends AbstractImportRule
 {
-    /** @var string */
-    private $keyword;
+    /** @var string[] */
+    private $keywords;
 
     /** @var string */
     private $keywordType;
@@ -55,8 +59,72 @@ class RemoveKeyword extends AbstractImportRule
     {
         $condition = $this->getCondition();
         if ($condition === null || $condition->applies($document)) {
-            // TODO remove keyword (that was matched in condition)
-            $keyword = 'TODO';
+            $keywords = $this->getKeywords();
+            if ($keywords !== null) {
+                $caseSensitive = $this->isCaseSensitive();
+                $keywordType   = $this->getKeywordType();
+                foreach ($this->getKeywords() as $keyword) {
+                    $document->removeSubject($keyword, $keywordType, $caseSensitive);
+                }
+            }
         }
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getKeywords()
+    {
+        return $this->keywords;
+    }
+
+    /**
+     * @param string|string[] $keywords
+     * @return $this
+     */
+    public function setKeywords($keywords)
+    {
+        if (is_array($keywords) || $keywords === null) {
+            $this->keywords = $keywords;
+        } else {
+            $this->keywords = array_map('trim', mb_split(',', $keywords));
+        }
+        return $this;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getKeywordType()
+    {
+        return $this->keywordType;
+    }
+
+    /**
+     * @param null|string $type
+     * @return $this
+     */
+    public function setKeywordType($type)
+    {
+        $this->keywordType = $type;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCaseSensitive()
+    {
+        return $this->caseSensitive;
+    }
+
+    /**
+     * @param bool $caseSensitive
+     * @return $this
+     */
+    public function setCaseSensitive($caseSensitive)
+    {
+        $this->caseSensitive = $caseSensitive;
+        return $this;
     }
 }
