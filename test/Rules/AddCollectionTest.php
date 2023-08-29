@@ -68,8 +68,9 @@ class AddCollectionTest extends TestCase
         $this->prepareCollections();
 
         $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
             'import' => [
-                'rules' => [
+                'rules'           => [
                     'addCol' => [
                         'type'       => AddCollection::class,
                         'collection' => [
@@ -77,6 +78,7 @@ class AddCollectionTest extends TestCase
                         ],
                     ],
                 ],
+                'rulesConfigFile' => null,
             ],
         ]);
 
@@ -111,8 +113,9 @@ class AddCollectionTest extends TestCase
         $col2id = $col2->getId();
 
         $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
             'import' => [
-                'rules' => [
+                'rules'           => [
                     'addCol1' => [
                         'type'       => 'AddCollection',
                         'condition'  => [
@@ -132,6 +135,7 @@ class AddCollectionTest extends TestCase
                         ],
                     ],
                 ],
+                'rulesConfigFile' => null,
             ],
         ]);
 
