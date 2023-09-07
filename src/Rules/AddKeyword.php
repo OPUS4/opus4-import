@@ -35,13 +35,22 @@ use Opus\Common\DocumentInterface;
 use Opus\Common\Subject;
 use Opus\Common\SubjectInterface;
 
+use function is_array;
+
 /**
  * TODO logging, error handling
+ * TODO allow configuring type and language
  */
 class AddKeyword extends AbstractImportRule
 {
     /** @var SubjectInterface */
     private $subject;
+
+    /** @var string */
+    private $subjectType = Subject::TYPE_UNCONTROLLED;
+
+    /** @var string */
+    private $language = 'deu';
 
     /**
      * @param array $options
@@ -51,10 +60,23 @@ class AddKeyword extends AbstractImportRule
         parent::setOptions($options);
 
         if (isset($options['keyword'])) {
-            $subject = Subject::new();
-            $subject->setValue($options['keyword']);
-            $subject->setType(Subject::TYPE_UNCONTROLLED);
-            $this->subject = $subject;
+            $config = $options['keyword'];
+
+            if (is_array($config)) {
+                $keyword           = $config['value'] ?? null;
+                $this->subjectType = $config['type'] ?? Subject::TYPE_UNCONTROLLED;
+                $this->language    = $config['lang'] ?? 'deu';
+            } else {
+                $keyword = $config;
+            }
+
+            if (! empty($keyword)) {
+                $subject = Subject::new();
+                $subject->setValue($keyword);
+                $subject->setType($this->subjectType);
+                $subject->setLanguage($this->language);
+                $this->subject = $subject;
+            }
         }
     }
 
