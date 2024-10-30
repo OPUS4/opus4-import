@@ -13,7 +13,8 @@
     "ext-fileinfo": "*",
     "ext-libxml": "*",
     "ext-zip": "*",
-    "opus4-repo/opus4-common": "^4.8",
+    "opus4-repo/opus4-common": "dev-master as 4.8.1",
+    "opus4-repo/opus4-app-common": "dev-main",
     "opus4-repo/opus4-job": ">4.8"
   },
   "require-dev": {

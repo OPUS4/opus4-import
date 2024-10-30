@@ -32,6 +32,8 @@
 namespace Opus\Import;
 
 use Exception;
+use Opus\Application\ApplicationException;
+use Opus\Application\Configuration;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -197,11 +199,11 @@ class PackageHandler
      *
      * @param string $payload der Inhalt des SWORD-Packages
      * @return string absoluter Pfad des temporären Ablageverzeichnisses
-     * @throws Application_Exception
+     * @throws ApplicationException
      */
     private function createTmpDir($payload)
     {
-        $baseDirName = Application_Configuration::getInstance()->getTempPath()
+        $baseDirName = Configuration::getInstance()->getTempPath()
             . DIRECTORY_SEPARATOR . md5($payload) . '-' . time() . '-' . rand(10000, 99999);
         $suffix      = 0;
         $dirName     = "$baseDirName-$suffix";
