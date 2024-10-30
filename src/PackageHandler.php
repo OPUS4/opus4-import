@@ -35,8 +35,18 @@ use Exception;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
+use function file_put_contents;
+use function is_readable;
+use function md5;
+use function mkdir;
+use function rand;
+use function rmdir;
+use function time;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+
 /**
- *
  * TODO separate differentiation of ZIP and TAR into separate classes - it should be possible to ADD another class to
  *      support a new type of package - it should not be necessary to MODIFY existing classes for that
  */
