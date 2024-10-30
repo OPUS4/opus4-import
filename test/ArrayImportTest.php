@@ -27,17 +27,14 @@
  *
  * @copyright   Copyright (c) 2020, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
- *
- * @category    Application Unit Tests
- * @package     Application
- * @author      Jens Schwidder <schwidder@zib.de>
  */
 
 namespace OpusTest\Import;
 
 use Opus\Import\ArrayImport;
+use PHPUnit\Framework\TestCase;
 
-class ArrayImportTest
+class ArrayImportTest extends TestCase
 {
     public function testImport()
     {
