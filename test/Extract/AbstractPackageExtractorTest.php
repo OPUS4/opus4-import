@@ -29,9 +29,9 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace OpusTest\Import\Extract;
 
-use Opus\Import\AbstractPackageReader;
+use Opus\Import\Extract\AbstractPackageExtractor;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use OpusTest\Import\TestAsset\TestCase;
 use ReflectionClass;
@@ -48,9 +48,9 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-class PackageReaderTest extends TestCase
+class AbstractPackageExtractorTest extends TestCase
 {
-    /** @var AbstractPackageReader */
+    /** @var AbstractPackageExtractor */
     private $mockReader;
 
     /** @var string */
@@ -60,7 +60,8 @@ class PackageReaderTest extends TestCase
     {
         parent::setUp();
 
-        $this->mockReader = $this->getMockForAbstractClass(AbstractPackageReader::class);
+        // TODO Mock abstract class
+        $this->mockReader = $this->getMockForAbstractClass(AbstractPackageExtractor::class);
     }
 
     public function testCreateExtractionDir()
@@ -102,7 +103,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_2';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
         touch($metadataFile);
 
         $statusDoc = $method->invokeArgs($this->mockReader, [$extractDir]);
@@ -119,7 +120,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_3';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
         touch($metadataFile);
         file_put_contents($metadataFile, '<import><opusDocument></opusDocument></import>');
 
@@ -139,7 +140,7 @@ class PackageReaderTest extends TestCase
         $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_4';
         mkdir($extractDir);
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageReader::METADATA_FILENAME;
+        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
         touch($metadataFile);
 
         $xml = <<<XML
@@ -181,7 +182,7 @@ XML;
      */
     protected static function getMethod($name)
     {
-        $class  = new ReflectionClass(AbstractPackageReader::class);
+        $class  = new ReflectionClass(AbstractPackageExtractor::class);
         $method = $class->getMethod($name);
         $method->setAccessible(true);
         return $method;

@@ -55,7 +55,7 @@ use const DIRECTORY_SEPARATOR;
  *
  * Currently ZIP and TAR files are supported by extending classes.
  */
-abstract class AbstractPackageReader
+class OpusPackageHandler extends AbstractPackageHandler
 {
     const METADATA_FILENAME = 'opus.xml';
 

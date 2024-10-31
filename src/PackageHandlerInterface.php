@@ -31,10 +31,7 @@
 
 namespace Opus\Import;
 
-/**
- * TODO What is the purpose of this class?
- */
-class PackageHandler
+interface PackageHandlerInterface
 {
 
 }

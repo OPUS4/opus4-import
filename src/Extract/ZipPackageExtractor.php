@@ -25,16 +25,48 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2024, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Extract;
 
-/**
- * TODO What is the purpose of this class?
- */
-class PackageHandler
+use Exception;
+use ZipArchive;
+
+use function is_readable;
+
+use const DIRECTORY_SEPARATOR;
+
+class ZipPackageExtractor extends AbstractPackageExtractor
 {
+    public function __construct()
+    {
+        parent::__construct();
 
+        $this->setSupportedMimeTypes([
+            'appliction/zip',
+        ]);
+    }
+
+    /**
+     * @param string $filePath
+     * @throws Exception
+     */
+    public function extract($filePath)
+    {
+        $filename = $filePath . DIRECTORY_SEPARATOR . 'package.zip';
+        $this->getLogger()->info('processing ZIP package in file system ' . $filename);
+
+        if (! is_readable($filename)) {
+            $errMsg = 'ZIP package ' . $filename . ' is not readable!';
+            $this->getLogger()->err($errMsg);
+            throw new Exception($errMsg);
+        }
+
+        $zip = new ZipArchive();
+        $zip->open($filename);
+        $zip->extractTo($filePath . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
+        $zip->close();
+    }
 }

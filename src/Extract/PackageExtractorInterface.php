@@ -25,37 +25,28 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018, OPUS 4 development team
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Extract;
 
-use Exception;
-use PharData;
-
-use function is_readable;
-
-use const DIRECTORY_SEPARATOR;
-
-class TarPackageReader extends AbstractPackageReader
+interface PackageExtractorInterface
 {
     /**
-     * @param string $dirName
-     * @throws Exception
+     * @param string $filePath
+     * @return void
      */
-    protected function extractPackage($dirName)
-    {
-        $filename = $dirName . DIRECTORY_SEPARATOR . 'package.tar';
-        $this->getLogger()->info('processing TAR package in file system ' . $filename);
+    public function extract($filePath);
 
-        if (! is_readable($filename)) {
-            $errMsg = 'TAR package ' . $filename . ' is not readable!';
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
-        }
+    /**
+     * @return string[]|null
+     */
+    public function getSupportedMimeTypes();
 
-        $phar = new PharData($filename);
-        $phar->extractTo($dirName . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
-    }
+    /**
+     * @param string $mimeType
+     * @return bool
+     */
+    public function isSupportedMimeType($mimeType);
 }

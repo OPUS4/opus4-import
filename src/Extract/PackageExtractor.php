@@ -25,68 +25,39 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2019, OPUS 4 development team
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Extract;
 
-use Opus\Import\TarPackageReader;
-use OpusTest\Import\TestAsset\TestCase;
-
-use function copy;
-use function mkdir;
-
-use const DIRECTORY_SEPARATOR;
-
-class TarPackageReaderTest extends TestCase
+class PackageExtractor
 {
-    /** @var string */
-    protected $additionalResources = 'database';
+    /** @var PackageExtractorInterface[] */
+    private $extractors;
 
-    public function setUp(): void
+    private function __construct()
     {
-        parent::setUp();
-        $this->makeConfigurationModifiable();
+        $this->extractors = [
+            new ZipPackageExtractor(),
+            new TarPackageExtractor(),
+        ];
     }
 
-    public function testReadPackageWithXmlFile()
+    /**
+     * @param string $mimeType
+     * @return PackageExtractorInterface|null
+     */
+    public static function getExtractor($mimeType)
     {
-        $this->adjustConfiguration([
-            'filetypes' => [
-                'xml' => [
-                    'mimeType' => [
-                        'text/xml',
-                        'application/xml',
-                    ],
-                ],
-            ],
-        ]);
+        $helper = new PackageExtractor();
 
-        $reader = new TarPackageReader();
+        foreach ($helper->extractors as $extractor) {
+            if ($extractor->isSupportedMimeType($mimeType)) {
+                return $extractor;
+            }
+        }
 
-        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/TarPackageReaderTest_ReadPackageWithXmlFile';
-        mkdir($tmpDir);
-
-        copy(
-            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar',
-            $tmpDir . DIRECTORY_SEPARATOR . 'package.tar'
-        );
-
-        $status = $reader->readPackage($tmpDir);
-
-        $this->assertFalse($status->noDocImported());
-        $this->assertCount(1, $status->getDocs());
-
-        $document = $status->getDocs()[0];
-
-        // TODO do wee need this?
-        // $this->addTestDocument($document); // for cleanup
-
-        $files = $document->getFile();
-
-        $this->assertCount(2, $files);
-
-        PackageReaderTest::cleanupTmpDir($tmpDir);
+        return null;
     }
 }

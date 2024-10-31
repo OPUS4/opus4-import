@@ -25,13 +25,13 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018, OPUS 4 development team
+ * @copyright   Copyright (c) 2019, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace OpusTest\Import\Extract;
 
-use Opus\Import\ZipPackageReader;
+use Opus\Import\Extract\TarPackageExtractor;
 use OpusTest\Import\TestAsset\TestCase;
 
 use function copy;
@@ -39,7 +39,7 @@ use function mkdir;
 
 use const DIRECTORY_SEPARATOR;
 
-class ZipPackageReaderTest extends TestCase
+class TarPackageExtractorTest extends TestCase
 {
     /** @var string */
     protected $additionalResources = 'database';
@@ -63,14 +63,14 @@ class ZipPackageReaderTest extends TestCase
             ],
         ]);
 
-        $reader = new ZipPackageReader();
+        $reader = new TarPackageExtractor();
 
-        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/ZipPackageReaderTest_ReadPackageWithXmlFile';
+        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/TarPackageReaderTest_ReadPackageWithXmlFile';
         mkdir($tmpDir);
 
         copy(
-            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip',
-            $tmpDir . DIRECTORY_SEPARATOR . 'package.zip'
+            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar',
+            $tmpDir . DIRECTORY_SEPARATOR . 'package.tar'
         );
 
         $status = $reader->readPackage($tmpDir);
@@ -80,13 +80,13 @@ class ZipPackageReaderTest extends TestCase
 
         $document = $status->getDocs()[0];
 
-        // TODO do we need this?
+        // TODO do wee need this?
         // $this->addTestDocument($document); // for cleanup
 
         $files = $document->getFile();
 
         $this->assertCount(2, $files);
 
-        PackageReaderTest::cleanupTmpDir($tmpDir);
+        AbstractPackageExtractorTest::cleanupTmpDir($tmpDir);
     }
 }

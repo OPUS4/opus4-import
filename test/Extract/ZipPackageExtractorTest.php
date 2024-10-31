@@ -25,16 +25,68 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2024, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace OpusTest\Import\Extract;
 
-/**
- * TODO What is the purpose of this class?
- */
-class PackageHandler
+use Opus\Import\Extract\ZipPackageExtractor;
+use OpusTest\Import\TestAsset\TestCase;
+
+use function copy;
+use function mkdir;
+
+use const DIRECTORY_SEPARATOR;
+
+class ZipPackageExtractorTest extends TestCase
 {
+    /** @var string */
+    protected $additionalResources = 'database';
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->makeConfigurationModifiable();
+    }
+
+    public function testReadPackageWithXmlFile()
+    {
+        $this->adjustConfiguration([
+            'filetypes' => [
+                'xml' => [
+                    'mimeType' => [
+                        'text/xml',
+                        'application/xml',
+                    ],
+                ],
+            ],
+        ]);
+
+        $reader = new ZipPackageExtractor();
+
+        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/ZipPackageReaderTest_ReadPackageWithXmlFile';
+        mkdir($tmpDir);
+
+        copy(
+            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip',
+            $tmpDir . DIRECTORY_SEPARATOR . 'package.zip'
+        );
+
+        $status = $reader->readPackage($tmpDir);
+
+        $this->assertFalse($status->noDocImported());
+        $this->assertCount(1, $status->getDocs());
+
+        $document = $status->getDocs()[0];
+
+        // TODO do we need this?
+        // $this->addTestDocument($document); // for cleanup
+
+        $files = $document->getFile();
+
+        $this->assertCount(2, $files);
+
+        AbstractPackageExtractorTest::cleanupTmpDir($tmpDir);
+    }
 }

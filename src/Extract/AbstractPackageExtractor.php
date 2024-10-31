@@ -29,12 +29,48 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Extract;
 
-/**
- * TODO What is the purpose of this class?
- */
-class PackageHandler
+use Opus\Common\LoggingTrait;
+use function in_array;
+use function is_string;
+
+abstract class AbstractPackageExtractor implements PackageExtractorInterface
 {
+    use LoggingTrait;
 
+    /** @var string[]|null */
+    private $supportedMimeTypes = [];
+
+    /**
+     * @return string[]|null
+     */
+    public function getSupportedMimeTypes()
+    {
+        return $this->supportedMimeTypes;
+    }
+
+    /**
+     * @param string|string[]|null $mimeTypes
+     * @return $this
+     */
+    public function setSupportedMimeTypes($mimeTypes)
+    {
+        if ($mimeTypes === null) {
+            $mimeTypes = [];
+        } elseif (is_string($mimeTypes)) {
+            $mimeTypes = [$mimeTypes];
+        }
+        $this->supportedMimeTypes = $mimeTypes;
+        return $this;
+    }
+
+    /**
+     * @param string $mimeType
+     * @return bool
+     */
+    public function isSupportedMimeType($mimeType)
+    {
+        return in_array($mimeType, $this->supportedMimeTypes);
+    }
 }

@@ -29,35 +29,43 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Extract;
 
 use Exception;
-use ZipArchive;
+use PharData;
 
 use function is_readable;
 
 use const DIRECTORY_SEPARATOR;
 
-class ZipPackageReader extends AbstractPackageReader
+class TarPackageExtractor extends AbstractPackageExtractor
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->setSupportedMimeTypes([
+            'application/tar',
+            'application/x-tar',
+        ]);
+    }
+
     /**
-     * @param string $dirName
+     * @param string $filePath
      * @throws Exception
      */
-    protected function extractPackage($dirName)
+    public function extract($filePath)
     {
-        $filename = $dirName . DIRECTORY_SEPARATOR . 'package.zip';
-        $this->getLogger()->info('processing ZIP package in file system ' . $filename);
+        $filename = $filePath . DIRECTORY_SEPARATOR . 'package.tar';
+        $this->getLogger()->info('processing TAR package in file system ' . $filename);
 
         if (! is_readable($filename)) {
-            $errMsg = 'ZIP package ' . $filename . ' is not readable!';
+            $errMsg = 'TAR package ' . $filename . ' is not readable!';
             $this->getLogger()->err($errMsg);
             throw new Exception($errMsg);
         }
 
-        $zip = new ZipArchive();
-        $zip->open($filename);
-        $zip->extractTo($dirName . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
-        $zip->close();
+        $phar = new PharData($filename);
+        $phar->extractTo($filePath . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
     }
 }
