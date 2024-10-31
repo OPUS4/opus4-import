@@ -9,6 +9,7 @@
   ],
   "homepage": "https://www.opus-repository.org",
   "require": {
+    "php": ">=8.1",
     "ext-dom": "*",
     "ext-fileinfo": "*",
     "ext-libxml": "*",
