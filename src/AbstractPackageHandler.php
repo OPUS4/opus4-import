@@ -32,8 +32,8 @@
 namespace Opus\Import;
 
 use Exception;
-use Opus\Application\ApplicationException;
-use Opus\Application\Configuration;
+use Opus\App\Common\ApplicationException;
+use Opus\App\Common\Configuration;
 use Opus\Import\Extract\PackageExtractor;
 use Opus\Import\Extract\TarPackageExtractor;
 use RecursiveDirectoryIterator;
