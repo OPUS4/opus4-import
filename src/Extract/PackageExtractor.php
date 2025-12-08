@@ -31,6 +31,9 @@
 
 namespace Opus\Import\Extract;
 
+/**
+ * Factory class for getting package extractor for MIME-type.
+ */
 class PackageExtractor
 {
     /** @var PackageExtractorInterface[] */
@@ -38,6 +41,7 @@ class PackageExtractor
 
     private function __construct()
     {
+        // TODO make configurable
         $this->extractors = [
             new ZipPackageExtractor(),
             new TarPackageExtractor(),

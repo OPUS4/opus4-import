@@ -31,148 +31,114 @@
 
 namespace OpusTest\Import\Extract;
 
+use Exception;
 use Opus\Import\Extract\AbstractPackageExtractor;
-use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use OpusTest\Import\TestAsset\TestCase;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
-
-use function file_put_contents;
-use function is_dir;
-use function is_writable;
-use function mkdir;
-use function rmdir;
-use function touch;
-use function unlink;
-
-use const DIRECTORY_SEPARATOR;
+use Symfony\Component\Filesystem\Filesystem;
 
 class AbstractPackageExtractorTest extends TestCase
 {
     /** @var AbstractPackageExtractor */
-    private $mockReader;
-
-    /** @var string */
-    protected $additionalResources = 'database';
+    private $mock;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        // TODO Mock abstract class
-        $this->mockReader = $this->getMockForAbstractClass(AbstractPackageExtractor::class);
+        // TODO use createMock function (problem: $supportedMimeTypes does not get initialized)
+
+        $this->mock = new class extends AbstractPackageExtractor {
+            /**
+             * @param string $src
+             * @param string $dest
+             * @return void
+             */
+            public function extractFile($src, $dest)
+            {
+            }
+        };
     }
 
-    public function testCreateExtractionDir()
+    public function tearDown(): void
     {
-        $method = $this->getMethod('createExtractionDir');
-
-        $baseDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_createExtractionDir';
-        mkdir($baseDir);
-
-        $extractDir = $method->invokeArgs($this->mockReader, [$baseDir]);
-
-        $this->assertTrue(is_dir($extractDir));
-        $this->assertTrue(is_writable($extractDir));
-        $this->assertStringStartsWith($baseDir, $extractDir);
-
-        rmdir($extractDir);
-        rmdir($baseDir);
-
-        $this->assertFalse(is_dir($extractDir));
+        parent::tearDown();
     }
 
-    public function testProcessPackageWithMissingFile()
+    public function testGetSupportedMimeTypesNone()
     {
-        $method = $this->getMethod('processPackage');
-
-        $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_1';
-        mkdir($extractDir);
-
-        $statusDoc = $method->invokeArgs($this->mockReader, [$extractDir]);
-        $this->assertNull($statusDoc);
-
-        rmdir($extractDir);
+        $this->assertIsArray($this->mock->getSupportedMimeTypes());
+        $this->assertCount(0, $this->mock->getSupportedMimeTypes());
     }
 
-    public function testProcessPackageWithEmptyFile()
+    public function testSetSupportedMimeTypes()
     {
-        $method = $this->getMethod('processPackage');
+        $method = $this->getMethod('setSupportedMimeTypes');
 
-        $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_2';
-        mkdir($extractDir);
+        $this->assertEquals($this->mock, $method->invoke($this->mock, [
+            'application/tar',
+            'application/x-tar',
+        ]));
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
-        touch($metadataFile);
-
-        $statusDoc = $method->invokeArgs($this->mockReader, [$extractDir]);
-        $this->assertNull($statusDoc);
-
-        unlink($metadataFile);
-        rmdir($extractDir);
+        $this->assertEqualsCanonicalizing(
+            ['application/tar', 'application/x-tar'],
+            $this->mock->getSupportedMimeTypes()
+        );
     }
 
-    public function testProcessPackageWithInvalidFile()
+    public function testIsSupportedMimeTypeFalse()
     {
-        $method = $this->getMethod('processPackage');
-
-        $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_3';
-        mkdir($extractDir);
-
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
-        touch($metadataFile);
-        file_put_contents($metadataFile, '<import><opusDocument></opusDocument></import>');
-
-        try {
-            $this->expectException(MetadataImportInvalidXmlException::class);
-            $method->invokeArgs($this->mockReader, [$extractDir]);
-        } finally {
-            unlink($metadataFile);
-            rmdir($extractDir);
-        }
+        $this->assertFalse($this->mock->isSupportedMimeType('application/zip'));
     }
 
-    public function testProcessPackageWithValidFile()
+    public function testIsSupportedMimeTypeCaseInsensitive()
     {
-        $method = $this->getMethod('processPackage');
+        $method = $this->getMethod('setSupportedMimeTypes');
 
-        $extractDir = APPLICATION_PATH . '/build/workspace/tmp/Application_Import_PackageReaderTest_processPackage_4';
-        mkdir($extractDir);
+        $this->assertEquals($this->mock, $method->invoke($this->mock, [
+            'application/tar',
+            'application/x-tar',
+        ]));
 
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . AbstractPackageExtractor::METADATA_FILENAME;
-        touch($metadataFile);
+        $this->assertTrue($this->mock->isSupportedMimeType('APPLICATION/TAR'));
+    }
 
-        $xml = <<<XML
-<import>
-    <opusDocument language="eng" type="article" serverState="unpublished">
-        <titlesMain>
-            <titleMain language="eng">This is a test document</titleMain>
-        </titlesMain>   
-    </opusDocument>
-</import>
-XML;
+    public function testGenerateTargetPath()
+    {
+        $srcFile = APPLICATION_PATH . '/test/_files/single-doc-pdf-xml.tar';
+        $this->assertEquals(
+            './test/_files/single-doc-pdf-xml',
+            $this->mock->generateTargetPath($srcFile)
+        );
+    }
 
-        file_put_contents($metadataFile, $xml);
+    public function testGenerateTargetPathAlreadyExists()
+    {
+        $srcFile    = APPLICATION_PATH . '/build/workspace/tmp/extractionDir';
+        $fileSystem = new Filesystem();
+        $fileSystem->mkdir($srcFile);
 
-        $statusDoc = $method->invokeArgs($this->mockReader, [$extractDir]);
-        $this->assertFalse($statusDoc->noDocImported());
-        $this->assertCount(1, $statusDoc->getDocs());
+        $this->assertEquals(
+            $srcFile . '_1',
+            $this->mock->generateTargetPath($srcFile . '.tar')
+        );
+    }
 
-        $doc = $statusDoc->getDocs()[0];
-        $this->assertEquals('eng', $doc->getLanguage());
-        $this->assertEquals('article', $doc->getType());
-        $this->assertEquals('unpublished', $doc->getServerState());
-        $this->assertCount(1, $doc->getTitleMain());
-        $title = $doc->getTitleMain()[0];
-        $this->assertEquals('eng', $title->getLanguage());
-        $this->assertEquals('This is a test document', $title->getValue());
+    public function testExtractMissingFile()
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('is not readable');
+        $this->mock->extract(APPLICATION_PATH . '/test/_files/unknown.tar');
+    }
 
-        // TODO Do we need this?
-        // $this->addTestDocument($doc); // for cleanup
-
-        unlink($metadataFile);
-        rmdir($extractDir);
+    public function testExtract()
+    {
+        $this->assertEquals(
+            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml',
+            $this->mock->extract(APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar')
+        );
     }
 
     /**
@@ -180,20 +146,9 @@ XML;
      * @return ReflectionMethod
      * @throws ReflectionException
      */
-    protected static function getMethod($name)
+    protected function getMethod($name)
     {
-        $class  = new ReflectionClass(AbstractPackageExtractor::class);
-        $method = $class->getMethod($name);
-        $method->setAccessible(true);
-        return $method;
-    }
-
-    /**
-     * @param string $tmpDirName
-     */
-    public static function cleanupTmpDir($tmpDirName)
-    {
-        parent::cleanupTmpDir($tmpDirName);
-        rmdir($tmpDirName); // TODO is this necessary - should it be moved to parent function?
+        $class = new ReflectionClass(AbstractPackageExtractor::class);
+        return $class->getMethod($name);
     }
 }

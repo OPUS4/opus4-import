@@ -31,13 +31,21 @@
 
 namespace Opus\Import\Extract;
 
+/**
+ * Interface for classes that can unpack package formats like ZIP or TAR.
+ *
+ * An interface is used to isolate the import code from specific formats
+ * and allow adding support for new formats in the future without changes
+ * to the existing code.
+ */
 interface PackageExtractorInterface
 {
     /**
-     * @param string $filePath
-     * @return void
+     * @param string      $srcPath
+     * @param string|null $targetPath
+     * @return string Path to folder with extracted files.
      */
-    public function extract($filePath);
+    public function extract($srcPath, $targetPath = null);
 
     /**
      * @return string[]|null

@@ -31,16 +31,37 @@
 
 namespace Opus\Import\Extract;
 
+use Exception;
 use Opus\Common\LoggingTrait;
-use function in_array;
-use function is_string;
 
+use function array_map;
+use function dirname;
+use function file_exists;
+use function in_array;
+use function is_readable;
+use function is_string;
+use function pathinfo;
+use function strtolower;
+
+use const DIRECTORY_SEPARATOR;
+use const PATHINFO_FILENAME;
+
+/**
+ * Base class with common functions for package extractors.
+ *
+ * TODO support arbitrary extraction locations
+ * TODO use dynamic (unique) extraction folder?
+ * TODO extract to temp folder?
+ */
 abstract class AbstractPackageExtractor implements PackageExtractorInterface
 {
     use LoggingTrait;
 
-    /** @var string[]|null */
+    /** @var string[] */
     private $supportedMimeTypes = [];
+
+    /** @var string|null */
+    private $extractionDirName;
 
     /**
      * @return string[]|null
@@ -54,14 +75,15 @@ abstract class AbstractPackageExtractor implements PackageExtractorInterface
      * @param string|string[]|null $mimeTypes
      * @return $this
      */
-    public function setSupportedMimeTypes($mimeTypes)
+    protected function setSupportedMimeTypes($mimeTypes)
     {
         if ($mimeTypes === null) {
             $mimeTypes = [];
         } elseif (is_string($mimeTypes)) {
             $mimeTypes = [$mimeTypes];
         }
-        $this->supportedMimeTypes = $mimeTypes;
+        $this->supportedMimeTypes = array_map('strtolower', $mimeTypes);
+
         return $this;
     }
 
@@ -71,6 +93,66 @@ abstract class AbstractPackageExtractor implements PackageExtractorInterface
      */
     public function isSupportedMimeType($mimeType)
     {
-        return in_array($mimeType, $this->supportedMimeTypes);
+        return in_array(strtolower($mimeType), $this->supportedMimeTypes);
+    }
+
+    /**
+     * @param string      $srcPath Path to ZIP file.
+     * @param string|null $targetPath
+     * @return string Path to extracted files.
+     * @throws Exception
+     *
+     * TODO nove common part to base class?
+     */
+    public function extract($srcPath, $targetPath = null)
+    {
+        $this->getLogger()->debug("processing file {$srcPath}");
+
+        if (! is_readable($srcPath)) {
+            $errMsg = "File {$srcPath} is not readable!";
+            $this->getLogger()->err($errMsg);
+            throw new Exception($errMsg);
+        }
+
+        if ($targetPath === null) {
+           // Extract to default directory at same location
+            $targetPath = $this->generateTargetPath($srcPath);
+        }
+
+        $this->extractFile($srcPath, $targetPath);
+
+        return $targetPath;
+    }
+
+    /**
+     * @param string $srcPath
+     * @param string $targetPath
+     * @return void
+     */
+    abstract public function extractFile($srcPath, $targetPath);
+
+    /**
+     * @param string $srcPath
+     * @return string
+     *
+     * TODO support using OPUS 4/system tmp folder
+     */
+    public function generateTargetPath($srcPath)
+    {
+        $srcFolder    = dirname($srcPath);
+        $targetFolder = pathinfo($srcPath, PATHINFO_FILENAME);
+        $basePath     = $srcFolder . DIRECTORY_SEPARATOR . $targetFolder;
+
+        $count = 0;
+
+        do {
+            $targetPath = $basePath;
+            if ($count > 0) {
+                $targetPath .= "_{$count}";
+            }
+            $count++;
+        } while (file_exists($targetPath));
+
+        return $targetPath;
     }
 }

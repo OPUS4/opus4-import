@@ -33,60 +33,60 @@ namespace OpusTest\Import\Extract;
 
 use Opus\Import\Extract\ZipPackageExtractor;
 use OpusTest\Import\TestAsset\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
-use function copy;
-use function mkdir;
+use function touch;
 
 use const DIRECTORY_SEPARATOR;
 
 class ZipPackageExtractorTest extends TestCase
 {
-    /** @var string */
-    protected $additionalResources = 'database';
+    /** @var ZipPackageExtractor */
+    private $extractor;
+
+    /** @var string[] */
+    private $cleanupPaths = [];
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->makeConfigurationModifiable();
+        $this->extractor = new ZipPackageExtractor();
     }
 
-    public function testReadPackageWithXmlFile()
+    public function tearDown(): void
     {
-        $this->adjustConfiguration([
-            'filetypes' => [
-                'xml' => [
-                    'mimeType' => [
-                        'text/xml',
-                        'application/xml',
-                    ],
-                ],
-            ],
-        ]);
+        $filesystem = new Filesystem();
+        foreach ($this->cleanupPaths as $path) {
+            $filesystem->remove($path);
+        }
+        parent::tearDown();
+    }
 
-        $reader = new ZipPackageExtractor();
+    public function testExtractToTargetPath()
+    {
+        $srcFile    = APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip';
+        $targetPath = APPLICATION_PATH . '/build/extract';
 
-        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/ZipPackageReaderTest_ReadPackageWithXmlFile';
-        mkdir($tmpDir);
+        $extractPath = $this->extractor->extract($srcFile, $targetPath);
 
-        copy(
-            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip',
-            $tmpDir . DIRECTORY_SEPARATOR . 'package.zip'
-        );
+        $this->assertFileExists($extractPath);
 
-        $status = $reader->readPackage($tmpDir);
+        $this->cleanupPaths[] = $extractPath;
 
-        $this->assertFalse($status->noDocImported());
-        $this->assertCount(1, $status->getDocs());
+        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'opus.xml');
+        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'doc1.xml');
+        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'doc1.pdf');
+    }
 
-        $document = $status->getDocs()[0];
+    public function testExtractSrcPathNotZip()
+    {
+        $srcFile = APPLICATION_PATH . '/build/test-bar.zip';
+        touch($srcFile);
+        $this->cleanupPaths[] = $srcFile;
 
-        // TODO do we need this?
-        // $this->addTestDocument($document); // for cleanup
+        $targetPath = APPLICATION_PATH . '/build/extract';
 
-        $files = $document->getFile();
-
-        $this->assertCount(2, $files);
-
-        AbstractPackageExtractorTest::cleanupTmpDir($tmpDir);
+        // $this->expectException(\UnexpectedValueException::class);
+        $this->extractor->extract($srcFile, $targetPath);
     }
 }

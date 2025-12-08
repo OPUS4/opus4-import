@@ -34,39 +34,33 @@ namespace Opus\Import\Extract;
 use Exception;
 use ZipArchive;
 
-use function is_readable;
-
-use const DIRECTORY_SEPARATOR;
-
+/**
+ * Unpacks ZIP files.
+ */
 class ZipPackageExtractor extends AbstractPackageExtractor
 {
     public function __construct()
     {
-        parent::__construct();
-
         $this->setSupportedMimeTypes([
-            'appliction/zip',
+            'application/zip',
         ]);
     }
 
     /**
-     * @param string $filePath
+     * @param string $srcPath
+     * @param string $targetPath
+     * @return void
      * @throws Exception
      */
-    public function extract($filePath)
+    public function extractFile($srcPath, $targetPath)
     {
-        $filename = $filePath . DIRECTORY_SEPARATOR . 'package.zip';
-        $this->getLogger()->info('processing ZIP package in file system ' . $filename);
-
-        if (! is_readable($filename)) {
-            $errMsg = 'ZIP package ' . $filename . ' is not readable!';
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
+        $zip    = new ZipArchive();
+        $result = $zip->open($srcPath);
+        if ($result !== true) {
+            // TODO more detailed error message
+            throw new Exception('Unable to open zip file');
         }
-
-        $zip = new ZipArchive();
-        $zip->open($filename);
-        $zip->extractTo($filePath . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
+        $zip->extractTo($targetPath);
         $zip->close();
     }
 }
