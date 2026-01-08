@@ -25,30 +25,36 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Extract;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
-
-class ArrayImportTest extends TestCase
+/**
+ * Interface for classes that can unpack package formats like ZIP or TAR.
+ *
+ * An interface is used to isolate the import code from specific formats
+ * and allow adding support for new formats in the future without changes
+ * to the existing code.
+ */
+interface PackageExtractorInterface
 {
-    public function testImport()
-    {
-        $importer = new ArrayImport();
+    /**
+     * @param string      $srcPath
+     * @param string|null $targetPath
+     * @return string Path to folder with extracted files.
+     */
+    public function extract($srcPath, $targetPath = null);
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
-    }
+    /**
+     * @return string[]|null
+     */
+    public function getSupportedMimeTypes();
+
+    /**
+     * @param string $mimeType
+     * @return bool
+     */
+    public function isSupportedMimeType($mimeType);
 }

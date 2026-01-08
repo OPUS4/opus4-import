@@ -25,37 +25,44 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2022
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import;
 
 use Exception;
-use PharData;
+use Opus\Import\Extract\PackageExtractor;
 
-use function is_readable;
-
-use const DIRECTORY_SEPARATOR;
-
-class TarPackageReader extends AbstractPackageReader
+/**
+ * Factory class for objects implementing PackageHandlerInterface.
+ *
+ * The import, the SWORD interface, should be able support multiple package formats. Currently there is only the
+ * OPUS4 package format, that can be submitted as ZIP or TAR file.
+ *
+ * TODO Could there be more specific MIME-Types? ZIP does not say how the data is structured inside.
+ */
+class PackageHandler
 {
     /**
-     * @param string $dirName
-     * @throws Exception
+     * @param string $mimeType
+     * @return PackageHandlerInterface|null
+     *
+     * TODO Use custom (MimeType)NotSupported exception?
      */
-    protected function extractPackage($dirName)
+    public static function getPackageHandler($mimeType)
     {
-        $filename = $dirName . DIRECTORY_SEPARATOR . 'package.tar';
-        $this->getLogger()->info('processing TAR package in file system ' . $filename);
+        $handler = new OpusPackageHandler();
 
-        if (! is_readable($filename)) {
-            $errMsg = 'TAR package ' . $filename . ' is not readable!';
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
+        // TODO setup extrator for MIME type
+        $extractor = PackageExtractor::getExtractor($mimeType);
+
+        if ($extractor === null) {
+            throw new Exception('Content-Type ' . $mimeType . ' is not supported');
         }
 
-        $phar = new PharData($filename);
-        $phar->extractTo($dirName . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
+        $handler->setExtractor($extractor);
+
+        return $handler;
     }
 }

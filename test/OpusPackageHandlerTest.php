@@ -25,30 +25,18 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use OpusTest\Import\TestAsset\TestCase;
 
-class ArrayImportTest extends TestCase
+class OpusPackageHandlerTest extends TestCase
 {
-    public function testImport()
+    public function testProcessPackage()
     {
-        $importer = new ArrayImport();
-
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
+        $this->markTestIncomplete('NOT IMPLEMENTED - API CHANGING');
     }
 }

@@ -25,30 +25,31 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use Exception;
+use Opus\Import\OpusPackageHandler;
+use Opus\Import\PackageHandler;
+use OpusTest\Import\TestAsset\TestCase;
 
-class ArrayImportTest extends TestCase
+class PackageHandlerTest extends TestCase
 {
-    public function testImport()
+    public function testGetPackageHandler()
     {
-        $importer = new ArrayImport();
+        $handler = PackageHandler::getPackageHandler('application/zip');
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
+        $this->assertNotNull($handler);
+        $this->assertInstanceOf(OpusPackageHandler::class, $handler);
+    }
+
+    public function testGetPackageHandlerUnknownFormat()
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('not supported');
+        PackageHandler::getPackageHandler('application/rar');
     }
 }

@@ -25,30 +25,43 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Extract;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
-
-class ArrayImportTest extends TestCase
+/**
+ * Factory class for getting package extractor for MIME-type.
+ */
+class PackageExtractor
 {
-    public function testImport()
-    {
-        $importer = new ArrayImport();
+    /** @var PackageExtractorInterface[] */
+    private $extractors;
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
+    private function __construct()
+    {
+        // TODO make configurable
+        $this->extractors = [
+            new ZipPackageExtractor(),
+            new TarPackageExtractor(),
+        ];
+    }
+
+    /**
+     * @param string $mimeType
+     * @return PackageExtractorInterface|null
+     */
+    public static function getExtractor($mimeType)
+    {
+        $helper = new PackageExtractor();
+
+        foreach ($helper->extractors as $extractor) {
+            if ($extractor->isSupportedMimeType($mimeType)) {
+                return $extractor;
+            }
+        }
+
+        return null;
     }
 }

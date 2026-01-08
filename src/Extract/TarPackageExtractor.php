@@ -25,30 +25,35 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Extract;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use PharData;
 
-class ArrayImportTest extends TestCase
+/**
+ * Unpacks TAR files.
+ */
+class TarPackageExtractor extends AbstractPackageExtractor
 {
-    public function testImport()
+    public function __construct()
     {
-        $importer = new ArrayImport();
-
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
+        $this->setSupportedMimeTypes([
+            'application/tar',
+            'application/x-tar',
         ]);
+    }
+
+    /**
+     * @param string $srcPath
+     * @param string $targetPath
+     * @return void
+     */
+    public function extractFile($srcPath, $targetPath)
+    {
+        $phar = new PharData($srcPath);
+        $phar->extractTo($targetPath);
     }
 }

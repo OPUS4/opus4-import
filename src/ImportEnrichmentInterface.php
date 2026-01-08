@@ -25,30 +25,26 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
-
-class ArrayImportTest extends TestCase
+interface ImportEnrichmentInterface
 {
-    public function testImport()
-    {
-        $importer = new ArrayImport();
+    /** Authenticated user account that performed the import. */
+    const OPUS_IMPORT_USER = 'opus.import.user';
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
-    }
+    /** Date of import. */
+    const OPUS_IMPORT_DATE = 'opus.import.date';
+
+    /** Name of import file. */
+    const OPUS_IMPORT_FILE = 'opus.import.file';
+
+    /** Checksum of import file. */
+    const OPUS_IMPORT_CHECKSUM = 'opus.import.checksum';
+
+    /** Source of added document like SWORD or the publish form. */
+    const OPUS_SOURCE = 'opus.source';
 }

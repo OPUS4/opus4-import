@@ -25,30 +25,47 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace OpusTest\Import\Extract;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use Opus\Import\Extract\PackageExtractor;
+use Opus\Import\Extract\TarPackageExtractor;
+use Opus\Import\Extract\ZipPackageExtractor;
+use OpusTest\Import\TestAsset\TestCase;
 
-class ArrayImportTest extends TestCase
+class PackageExtractorTest extends TestCase
 {
-    public function testImport()
+    public function testGetExtractorForZip()
     {
-        $importer = new ArrayImport();
+        $extractor = PackageExtractor::getExtractor('application/zip');
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
+        $this->assertNotNull($extractor);
+        $this->assertInstanceOf(ZipPackageExtractor::class, $extractor);
+    }
+
+    public function testGetExtractorForTar()
+    {
+        $extractor = PackageExtractor::getExtractor('application/tar');
+
+        $this->assertNotNull($extractor);
+        $this->assertInstanceOf(TarPackageExtractor::class, $extractor);
+
+        $extractor = PackageExtractor::getExtractor('application/x-tar');
+
+        $this->assertNotNull($extractor);
+        $this->assertInstanceOf(TarPackageExtractor::class, $extractor);
+    }
+
+    public function testGetExtractorUnsupportedMimeType()
+    {
+        $this->assertNull(PackageExtractor::getExtractor('application/x-rar-compressed'));
+    }
+
+    public function testMimeTypeCaseInsensitive()
+    {
+        $this->assertNotNull(PackageExtractor::getExtractor('APPlicaTION/ZIP'));
     }
 }

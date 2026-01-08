@@ -41,10 +41,7 @@ use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Zend_Exception;
 
 use function file_get_contents;
-use function is_dir;
 use function is_readable;
-use function is_writable;
-use function mkdir;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
@@ -54,15 +51,16 @@ use const DIRECTORY_SEPARATOR;
  * the documents.
  *
  * Currently ZIP and TAR files are supported by extending classes.
+ *
+ * TODO use OutputInterface
  */
-abstract class AbstractPackageReader
+class OpusPackageHandler extends AbstractPackageHandler
 {
+    // TODO make configurable with opus.xml as default if no configuration exists
     const METADATA_FILENAME = 'opus.xml';
 
-    const EXTRACTION_DIR_NAME = 'extracted';
-
     /** @var AdditionalEnrichments */
-    private $additionalEnrichments;
+    private $additionalEnrichments; // TODO additional enrichments should be something configurable/extendable
 
     /**
      * Sets additional enrichments that will be added to every imported document.
@@ -86,6 +84,8 @@ abstract class AbstractPackageReader
      * @throws ModelException
      * @throws SecurityException
      * @throws Zend_Exception
+     *
+     * TODO get rid of enableSwordContext, instead use new SwordImporter class (use inheritance)
      */
     private function processOpusXML($xml, $dirName)
     {
@@ -100,49 +100,8 @@ abstract class AbstractPackageReader
 
         $importer->run();
 
+        // TODO ImportStatusDocument is SWORD specific - separate package import from SWORD
         return $importer->getStatusDoc();
-    }
-
-    /**
-     * @param string $dirName
-     */
-    abstract protected function extractPackage($dirName);
-
-    /**
-     * Verarbeitet das Paket im übergebenen Verzeichnis $dirName. Entpackt das Verzeichnis in ein Unterverzeichnis
-     * mit dem Namen EXTRACTION_DIR_NAME. Anschließend wird die entpackte Metadaten-Datei opus.xml verarbeitet.
-     * Bei der Verarbeitung der XML-Datei werden entpackte Volltextdateien verarbeitet.
-     *
-     * @param string $dirName
-     * @return ImportStatusDocument
-     * @throws Zend_Exception
-     *
-     * TODO improve readability of code - readPackage extracts the package into a folder and then calls processPackage
-     *      from the outside it is the function that "processes the package"
-     *      the way these functions are chained makes it hard to add additional steps to the process - either the
-     *      calling function should call read... first and then process... or probalby better process.. should call
-     *      read... as one of its processing steps
-     */
-    public function readPackage($dirName)
-    {
-        $this->getLogger()->info('processing package in directory ' . $dirName);
-
-        if (! (is_dir($dirName) && is_readable($dirName))) {
-            $errMsg = 'directory ' . $dirName . ' is not readable!';
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
-        }
-
-        $extractDir = $this->createExtractionDir($dirName);
-        if ($extractDir === null) {
-            $errMsg = 'could not create extraction directory ' . $dirName;
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
-        }
-
-        $this->extractPackage($dirName);
-
-        return $this->processPackage($extractDir);
     }
 
     /**
@@ -163,9 +122,26 @@ abstract class AbstractPackageReader
      * @return null|ImportStatusDocument
      * @throws Zend_Exception
      */
-    private function processPackage($extractDir)
+    public function processPackage($extractDir)
     {
-        $metadataFile = $extractDir . DIRECTORY_SEPARATOR . self::METADATA_FILENAME;
+        $metadataXml = $this->getMetadataXml($extractDir);
+
+        if ($metadataXml === null) {
+            // TODO What should be returned/thrown?
+            return null;
+        }
+
+        return $this->processOpusXML($metadataXml, $extractDir);
+    }
+
+    /**
+     * @param string $dirName
+     * @return string|null
+     * @throws Zend_Exception
+     */
+    protected function getMetadataXml($dirName)
+    {
+        $metadataFile = $dirName . DIRECTORY_SEPARATOR . self::METADATA_FILENAME;
         if (! is_readable($metadataFile)) {
             $this->getLogger()->err('missing metadata file ' . $metadataFile);
             return null;
@@ -177,36 +153,6 @@ abstract class AbstractPackageReader
             return null;
         }
 
-        return $this->processOpusXML($content, $extractDir);
-    }
-
-    /**
-     * Erzeugt ein Verzeichnis, in dem der Paketinhalt extrahiert werden kann.
-     * Liefert den Pfad des Extraktionsverzeichnisses zurück oder null, wenn
-     * es nicht erzeugt werden konnte;
-     *
-     * @param string $baseDir Basisverzeichnis, in das Extraktionsverzeichnis angelegt werden soll.
-     * @return string|null Absoluter Pfad zum Extraktionsverzeichnis
-     * @throws Zend_Exception
-     */
-    private function createExtractionDir($baseDir)
-    {
-        $extractDir = $baseDir . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME;
-        if (mkdir($extractDir) === false) {
-            $this->getLogger()->err('could not create extraction directory ' . $extractDir);
-            return null;
-        }
-
-        if (! is_readable($extractDir)) {
-            $this->getLogger()->err('extraction directory is not readable: ' . $extractDir);
-            return null;
-        }
-
-        if (! is_writable($extractDir)) {
-            $this->getLogger()->err('extraction directory is not writable: ' . $extractDir);
-            return null;
-        }
-
-        return $extractDir;
+        return $content;
     }
 }

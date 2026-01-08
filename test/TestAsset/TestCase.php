@@ -33,17 +33,11 @@ namespace OpusTest\Import\TestAsset;
 
 use Opus\Common\Config;
 use Opus\Db\Util\DatabaseHelper;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 use Zend_Config;
 
-use function array_diff;
-use function is_dir;
-use function rmdir;
-use function scandir;
-use function unlink;
-
-use const DIRECTORY_SEPARATOR;
+use function realpath;
 
 /**
  * Superclass for all tests.  Providing maintenance tasks.
@@ -61,35 +55,25 @@ class TestCase extends SimpleTestCase
      *
      * @param string|null $directory
      */
-    protected function clearFiles($directory = null)
+    protected function clearFiles($directory = null): void
     {
+        if (empty(APPLICATION_PATH)) {
+            return;
+        }
+
         if ($directory === null) {
-            if (empty(APPLICATION_PATH)) {
+            $directory = Path::join(APPLICATION_PATH, 'build/workspace/files');
+        } else {
+            $applicationPath = Path::join(realpath(APPLICATION_PATH), 'build');
+            $basePath        = Path::getLongestCommonBasePath($applicationPath, realpath($directory));
+            if ($basePath !== $applicationPath) {
+                // do not remove directories outside of APPLICATION_PATH
                 return;
             }
-            $filesDir = APPLICATION_PATH . DIRECTORY_SEPARATOR . 'build' . DIRECTORY_SEPARATOR . 'workspace'
-            . DIRECTORY_SEPARATOR . 'files';
-            $files    = array_diff(scandir($filesDir), ['.', '..', '.gitignore']);
-        } else {
-            $filesDir = $directory;
-            $files    = array_diff(scandir($filesDir), ['.', '..']);
         }
 
-        foreach ($files as $file) {
-            $path = $filesDir . DIRECTORY_SEPARATOR . $file;
-
-            if (is_dir($path)) {
-                $this->clearFiles($path);
-            } else {
-                unlink($path);
-            }
-        }
-
-        if ($directory !== null) {
-            rmdir($directory);
-        }
-
-        return;
+        $filesystem = new Filesystem();
+        $filesystem->remove($directory);
     }
 
     /**
@@ -105,9 +89,10 @@ class TestCase extends SimpleTestCase
 
     protected function tearDown(): void
     {
-        parent::tearDown();
+        $filesystem = new Filesystem();
+        $filesystem->remove(APPLICATION_PATH . '/build/workspace/tmp');
 
-        self::cleanupTmpDir(APPLICATION_PATH . '/build/workspace/tmp');
+        parent::tearDown();
     }
 
     /**
@@ -117,23 +102,5 @@ class TestCase extends SimpleTestCase
     {
         $config = new Zend_Config([], true);
         Config::set($config->merge(Config::get()));
-    }
-
-    /**
-     * Empties the workspace tmp directory.
-     *
-     * @param string $tmpDirName
-     */
-    public static function cleanupTmpDir($tmpDirName)
-    {
-        $it    = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
-        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-        foreach ($files as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
     }
 }
