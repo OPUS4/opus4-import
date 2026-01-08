@@ -25,44 +25,49 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2024, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Console;
 
-use Exception;
-use Opus\Import\Extract\PackageExtractor;
+use Opus\Common\Document;
+use Opus\Common\Model\NotFoundException;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Factory class for objects implementing PackageHandlerInterface.
- *
- * The import, the SWORD interface, should be able support multiple package formats. Currently there is only the
- * OPUS4 package format, that can be submitted as ZIP or TAR file.
- *
- * TODO Could there be more specific MIME-Types? ZIP does not say how the data is structured inside.
+ * Imports Yaml as OPUS4 document.
  */
-class PackageHandler
+class YamlImportCommand extends Command
 {
     /**
-     * @param string $mimeType
-     * @return PackageHandlerInterface|null
-     *
-     * TODO Use custom (MimeType)NotSupported exception?
+     * @return void
      */
-    public static function getPackageHandler($mimeType)
+    protected function configure()
     {
-        $handler = new OpusPackageHandler();
+        parent::configure();
 
-        // TODO setup extrator for MIME type
-        $extractor = PackageExtractor::getExtractor($mimeType);
+        $help = <<<EOT
+<error>NOT IMPLEMENTED YET</error>
 
-        if ($extractor === null) {
-            throw new Exception('Content-Type ' . $mimeType . ' is not supported');
-        }
+The <fg=green>yaml:import</> command can be used to import documents
+from Yaml files. 
+EOT;
 
-        $handler->setExtractor($extractor);
+        $this->setName('yaml:import')
+            ->setDescription('Import document from Yaml file')
+            ->setHelp($help);
+    }
 
-        return $handler;
+    /**
+     * @throws NotFoundException
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $doc = Document::new();
+
+        return self::SUCCESS;
     }
 }

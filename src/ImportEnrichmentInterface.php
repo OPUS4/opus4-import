@@ -25,44 +25,26 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2024, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import;
 
-use Exception;
-use Opus\Import\Extract\PackageExtractor;
-
-/**
- * Factory class for objects implementing PackageHandlerInterface.
- *
- * The import, the SWORD interface, should be able support multiple package formats. Currently there is only the
- * OPUS4 package format, that can be submitted as ZIP or TAR file.
- *
- * TODO Could there be more specific MIME-Types? ZIP does not say how the data is structured inside.
- */
-class PackageHandler
+interface ImportEnrichmentInterface
 {
-    /**
-     * @param string $mimeType
-     * @return PackageHandlerInterface|null
-     *
-     * TODO Use custom (MimeType)NotSupported exception?
-     */
-    public static function getPackageHandler($mimeType)
-    {
-        $handler = new OpusPackageHandler();
+    /** Authenticated user account that performed the import. */
+    const OPUS_IMPORT_USER = 'opus.import.user';
 
-        // TODO setup extrator for MIME type
-        $extractor = PackageExtractor::getExtractor($mimeType);
+    /** Date of import. */
+    const OPUS_IMPORT_DATE = 'opus.import.date';
 
-        if ($extractor === null) {
-            throw new Exception('Content-Type ' . $mimeType . ' is not supported');
-        }
+    /** Name of import file. */
+    const OPUS_IMPORT_FILE = 'opus.import.file';
 
-        $handler->setExtractor($extractor);
+    /** Checksum of import file. */
+    const OPUS_IMPORT_CHECKSUM = 'opus.import.checksum';
 
-        return $handler;
-    }
+    /** Source of added document like SWORD or the publish form. */
+    const OPUS_SOURCE = 'opus.source';
 }

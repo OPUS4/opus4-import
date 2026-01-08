@@ -37,6 +37,8 @@ use Opus\Common\Model\NotFoundException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function yaml_emit;
+
 /**
  * TODO move to opus4-export OR opus4-yaml OR ?
  */
@@ -47,8 +49,10 @@ class YamlExportCommand extends AbstractDocumentCommand
         parent::configure();
 
         $help = <<<EOT
-The <fg=green>yaml:export</> command can be used to export documents
-as Yaml files. 
+<error>NOT FULLY IMPLEMENTED YET</error>
+
+The <fg=green>yaml:export</> command can be used to export a document
+as Yaml file. 
 EOT;
 
         $this->setName('yaml:export')
@@ -65,10 +69,10 @@ EOT;
 
         $docId = $this->startId;
 
-        $doc = Document::get($docId);
+        $doc  = Document::get($docId);
         $data = $doc->toArray();
 
-        var_dump(yaml_emit($data));
+        $output->writeln(yaml_emit($data));
 
         return self::SUCCESS;
     }

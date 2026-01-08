@@ -58,9 +58,12 @@ class ZipPackageExtractor extends AbstractPackageExtractor
         $result = $zip->open($srcPath);
         if ($result !== true) {
             // TODO more detailed error message
-            throw new Exception('Unable to open zip file');
+            throw new Exception('Unable to open file');
         }
-        $zip->extractTo($targetPath);
+        $result = $zip->extractTo($targetPath);
+        if ($result !== true) {
+            throw new Exception('Unable to extract zip file');
+        }
         $zip->close();
     }
 }

@@ -93,7 +93,11 @@ abstract class AbstractPackageExtractor implements PackageExtractorInterface
      */
     public function isSupportedMimeType($mimeType)
     {
-        return in_array(strtolower($mimeType), $this->supportedMimeTypes);
+        if ($mimeType === null) {
+            return false;
+        } else {
+            return in_array(strtolower($mimeType), $this->supportedMimeTypes);
+        }
     }
 
     /**
@@ -101,8 +105,6 @@ abstract class AbstractPackageExtractor implements PackageExtractorInterface
      * @param string|null $targetPath
      * @return string Path to extracted files.
      * @throws Exception
-     *
-     * TODO nove common part to base class?
      */
     public function extract($srcPath, $targetPath = null)
     {

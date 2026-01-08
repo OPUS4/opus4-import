@@ -40,6 +40,9 @@ use Opus\Common\Log;
 use function count;
 use function trim;
 
+/**
+ * TODO make generic or move to opus4-sword (What is the concept here? Is SWORD specific?)
+ */
 class ImportCollection
 {
     /** @var CollectionInterface */
@@ -113,7 +116,7 @@ class ImportCollection
     }
 
     /**
-     * @return Collection
+     * @return CollectionInterface
      */
     public function getCollection()
     {

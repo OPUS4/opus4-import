@@ -88,9 +88,25 @@ class AbstractPackageExtractorTest extends TestCase
         );
     }
 
+    public function testIsSupportedMimeTypeTrue()
+    {
+        $method = $this->getMethod('setSupportedMimeTypes');
+
+        $this->assertEquals($this->mock, $method->invoke($this->mock, [
+            'application/x-tar',
+        ]));
+
+        $this->assertTrue($this->mock->isSupportedMimeType('application/x-tar'));
+    }
+
     public function testIsSupportedMimeTypeFalse()
     {
         $this->assertFalse($this->mock->isSupportedMimeType('application/zip'));
+    }
+
+    public function testIsSupportedMimeTypeForNull()
+    {
+        $this->assertFalse($this->mock->isSupportedMimeType(null));
     }
 
     public function testIsSupportedMimeTypeCaseInsensitive()

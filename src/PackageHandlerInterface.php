@@ -33,5 +33,11 @@ namespace Opus\Import;
 
 interface PackageHandlerInterface
 {
-
+    /**
+     * @param string $filePath Path to package files
+     * @return mixed
+     *
+     * TODO support data directly as parameter - maybe second function?
+     */
+    public function handlePackage($filePath);
 }

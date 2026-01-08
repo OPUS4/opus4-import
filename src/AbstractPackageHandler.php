@@ -31,22 +31,15 @@
 
 namespace Opus\Import;
 
-use Exception;
 use Opus\App\Common\ApplicationException;
 use Opus\App\Common\Configuration;
-use Opus\Import\Extract\PackageExtractor;
-use Opus\Import\Extract\TarPackageExtractor;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
+use Opus\Common\LoggingTrait;
+use Opus\Import\Extract\PackageExtractorInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
-use function file_put_contents;
-use function is_readable;
-use function md5;
 use function mkdir;
-use function rand;
-use function rmdir;
-use function time;
-use function unlink;
+use function rtrim;
+use function uniqid;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -55,22 +48,21 @@ use const DIRECTORY_SEPARATOR;
  *
  * This class should be extended to support specific package formats.
  */
-class AbstractPackageHandler implements PackageHandlerInterface
+abstract class AbstractPackageHandler implements PackageHandlerInterface
 {
+    use LoggingTrait;
+
     /** @var AdditionalEnrichments */
     private $additionalEnrichments;
 
     /** @var string */
     private $packageType;
 
-    /**
-     * @param string $contentType
-     * @throws Exception
-     */
-    public function __construct($contentType)
-    {
-        $this->setPackageType($contentType);
-    }
+    /** @var PackageExtractorInterface */
+    private $extractor;
+
+    /** @var bool */
+    private $cleanupEnabled = false;
 
     /**
      * @param AdditionalEnrichments $additionalEnrichments
@@ -81,127 +73,124 @@ class AbstractPackageHandler implements PackageHandlerInterface
     }
 
     /**
-     * @param string $contentType
-     * @throws Exception
-     */
-    private function setPackageType($contentType)
-    {
-        if ($contentType === null || $contentType === false) {
-            throw new Exception('Content-Type header is required');
-        }
-
-        $extractor = PackageExtractor::getExtractor($contentType);
-
-        if ($extractor === null) {
-            throw new Exception("Content-Type '{$contentType}' is currently not supported");
-        }
-
-        $this->packageType = $contentType;
-    }
-
-    /**
      * Verarbeitet die mit dem SWORD-Request übergebene Paketdatei.
      *
      * @param string $filePath Path to package file
      * @return ImportStatusDocument|null
+     *
+     * TODO rename "process" or "import"?
      */
     public function handlePackage($filePath)
     {
-        $packageReader = $this->getPackageReader();
-        if ($packageReader === null) {
-            // TODO improve error handling
-            return null;
-        }
-
-        $tmpDirName = null;
         try {
-            $tmpDirName = $this->createTmpDir($payload);
-            $this->savePackage($payload, $tmpDirName);
+            $extractedPath = $this->extractPackage($filePath);
 
-            $statusDoc = $packageReader->readPackage($tmpDirName);
+            $statusDoc = $this->processPackage($extractedPath);
         } finally {
-            // TODO copy file before cleanup if error occured
-            if ($tmpDirName !== null) {
-                $this->cleanupTmpDir($tmpDirName);
-            }
+            $this->cleanup($extractedPath);
         }
         return $statusDoc;
     }
 
     /**
-     * Entfernt das zuvor erzeugte temporäre Verzeichnis für die Extraktion des Paketinhalts.
-     * Das Verzeichnis enthält Dateien und ein Unterverzeichnis. Daher ist ein rekursives Löschen
-     * erforderlich.
+     * @param string $filePath
+     * @return null|ImportStatusDocument
      *
-     * @param string $tmpDirName
+     * TODO rename processData?
      */
-    private function cleanupTmpDir($tmpDirName)
-    {
-        $it    = new RecursiveDirectoryIterator($tmpDirName, RecursiveDirectoryIterator::SKIP_DOTS);
-        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-        foreach ($files as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($tmpDirName);
-    }
-
-    /**
-     * Liefert in Abhängigkeit vom zu verarbeitenden Pakettyp ein passendes Objekt zum Einlesen des Pakets zurück.
-     * Liefert null zurück, wenn der Pakettyp nicht verarbeitet werden kann.
-     *
-     * @return OpusPackageHandler
-     *
-     * TODO make types configurable and remove explicit TAR/ZIP declarations in this class (use factory class?)
-     */
-    private function getPackageReader()
-    {
-        $extractor = PackageExtractor::getExtractor($this->packageType);
-
-        if ($extractor === null) {
-            throw new Exception("Content-Type '{$this->packageType}' is currently not supported");
-        }
-        // TODO $packageReader->setAdditionalEnrichments($this->additionalEnrichments);
-        return $extractor;
-    }
-
-    /**
-     * Speichert die übergebene Payload als Datei im übergebenen Verzeichnis ab.
-     *
-     * @param string $payload
-     * @param string $tmpDir
-     *
-     * TODO save package into import folder (no longer temporary file)
-     */
-    private function savePackage($payload, $tmpDir)
-    {
-        $tmpFileName = $tmpDir . DIRECTORY_SEPARATOR . 'package.' . $this->packageType;
-        file_put_contents($tmpFileName, $payload);
-    }
+    abstract public function processPackage($filePath);
 
     /**
      * Erzeugt ein temporäres Verzeichnis, in dem die mit dem SWORD-Request übergebene Datei zwischengespeichert werden
      * kann. Die Methode gibt den absoluten Pfad des Verzeichnisses zurück.
      *
-     * @param string $payload der Inhalt des SWORD-Packages
-     * @return string absoluter Pfad des temporären Ablageverzeichnisses
+     * @return string Pfad zum temporären Ablageverzeichnis
      * @throws ApplicationException
      */
-    private function createTmpDir($payload)
+    protected function createTempDir()
     {
-        $baseDirName = Configuration::getInstance()->getTempPath()
-            . DIRECTORY_SEPARATOR . md5($payload) . '-' . time() . '-' . rand(10000, 99999);
-        $suffix      = 0;
-        $dirName     = "$baseDirName-$suffix";
-        while (is_readable($dirName)) {
-            // add another suffix to make file name unique (even if collision events are not very likely)
-            $suffix++;
-            $dirName = "$baseDirName-$suffix";
+        $tempBaseDir = Configuration::getInstance()->getTempPath();
+        $mode        = 0700;
+        $prefix      = 'opus4-import-';
+
+        $tempBaseDir = rtrim($tempBaseDir, DIRECTORY_SEPARATOR);
+
+        do {
+            $tempDir = $tempBaseDir . DIRECTORY_SEPARATOR . uniqid($prefix);
+        } while (! mkdir($tempDir, $mode));
+
+        return $tempDir;
+    }
+
+    /**
+     * @param string $filePath
+     * @return string Path to extracted files
+     */
+    protected function extractPackage($filePath)
+    {
+        $extractor = $this->getExtractor();
+
+        if ($extractor === null) {
+            // TODO throw exception or support not unpacking package (for handling folder?)
+            return null;
         }
-        mkdir($dirName);
-        return $dirName;
+
+        $extractPath = $this->createTempDir();
+
+        $extractor->extract($filePath, $extractPath);
+
+        $this->setCleanupEnabled(true);
+
+        return $extractPath;
+    }
+
+    /**
+     * @param string $extractedPath
+     * @return void
+     *
+     * TODO it should not be necessary to pass the path here
+     */
+    protected function cleanup($extractedPath)
+    {
+        if ($this->isCleanupEnabled() && $extractedPath !== null) {
+            $filesystem = new Filesystem();
+            $filesystem->remove($extractedPath);
+        }
+    }
+
+    /**
+     * @return PackageExtractorInterface
+     */
+    public function getExtractor()
+    {
+        return $this->extractor;
+    }
+
+    /**
+     * @param PackageExtractorInterface $extractor
+     * @return $this
+     */
+    public function setExtractor($extractor)
+    {
+        $this->extractor = $extractor;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCleanupEnabled()
+    {
+        return $this->cleanupEnabled;
+    }
+
+    /**
+     * @param bool $cleanupEnabled
+     * @return $this
+     */
+    public function setCleanupEnabled($cleanupEnabled)
+    {
+        $this->cleanupEnabled = $cleanupEnabled;
+        return $this;
     }
 }

@@ -25,66 +25,62 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Extract;
+namespace OpusTest\Import;
 
-use Exception;
-use Opus\Import\Extract\ZipPackageExtractor;
+use Opus\Common\Document;
+use Opus\Common\Enrichment;
+use Opus\Import\AdditionalEnrichments;
+use Opus\Import\ImportEnrichmentInterface;
 use OpusTest\Import\TestAsset\TestCase;
-use Symfony\Component\Filesystem\Filesystem;
 
-use const DIRECTORY_SEPARATOR;
-
-class ZipPackageExtractorTest extends TestCase
+class AdditionalEnrichmentsTest extends TestCase
 {
-    /** @var ZipPackageExtractor */
-    private $extractor;
+    /** @var string */
+    protected $additionalResources = 'database';
 
-    /** @var string[] */
-    private $cleanupPaths = [];
+    /** @var AdditionalEnrichments */
+    private $enrichments;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->extractor = new ZipPackageExtractor();
+
+        $this->enrichments = new AdditionalEnrichments();
     }
 
-    public function tearDown(): void
+    public function testGetImportDate()
     {
-        $filesystem = new Filesystem();
-        foreach ($this->cleanupPaths as $path) {
-            $filesystem->remove($path);
-        }
-        parent::tearDown();
+        $importDate = $this->enrichments->getValue(ImportEnrichmentInterface::OPUS_IMPORT_DATE);
+        $this->assertNotNull($importDate);
+        $this->assertIsString($importDate);
     }
 
-    public function testExtractToTargetPath()
+    public function testAddEnrichment()
     {
-        $srcFile    = APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip';
-        $targetPath = APPLICATION_PATH . '/build/extract';
-
-        $extractPath = $this->extractor->extract($srcFile, $targetPath);
-
-        $this->assertFileExists($extractPath);
-
-        $this->cleanupPaths[] = $extractPath;
-
-        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'opus.xml');
-        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'doc1.xml');
-        $this->assertFileExists($extractPath . DIRECTORY_SEPARATOR . 'doc1.pdf');
+        $this->enrichments->addEnrichment('myKey', 'myValue');
+        $this->assertEquals('myValue', $this->enrichments->getValue('myKey'));
     }
 
-    public function testExtractSrcPathNotZip()
+    /**
+     * This test makes sure we can use the import enrichments without having to register them ahead of
+     * time. the foreign key relationship for enrichments in the database, was removed a while ago.
+     */
+    public function testStoringUnregisteredEnrichments()
     {
-        $srcFile = APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar';
+        $doc        = Document::new();
+        $enrichment = Enrichment::new();
+        $enrichment->setKeyName('UnknownEnrichment');
+        $enrichment->setValue('TestValue1');
+        $doc->addEnrichment($enrichment);
+        $docId = $doc->store();
 
-        $targetPath = APPLICATION_PATH . '/build/extract';
+        $doc = Document::get($docId);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Unable to open file');
-        $this->extractor->extract($srcFile, $targetPath);
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('TestValue1', $doc->getEnrichment(0)->getValue());
     }
 }
