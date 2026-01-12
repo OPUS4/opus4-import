@@ -89,8 +89,7 @@ class OpusPackageHandler extends AbstractPackageHandler
      */
     private function processOpusXML($xml, $dirName)
     {
-        $importer = new Importer($xml, false, $this->getLogger());
-        $importer->enableSwordContext();
+        $importer = new SwordImporter($xml, false, $this->getLogger());
         $importer->setImportDir($dirName);
 
         $importer->setAdditionalEnrichments($this->additionalEnrichments);
@@ -118,20 +117,20 @@ class OpusPackageHandler extends AbstractPackageHandler
      * Liefert null, wenn das Paket kein Metadaten-Dokument enthält oder
      * dieses leer ist.
      *
-     * @param string $extractDir Pfad zum Extraktionsverzeichnis
+     * @param string $filePath Pfad zum Extraktionsverzeichnis
      * @return null|ImportStatusDocument
      * @throws Zend_Exception
      */
-    public function processPackage($extractDir)
+    public function processPackage($filePath)
     {
-        $metadataXml = $this->getMetadataXml($extractDir);
+        $metadataXml = $this->getMetadataXml($filePath);
 
         if ($metadataXml === null) {
             // TODO What should be returned/thrown?
             return null;
         }
 
-        return $this->processOpusXML($metadataXml, $extractDir);
+        return $this->processOpusXML($metadataXml, $filePath);
     }
 
     /**

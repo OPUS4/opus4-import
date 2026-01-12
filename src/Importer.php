@@ -66,7 +66,6 @@ use function hash_file;
 use function intval;
 use function is_readable;
 use function pathinfo;
-use function scandir;
 use function strcasecmp;
 use function strlen;
 use function substr;
@@ -78,13 +77,8 @@ use const FILEINFO_MIME_TYPE;
 use const PATHINFO_EXTENSION;
 
 /**
- * TODO behavior of this importer changes depending swordContext - It means special handling code in various places.
- *      With every new context, every new use case this code will get more complicated. It would be better if the
- *      different context would be implemented in separate classes that extend a base class providing common
- *      functionality.
- *
- * TODO all those private functions make testing difficult and prevent this class from being extended to customize
- *      the import process - revisit the design of this class
+ * TODO document loggers
+ * TODO use OutputInterface?
  */
 class Importer
 {
@@ -106,15 +100,8 @@ class Importer
     /** @var array */
     private $fieldsToKeepOnUpdate = [];
 
-    // variables used in SWORD context
-    /** @var bool */
-    private $swordContext = false;
-
     /** @var string */
     private $importDir;
-
-    /** @var mixed */
-    private $statusDoc;
 
     /**
      * Additional enrichments that will be added to each imported document.
@@ -131,17 +118,17 @@ class Importer
     /** @var bool */
     private $singleDocImport = false;
 
-    /**
-     * Last imported document.
-     *
-     * Contains the document object if the import was successful.
-     *
-     * @var DocumentInterface
-     */
+    /** @var DocumentInterface Last imported document. Contains the document object if the import was successful. */
     private $document;
 
     /** @var XmlDocument */
     private $xmlDocument;
+
+    /** @var bool */
+    private $updateExistingDocuments = true;
+
+    /** @var bool */
+    private $filesAdded = false;
 
     /**
      * @param string        $xml
@@ -163,33 +150,31 @@ class Importer
     }
 
     /**
-     * @return mixed
+     * @param string $path
+     * @return $this
      */
-    public function getStatusDoc()
+    public function setImportDir($path)
     {
-        return $this->statusDoc;
-    }
-
-    public function enableSwordContext()
-    {
-        $this->swordContext = true;
-        $this->statusDoc    = new ImportStatusDocument();
-    }
-
-    /**
-     * @param string $imporDir
-     */
-    public function setImportDir($imporDir)
-    {
-        $this->importDir = trim($imporDir);
+        $this->importDir = trim($path);
         // always ensure that importDir ends with a directory separator
         if (substr($this->importDir, -1) !== DIRECTORY_SEPARATOR) {
             $this->importDir .= DIRECTORY_SEPARATOR;
         }
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getImportDir()
+    {
+        return $this->importDir;
     }
 
     /**
      * @param AdditionalEnrichments $additionalEnrichments
+     *
+     * TODO generalize? explain concept, additional enrichments before/after Importer
      */
     public function setAdditionalEnrichments($additionalEnrichments)
     {
@@ -197,7 +182,8 @@ class Importer
     }
 
     /**
-     * @param Collection $importCollection
+     * @param CollectionInterface $importCollection
+     * TODO use Import Rules?
      */
     public function setImportCollection($importCollection)
     {
@@ -207,7 +193,7 @@ class Importer
     /**
      * @return DocumentInterface
      */
-    private function initDocument()
+    protected function initDocument()
     {
         $doc = Document::new();
         // since OPUS 4.5 attribute serverState is optional: if no attribute
@@ -221,6 +207,8 @@ class Importer
      * @throws MetadataImportSkippedDocumentsException
      * @throws ModelException
      * @throws SecurityException
+     *
+     * TODO break up processing
      */
     public function run()
     {
@@ -232,10 +220,10 @@ class Importer
 
         $opusDocuments = $this->xml->getElementsByTagName('opusDocument');
 
-        // in case of a single document deposit (via SWORD) we allow to omit
+        // in case of a single document deposit (via SWORD, ...) we allow to omit
         // the explicit declaration of file elements (within <files>..</files>)
-        // and automatically import all files in the root level of the SWORD package
-        $this->singleDocImport = $opusDocuments->length === 1;
+        // and automatically import all files in the root level of the package
+        $this->setSingleDocImport($opusDocuments->length === 1);
 
         foreach ($opusDocuments as $opusDocumentElement) {
             // save oldId for later referencing of the record under consideration
@@ -247,46 +235,44 @@ class Importer
                 $this->log("Start processing of record #" . $oldId . " ...");
             }
 
-            /*
-             * @var Document
-             */
+            // @var DocumentInterface
             $doc = null;
-            if ($opusDocumentElement->hasAttribute('docId')) {
-                if ($this->swordContext) {
-                    // update of existing documents is not supported in SWORD context
-                    // ignore docId and create an empty document instead
-                    $opusDocumentElement->removeAttribute('docId');
-                    $this->log('Value of attribute docId is ignored in SWORD context');
-                    $doc = $this->initDocument();
-                } else {
-                    // perform metadata update on given document
-                    // please note that existing files that are already associated
-                    // with the given document are not deleted or updated
-                    $docId = $opusDocumentElement->getAttribute('docId');
-                    try {
-                        $doc = Document::get($docId);
-                        $opusDocumentElement->removeAttribute('docId');
-                    } catch (NotFoundException $e) {
-                        $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
-                        $this->appendDocIdToRejectList($oldId);
-                        $numOfSkippedDocs++;
-                        continue;
-                    }
 
-                    $this->resetDocument($doc);
+            // TODO move creation of Document object into separata function
+            if ($opusDocumentElement->hasAttribute('docId') && $this->isUpdateExistingDocuments()) {
+                // perform metadata update on given document
+                // please note that existing files that are already associated
+                // with the given document are not deleted or updated
+                $docId = $opusDocumentElement->getAttribute('docId');
+                try {
+                    $doc = Document::get($docId);
+                    $opusDocumentElement->removeAttribute('docId');
+                } catch (NotFoundException $e) {
+                    $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
+                    $this->appendDocIdToRejectList($oldId);
+                    $numOfSkippedDocs++;
+                    continue;
                 }
+
+                $this->resetDocument($doc);
             } else {
+                // ignore docId and create an empty document instead
+                // TODO necessary? error if docId not present?
+                $opusDocumentElement->removeAttribute('docId');
+
+                $this->log('Ignore value of attribute docId');
+
                 // create a new OPUS document and populate it with data
                 $doc = $this->initDocument();
             }
 
             try {
                 $this->processAttributes($opusDocumentElement->attributes, $doc);
-                $filesElementFound = $this->processElements($opusDocumentElement->childNodes, $doc);
-                if ($this->swordContext && $this->singleDocImport && ! $filesElementFound) {
-                    // add all files in the root level of the package to the currently
-                    // processed document
-                    $this->importFilesDirectly($doc);
+                $this->processElements($opusDocumentElement->childNodes, $doc);
+
+                // Files may already have been added in processElements
+                if (! $this->isFilesAdded()) {
+                    $this->processFiles($doc);
                 }
             } catch (Exception $e) {
                 $this->log('Error while processing document #' . $oldId . ': ' . $e->getMessage());
@@ -302,16 +288,16 @@ class Importer
                 }
             }
 
+            // TODO should this be handled by Import Rules?
             if ($this->importCollection !== null) {
                 $doc->addCollection($this->importCollection);
             }
 
             try {
+                // TODO post "import" processing before storing!
                 $doc->store();
                 $this->document = $doc;
-                if ($this->statusDoc !== null) {
-                    $this->statusDoc->addDoc($doc);
-                }
+                $this->postStore($doc);
             } catch (Exception $e) {
                 $this->log('Error while saving imported document #' . $oldId . ' to database: ' . $e->getMessage());
                 $this->appendDocIdToRejectList($oldId);
@@ -327,16 +313,41 @@ class Importer
             $this->log("Import finished successfully. $numOfDocsImported documents were imported.");
         } else {
             $this->log("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
-            if (! $this->swordContext) {
-                throw new MetadataImportSkippedDocumentsException("$numOfSkippedDocs documents were skipped during import.");
-            }
+            throw new MetadataImportSkippedDocumentsException("$numOfSkippedDocs documents were skipped during import.");
         }
+    }
+
+    /**
+     * TODO convert into store function, that actually does the storing?
+     *
+     * @param DocumentInterface $doc
+     */
+    protected function postStore($doc): void
+    {
+    }
+
+    /**
+     * @param bool $enabled
+     * @return $this
+     */
+    public function setUpdateExistingDocuments($enabled)
+    {
+        $this->updateExistingDocuments = $enabled;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUpdateExistingDocuments()
+    {
+        return $this->updateExistingDocuments;
     }
 
     /**
      * @param string $message
      */
-    private function log($message)
+    protected function log($message)
     {
         if ($this->logger === null) {
             return;
@@ -347,7 +358,7 @@ class Importer
     /**
      * Setting the XML from $xmlString or a $xmlFile
      */
-    private function setXml()
+    protected function setXml()
     {
         $this->log("Load XML ...");
 
@@ -369,7 +380,7 @@ class Importer
     /**
      * Validates the XML
      */
-    private function validateXml()
+    protected function validateXml()
     {
         $this->log("Validate XML ...");
 
@@ -386,13 +397,13 @@ class Importer
     /**
      * @param int $docId
      */
-    private function appendDocIdToRejectList($docId)
+    protected function appendDocIdToRejectList($docId)
     {
         $this->log('... SKIPPED');
         if ($this->logfile === null) {
             return;
         }
-        $this->logfile->log($docId);
+        $this->logfile->log($docId, Zend_Log::ERR);
     }
 
     /**
@@ -407,8 +418,10 @@ class Importer
 
     /**
      * @param DocumentInterface $doc
+     *
+     * TODO this list needs to be maintained, when model is expanded - better way? Maybe just maintain exceptions?
      */
-    private function resetDocument($doc)
+    protected function resetDocument($doc)
     {
         $fieldsToDelete = array_diff(
             [
@@ -463,8 +476,12 @@ class Importer
     /**
      * @param DOMNamedNodeMap $attributes
      * @param Document        $doc
+     *
+     * TODO use filter_var?
+     * TODO use data model description (configurable, expandable)
+     * TODO should not contain code for specific fields - there are/will be other boolean fields
      */
-    private function processAttributes($attributes, $doc)
+    protected function processAttributes($attributes, $doc)
     {
         foreach ($attributes as $attribute) {
             $method = 'set' . ucfirst($attribute->name);
@@ -483,13 +500,11 @@ class Importer
     /**
      * @param DOMNodeList       $elements
      * @param DocumentInterface $doc
-     * @return bool returns true if the import XML definition of the
-     *                 currently processed document contains the first level
-     *                 element files
+     * @return void
      */
-    private function processElements($elements, $doc)
+    protected function processElements($elements, $doc)
     {
-        $filesElementPresent = false;
+        $this->filesAdded = false;
 
         foreach ($elements as $node) {
             if ($node instanceof DOMElement) {
@@ -534,31 +549,26 @@ class Importer
                         $this->handleDates($node, $doc);
                         break;
                     case 'files':
-                        $filesElementPresent = true;
-                        if ($this->importDir !== null) {
-                            $baseDir = trim($node->getAttribute('basedir'));
-                            $this->handleFiles($node, $doc, $baseDir);
-                        }
+                        $this->handleFiles($node, $doc);
                         break;
                     default:
                         break;
                 }
             }
         }
-        return $filesElementPresent;
     }
 
     /**
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleTitleMain($node, $doc)
+    protected function handleTitleMain($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $t = $doc->addTitleMain();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
+                $title = $doc->addTitleMain();
+                $title->setValue(trim($childNode->textContent));
+                $title->setLanguage(trim($childNode->getAttribute('language')));
             }
         }
     }
@@ -567,14 +577,14 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleTitles($node, $doc)
+    protected function handleTitles($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
                 $method = 'addTitle' . ucfirst($childNode->getAttribute('type'));
-                $t      = $doc->$method();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
+                $title  = $doc->$method();
+                $title->setValue(trim($childNode->textContent));
+                $title->setLanguage(trim($childNode->getAttribute('language')));
             }
         }
     }
@@ -583,13 +593,13 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleAbstracts($node, $doc)
+    protected function handleAbstracts($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $t = $doc->addTitleAbstract();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
+                $title = $doc->addTitleAbstract();
+                $title->setValue(trim($childNode->textContent));
+                $title->setLanguage(trim($childNode->getAttribute('language')));
             }
         }
     }
@@ -598,7 +608,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handlePersons($node, $doc)
+    protected function handlePersons($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -642,7 +652,7 @@ class Importer
      * @param DOMNode         $identifiers
      * @param PersonInterface $person
      */
-    private function handlePersonIdentifiers($identifiers, $person)
+    protected function handlePersonIdentifiers($identifiers, $person)
     {
         $identifiers  = $identifiers->childNodes;
         $idTypesFound = []; // print log message if an identifier type is used more than once
@@ -668,7 +678,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleKeywords($node, $doc)
+    protected function handleKeywords($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -685,7 +695,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleDnbInstitutions($node, $doc)
+    protected function handleDnbInstitutions($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -705,21 +715,27 @@ class Importer
                     }
                 } catch (NotFoundException $e) {
                     $msg = 'dnbInstitution id ' . $instId . ' does not exist: ' . $e->getMessage();
-                    if ($this->swordContext) {
-                        $this->log($msg);
-                        continue;
-                    }
-                    throw new Exception($msg);
+                    $this->errorMissingObject($msg);
                 }
             }
         }
     }
 
     /**
+     * @param string $msg
+     * @return void
+     * @throws Exception
+     */
+    protected function errorMissingObject($msg)
+    {
+        throw new Exception($msg);
+    }
+
+    /**
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleIdentifiers($node, $doc)
+    protected function handleIdentifiers($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -734,7 +750,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleNotes($node, $doc)
+    protected function handleNotes($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -749,7 +765,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleCollections($node, $doc)
+    protected function handleCollections($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -760,11 +776,7 @@ class Importer
                     $doc->addCollection($c);
                 } catch (NotFoundException $e) {
                     $msg = 'collection id ' . $collectionId . ' does not exist: ' . $e->getMessage();
-                    if ($this->swordContext) {
-                        $this->log($msg);
-                        continue;
-                    }
-                    throw new Exception($msg);
+                    $this->errorMissingObject($msg);
                 }
             }
         }
@@ -774,23 +786,19 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleSeries($node, $doc)
+    protected function handleSeries($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
                 $seriesId = trim($childNode->getAttribute('id'));
                 // check if document set with given id exists
                 try {
-                    $s    = Series::get($seriesId);
-                    $link = $doc->addSeries($s);
+                    $series = Series::get($seriesId);
+                    $link   = $doc->addSeries($series);
                     $link->setNumber(trim($childNode->getAttribute('number')));
                 } catch (NotFoundException $e) {
                     $msg = 'series id ' . $seriesId . ' does not exist: ' . $e->getMessage();
-                    if ($this->swordContext) {
-                        $this->log($msg);
-                        continue;
-                    }
-                    throw new Exception($msg);
+                    $this->errorMissingObject($msg);
                 }
             }
         }
@@ -803,8 +811,9 @@ class Importer
      * @param DocumentInterface $doc
      *
      * TODO add unit test - a bug that prevented the NotFoundException was not automatically detected
+     * TODO Enrichment keys do not need to be registered anymore - no need for error message
      */
-    private function handleEnrichments($node, $doc)
+    protected function handleEnrichments($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -814,11 +823,7 @@ class Importer
                     EnrichmentKey::get($key);
                 } catch (NotFoundException $e) {
                     $msg = 'enrichment key ' . $key . ' does not exist: ' . $e->getMessage();
-                    if ($this->swordContext) {
-                        $this->log($msg);
-                        continue;
-                    }
-                    throw new Exception($msg);
+                    $this->errorMissingObject($msg);
                 }
 
                 $this->addEnrichment($doc, $key, $childNode->textContent);
@@ -833,7 +838,7 @@ class Importer
      * @param string            $key   Name of enrichment
      * @param string            $value Value of enrichment
      */
-    private function addEnrichment($doc, $key, $value)
+    protected function addEnrichment($doc, $key, $value)
     {
         if ($value === null || strlen(trim($value)) === 0) {
             // enrichment must have a value
@@ -849,21 +854,17 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleLicences($node, $doc)
+    protected function handleLicences($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
                 $licenceId = trim($childNode->getAttribute('id'));
                 try {
-                    $l = Licence::get($licenceId);
-                    $doc->addLicence($l);
+                    $link = Licence::get($licenceId);
+                    $doc->addLicence($link);
                 } catch (NotFoundException $e) {
                     $msg = 'licence id ' . $licenceId . ' does not exist: ' . $e->getMessage();
-                    if ($this->swordContext) {
-                        $this->log($msg);
-                        continue;
-                    }
-                    throw new Exception($msg);
+                    $this->errorMissingObject($msg);
                 }
             }
         }
@@ -873,7 +874,7 @@ class Importer
      * @param DOMNode           $node
      * @param DocumentInterface $doc
      */
-    private function handleDates($node, $doc)
+    protected function handleDates($node, $doc)
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
@@ -906,10 +907,15 @@ class Importer
      *
      * @param DOMNode           $node
      * @param DocumentInterface $doc
-     * @param string            $baseDir
      */
-    private function handleFiles($node, $doc, $baseDir)
+    protected function handleFiles($node, $doc)
     {
+        if ($this->getImportDir() === null) {
+            return;
+        }
+
+        $baseDir = trim($node->getAttribute('basedir'));
+
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
                 $name = trim($childNode->getAttribute('name'));
@@ -922,6 +928,18 @@ class Importer
                 $this->addSingleFile($doc, $name, $baseDir, $path, $childNode);
             }
         }
+
+        $this->setFilesAdded(true);
+    }
+
+    /**
+     * Basic Importer handles files in processElements function.
+     *
+     * @param DocumentInterface $doc
+     * @return void
+     */
+    protected function processFiles($doc)
+    {
     }
 
     /**
@@ -932,8 +950,10 @@ class Importer
      * @param string            $baseDir (optional) path of the file that should be imported (relative to the import directory)
      * @param string            $path (optional) path (and name) of the file that should be imported (relative to baseDir)
      * @param null|DOMNode      $childNode (optional) additional metadata of the file (taken from import XML)
+     *
+     * TODO public or protected - use from outside of Importer for DeepGreen? - design question
      */
-    private function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
+    public function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
     {
         $fullPath = $this->importDir;
         if ($baseDir !== '') {
@@ -992,7 +1012,7 @@ class Importer
      *
      * TODO move check to file types helper?
      */
-    private function validMimeType($fullPath)
+    protected function validMimeType($fullPath)
     {
         $extension     = pathinfo($fullPath, PATHINFO_EXTENSION);
         $finfo         = new finfo(FILEINFO_MIME_TYPE);
@@ -1015,7 +1035,7 @@ class Importer
      * @param string  $fullPath
      * @return bool
      */
-    private function checksumValidation($childNode, $fullPath)
+    protected function checksumValidation($childNode, $fullPath)
     {
         $checksums = $childNode->getElementsByTagName('checksum');
         if ($checksums->length === 0) {
@@ -1033,7 +1053,7 @@ class Importer
      * @param DOMNode $node
      * @param File    $file
      */
-    private function handleFileAttributes($node, $file)
+    protected function handleFileAttributes($node, $file)
     {
         $attrsToConsider = [
             'language',
@@ -1066,20 +1086,6 @@ class Importer
     }
 
     /**
-     * Add all files in the root level of the import package to the given
-     * document.
-     *
-     * @param DocumentInterface $doc document
-     */
-    private function importFilesDirectly($doc)
-    {
-        $files = array_diff(scandir($this->importDir), ['..', '.', 'opus.xml']);
-        foreach ($files as $file) {
-            $this->addSingleFile($doc, $file);
-        }
-    }
-
-    /**
      * Returns the imported document.
      *
      * @return DocumentInterface
@@ -1087,5 +1093,41 @@ class Importer
     public function getDocument()
     {
         return $this->document;
+    }
+
+    /**
+     * @param bool $singleDoc
+     * @return $this
+     */
+    protected function setSingleDocImport($singleDoc)
+    {
+        $this->singleDocImport = $singleDoc;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isSingleDocImport()
+    {
+        return $this->singleDocImport;
+    }
+
+    /**
+     * @param bool $added
+     * @return $this
+     */
+    protected function setFilesAdded($added)
+    {
+        $this->filesAdded = $added;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isFilesAdded()
+    {
+        return $this->filesAdded;
     }
 }
