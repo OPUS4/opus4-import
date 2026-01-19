@@ -90,7 +90,7 @@ class XmlDocument
         return $this->loadXmlData($xmlFilePath, true);
     }
 
-    public function setXml($xml)
+    public function setXml(DOMDocument $xml)
     {
         $this->xml = $xml;
     }
