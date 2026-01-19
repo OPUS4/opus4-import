@@ -131,22 +131,26 @@ class Importer
     private $filesAdded = false;
 
     /**
-     * @param string        $xml
-     * @param bool          $isFile
-     * @param null|Zend_Log $logger
-     * @param null|string   $logfile
+     * @param string|DOMDocument $xml
+     * @param bool               $isFile
+     * @param null|Zend_Log      $logger
+     * @param null|string        $logfile
      */
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
         $this->logger  = $logger;
         $this->logfile = $logfile;
+
+        $this->xmlDocument = new XmlDocument();
+
         if ($isFile) {
             $this->xmlFile = $xml;
+        } elseif ($xml instanceof DOMDocument) {
+            $this->xml = $xml;
+            $this->xmlDocument->setXml($xml);
         } else {
             $this->xmlString = $xml;
         }
-
-        $this->xmlDocument = new XmlDocument();
     }
 
     /**
@@ -212,7 +216,7 @@ class Importer
      */
     public function run()
     {
-        $this->setXml();
+        $this->loadXml();
         $this->validateXml();
 
         $numOfDocsImported = 0;
@@ -356,10 +360,14 @@ class Importer
     }
 
     /**
-     * Setting the XML from $xmlString or a $xmlFile
+     * Loading XML from $xmlString or a $xmlFile
      */
-    protected function setXml()
+    protected function loadXml()
     {
+        if ($this->xml !== null) {
+            return;
+        }
+
         $this->log("Load XML ...");
 
         try {

@@ -44,7 +44,7 @@ use const LIBXML_ERR_FATAL;
 use const LIBXML_ERR_WARNING;
 
 /**
- * A class for loading and validating XML
+ * A class for loading and validating OPUS-XML.
  */
 class XmlDocument
 {
@@ -88,6 +88,11 @@ class XmlDocument
         // TODO: Error handling for missing files etc.
 
         return $this->loadXmlData($xmlFilePath, true);
+    }
+
+    public function setXml($xml)
+    {
+        $this->xml = $xml;
     }
 
     /**
