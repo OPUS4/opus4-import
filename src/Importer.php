@@ -57,6 +57,8 @@ use Opus\Common\Subject;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Opus\Import\Xml\XmlDocument;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use Zend_Log;
 
 use function array_diff;
@@ -66,6 +68,7 @@ use function hash_file;
 use function intval;
 use function is_readable;
 use function pathinfo;
+use function sprintf;
 use function strcasecmp;
 use function strlen;
 use function substr;
@@ -129,6 +132,9 @@ class Importer
 
     /** @var bool */
     private $filesAdded = false;
+
+    /** @var OutputInterface */
+    private $output;
 
     /**
      * @param string|DOMDocument $xml
@@ -963,6 +969,8 @@ class Importer
      */
     public function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
     {
+        $output = $this->getOutput();
+
         $fullPath = $this->importDir;
         if ($baseDir !== '') {
             $fullPath .= $baseDir . DIRECTORY_SEPARATOR;
@@ -976,6 +984,7 @@ class Importer
 
         if (! $this->validMimeType($fullPath)) {
             $this->log('MIME type of file ' . $fullPath . ' is not allowed for import');
+            $output->writeln(sprintf('File %s not imported', $name));
             return;
         }
 
@@ -1137,5 +1146,19 @@ class Importer
     protected function isFilesAdded()
     {
         return $this->filesAdded;
+    }
+
+    public function getOutput(): OutputInterface
+    {
+        if ($this->output === null) {
+            $this->output = new NullOutput();
+        }
+
+        return $this->output;
+    }
+
+    public function setOutput(OutputInterface $output)
+    {
+        $this->output = $output;
     }
 }
