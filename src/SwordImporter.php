@@ -123,7 +123,7 @@ class SwordImporter extends Importer
         $this->statusDoc->addDoc($doc);
     }
 
-    public function setIgnoreFiles(int|array $files): self
+    public function setIgnoreFiles(string|array $files): self
     {
         if (! is_array($files)) {
             $this->ignoreFiles = [$files];
