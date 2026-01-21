@@ -64,6 +64,7 @@ use Zend_Log;
 use function array_diff;
 use function array_key_exists;
 use function basename;
+use function count;
 use function hash_file;
 use function intval;
 use function is_readable;
@@ -135,6 +136,12 @@ class Importer
 
     /** @var OutputInterface */
     private $output;
+
+    /** @var int[] */
+    private $importedDocumentIds;
+
+    /** @var bool */
+    private $storeDocument = true;
 
     /**
      * @param string|DOMDocument $xml
@@ -222,6 +229,8 @@ class Importer
      */
     public function run()
     {
+        $this->importedDocumentIds = [];
+
         $this->loadXml();
         $this->validateXml();
 
@@ -236,6 +245,8 @@ class Importer
         $this->setSingleDocImport($opusDocuments->length === 1);
 
         foreach ($opusDocuments as $opusDocumentElement) {
+            $this->storeDocument = true;
+
             // save oldId for later referencing of the record under consideration
             // according to the latest documentation the value of oldId is not
             // stored as an OPUS identifier
@@ -303,10 +314,17 @@ class Importer
                 $doc->addCollection($this->importCollection);
             }
 
+            if (! $this->storeDocument) {
+                $numOfSkippedDocs++;
+                $this->appendDocIdToRejectList($oldId);
+                continue;
+            }
+
             try {
                 // TODO post "import" processing before storing!
-                $doc->store();
-                $this->document = $doc;
+                $newDocId                    = $doc->store();
+                $this->document              = $doc;
+                $this->importedDocumentIds[] = $newDocId;
                 $this->postStore($doc);
             } catch (Exception $e) {
                 $this->log('Error while saving imported document #' . $oldId . ' to database: ' . $e->getMessage());
@@ -984,7 +1002,8 @@ class Importer
 
         if (! $this->validMimeType($fullPath)) {
             $this->log('MIME type of file ' . $fullPath . ' is not allowed for import');
-            $output->writeln(sprintf('File %s not imported', $name));
+            $output->writeln(sprintf('<error>File %s not imported</error>', $name));
+            $this->storeDocument = false;
             return;
         }
 
@@ -1102,48 +1121,29 @@ class Importer
         }
     }
 
-    /**
-     * Returns the imported document.
-     *
-     * @return DocumentInterface
-     */
-    public function getDocument()
+    public function getDocument(): DocumentInterface
     {
         return $this->document;
     }
 
-    /**
-     * @param bool $singleDoc
-     * @return $this
-     */
-    protected function setSingleDocImport($singleDoc)
+    protected function setSingleDocImport(bool $singleDoc): self
     {
         $this->singleDocImport = $singleDoc;
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    protected function isSingleDocImport()
+    protected function isSingleDocImport(): bool
     {
         return $this->singleDocImport;
     }
 
-    /**
-     * @param bool $added
-     * @return $this
-     */
-    protected function setFilesAdded($added)
+    protected function setFilesAdded(bool $added): self
     {
         $this->filesAdded = $added;
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    protected function isFilesAdded()
+    protected function isFilesAdded(): bool
     {
         return $this->filesAdded;
     }
@@ -1157,8 +1157,20 @@ class Importer
         return $this->output;
     }
 
-    public function setOutput(OutputInterface $output)
+    public function setOutput(OutputInterface $output): self
     {
         $this->output = $output;
+        return $this;
+    }
+
+    public function getDocumentIds(): int|array
+    {
+        if ($this->importedDocumentIds === null) {
+            return [];
+        } elseif (count($this->importedDocumentIds) === 1) {
+            return $this->importedDocumentIds[0];
+        }
+
+        return $this->importedDocumentIds;
     }
 }
