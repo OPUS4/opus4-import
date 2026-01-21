@@ -36,6 +36,8 @@ use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Zend_Log;
 
 use function array_diff;
+use function in_array;
+use function is_array;
 use function scandir;
 
 /**
@@ -47,6 +49,9 @@ class SwordImporter extends Importer
 {
     /** @var mixed */
     private $statusDoc;
+
+    /** @var string[]|null */
+    private $ignoreFiles;
 
     /**
      * @param string        $xml
@@ -103,7 +108,9 @@ class SwordImporter extends Importer
         if ($this->isSingleDocImport()) {
             $files = array_diff(scandir($this->getImportDir()), ['..', '.', 'opus.xml']);
             foreach ($files as $file) {
-                $this->addSingleFile($doc, $file);
+                if (! in_array($file, $this->ignoreFiles)) {
+                    $this->addSingleFile($doc, $file);
+                }
             }
         }
     }
@@ -114,5 +121,15 @@ class SwordImporter extends Importer
     protected function postStore($doc): void
     {
         $this->statusDoc->addDoc($doc);
+    }
+
+    public function setIgnoreFiles(int|array $files): self
+    {
+        if (! is_array($files)) {
+            $this->ignoreFiles = [$files];
+        } else {
+            $this->ignoreFiles = $files;
+        }
+        return $this;
     }
 }
