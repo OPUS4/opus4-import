@@ -51,7 +51,7 @@ class SwordImporter extends Importer
     private $statusDoc;
 
     /** @var string[]|null */
-    private $ignoreFiles;
+    private $ignoreFiles = [];
 
     /**
      * @param string        $xml
@@ -123,9 +123,16 @@ class SwordImporter extends Importer
         $this->statusDoc->addDoc($doc);
     }
 
-    public function setIgnoreFiles(string|array $files): self
+    public function getIgnoredFiles(): array
     {
-        if (! is_array($files)) {
+        return $this->ignoreFiles;
+    }
+
+    public function setIgnoredFiles(string|array|null $files): self
+    {
+        if ($files === null) {
+            $this->ignoreFiles = [];
+        } else if (! is_array($files)) {
             $this->ignoreFiles = [$files];
         } else {
             $this->ignoreFiles = $files;
