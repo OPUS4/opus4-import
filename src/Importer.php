@@ -69,7 +69,6 @@ use function hash_file;
 use function intval;
 use function is_readable;
 use function pathinfo;
-use function sprintf;
 use function strcasecmp;
 use function strlen;
 use function substr;
@@ -141,7 +140,7 @@ class Importer
     private $importedDocumentIds;
 
     /** @var bool */
-    private $storeDocument = true;
+    protected $storeDocument = true;
 
     /**
      * @param string|DOMDocument $xml
@@ -763,6 +762,11 @@ class Importer
         throw new Exception($msg);
     }
 
+    protected function errorUnsupportedMimeType(string $name, string $msg)
+    {
+        $this->log($msg);
+    }
+
     /**
      * @param DOMNode           $node
      * @param DocumentInterface $doc
@@ -1001,9 +1005,7 @@ class Importer
         }
 
         if (! $this->validMimeType($fullPath)) {
-            $this->log('MIME type of file ' . $fullPath . ' is not allowed for import');
-            $output->writeln(sprintf('<error>File %s not imported</error>', $name));
-            $this->storeDocument = false;
+            $this->errorUnsupportedMimeType($name, 'MIME type of file ' . $fullPath . ' is not allowed for import');
             return;
         }
 

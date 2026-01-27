@@ -39,6 +39,7 @@ use function array_diff;
 use function in_array;
 use function is_array;
 use function scandir;
+use function sprintf;
 
 /**
  * Importer for SWORD interface.
@@ -52,6 +53,9 @@ class SwordImporter extends Importer
 
     /** @var string[]|null */
     private $ignoreFiles = [];
+
+    /** @var bool */
+    private $importDocumentsWithUnsupportedMimeTypes = true;
 
     /**
      * @param string        $xml
@@ -86,6 +90,15 @@ class SwordImporter extends Importer
     protected function errorMissingObject($msg)
     {
         $this->log($msg);
+    }
+
+    protected function errorUnsupportedMimeType(string $name, string $msg)
+    {
+        parent::errorUnsupportedMimeType($name, $msg);
+        if (! $this->isImportDocumentsWithUnsupportedMimeTypes()) {
+            $this->getOutput()->writeln(sprintf('<error>File %s not imported</error>', $name));
+            $this->storeDocument = false;
+        }
     }
 
     public function run()
@@ -132,11 +145,22 @@ class SwordImporter extends Importer
     {
         if ($files === null) {
             $this->ignoreFiles = [];
-        } else if (! is_array($files)) {
+        } elseif (! is_array($files)) {
             $this->ignoreFiles = [$files];
         } else {
             $this->ignoreFiles = $files;
         }
         return $this;
+    }
+
+    public function setImportDocumentsWithUnsupportedMimeTypes(bool $import): self
+    {
+        $this->importDocumentsWithUnsupportedMimeTypes = $import;
+        return $this;
+    }
+
+    public function isImportDocumentsWithUnsupportedMimeTypes(): bool
+    {
+        return $this->importDocumentsWithUnsupportedMimeTypes;
     }
 }
