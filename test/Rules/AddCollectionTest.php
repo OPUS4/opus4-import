@@ -47,6 +47,9 @@ class AddCollectionTest extends TestCase
     /** @var Zend_Auth_Storage_Interface */
     private $authStorage;
 
+    /** @var int */
+    private $colId;
+
     public function setUp(): void
     {
         parent::setUp();

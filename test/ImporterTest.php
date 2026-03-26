@@ -295,7 +295,7 @@ class ImporterTest extends TestCase
         $role->setName('import');
         $role->setOaiName('oaiImport');
         $role->addRootCollection();
-        $this->roleId = $role->store();
+        $role->store();
 
         $rootCol = $role->getRootCollection();
 
@@ -309,7 +309,5 @@ class ImporterTest extends TestCase
         $col->setNumber('col2number');
         $rootCol->addLastChild($col);
         $role->store();
-
-        $this->colId = $col->getId();
     }
 }
