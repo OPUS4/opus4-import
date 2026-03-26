@@ -213,7 +213,7 @@
                     <xsd:simpleContent>
                         <xsd:extension base="xsd:string">
                             <xsd:attribute name="type" type="keywordTypeValues" />
-                            <xsd:attribute name="language" type="xsd:string" use="required" />
+                            <xsd:attribute name="language" type="xsd:string" />
                         </xsd:extension>
                     </xsd:simpleContent>
                 </xsd:complexType>
@@ -224,6 +224,7 @@
     <xsd:simpleType name="keywordTypeValues">
         <xsd:restriction base="xsd:string">
             <xsd:enumeration value="swd"/>
+            <xsd:enumeration value="psyndex"/>
             <xsd:enumeration value="uncontrolled"/>
         </xsd:restriction>
     </xsd:simpleType>

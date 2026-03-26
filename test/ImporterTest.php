@@ -310,4 +310,44 @@ class ImporterTest extends TestCase
         $rootCol->addLastChild($col);
         $role->store();
     }
+
+    public function testImportKeywordDefaults()
+    {
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import2.xml');
+
+        $importer = new Importer($xml, false, Log::get());
+
+        $importer->run();
+
+        $doc = $importer->getDocument();
+
+        $this->assertNotNull($doc);
+        $this->assertInstanceOf(DocumentInterface::class, $doc);
+
+        $subjects = $doc->getSubject();
+
+        $this->assertCount(3, $subjects);
+
+        // TODO this result check is overly complicated - better way?
+        foreach ($subjects as $subject) {
+            switch ($subject->getType()) {
+                case Subject::TYPE_SWD:
+                    $this->assertEquals('Test', $subject->getValue());
+                    $this->assertEquals('deu', $subject->getLanguage());
+                    break;
+                case Subject::TYPE_UNCONTROLLED:
+                    switch ($subject->getValue()) {
+                        case 'engTest':
+                            $this->assertEquals('eng', $subject->getLanguage());
+                            break;
+                        case 'testWithDefaults':
+                            $this->assertEquals('deu', $subject->getLanguage());
+                            break;
+                    }
+                    break;
+                default:
+                    $this->fail('Unexpected subject type ' . $subject->getType());
+            }
+        }
+    }
 }

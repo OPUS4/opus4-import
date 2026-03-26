@@ -719,8 +719,9 @@ class Importer
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $s = Subject::new();
-                $s->setLanguage(trim($childNode->getAttribute('language')));
+                $s        = Subject::new();
+                $language = $childNode->getAttribute('language');
+                $s->setLanguage($language ?: 'deu');
                 $type = $childNode->getAttribute('type');
                 $s->setType($type ?: 'uncontrolled');
                 $s->setValue(trim($childNode->textContent));
