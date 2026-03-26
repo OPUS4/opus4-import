@@ -25,30 +25,55 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2024, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Console;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use Opus\Common\Console\AbstractDocumentCommand;
+use Opus\Common\Document;
+use Opus\Common\Model\NotFoundException;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-class ArrayImportTest extends TestCase
+use function yaml_emit;
+
+/**
+ * TODO move to opus4-export OR opus4-yaml OR ?
+ */
+class YamlExportCommand extends AbstractDocumentCommand
 {
-    public function testImport()
+    protected function configure()
     {
-        $importer = new ArrayImport();
+        parent::configure();
 
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
-        ]);
+        $help = <<<EOT
+<error>NOT FULLY IMPLEMENTED YET</error>
+
+The <fg=green>yaml:export</> command can be used to export a document
+as Yaml file. 
+EOT;
+
+        $this->setName('yaml:export')
+            ->setDescription('Export document as Yaml file')
+            ->setHelp($help);
+    }
+
+    /**
+     * @throws NotFoundException
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $this->processArguments($input);
+
+        $docId = $this->startId;
+
+        $doc  = Document::get($docId);
+        $data = $doc->toArray();
+
+        $output->writeln(yaml_emit($data));
+
+        return self::SUCCESS;
     }
 }

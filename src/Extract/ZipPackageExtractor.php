@@ -25,30 +25,45 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2018, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace Opus\Import\Extract;
 
-use Opus\Import\ArrayImport;
-use PHPUnit\Framework\TestCase;
+use Exception;
+use ZipArchive;
 
-class ArrayImportTest extends TestCase
+/**
+ * Unpacks ZIP files.
+ */
+class ZipPackageExtractor extends AbstractPackageExtractor
 {
-    public function testImport()
+    public function __construct()
     {
-        $importer = new ArrayImport();
-
-        $importer->import([
-            'Type'      => 'article',
-            'TitleMain' => [
-                [
-                    'Type'     => 'Main',
-                    'Language' => 'eng',
-                    'Value'    => 'Document Test Title',
-                ],
-            ],
+        $this->setSupportedMimeTypes([
+            'application/zip',
         ]);
+    }
+
+    /**
+     * @param string $srcPath
+     * @param string $targetPath
+     * @return void
+     * @throws Exception
+     */
+    public function extractFile($srcPath, $targetPath)
+    {
+        $zip    = new ZipArchive();
+        $result = $zip->open($srcPath);
+        if ($result !== true) {
+            // TODO more detailed error message
+            throw new Exception('Unable to open file');
+        }
+        $result = $zip->extractTo($targetPath);
+        if ($result !== true) {
+            throw new Exception('Unable to extract zip file');
+        }
+        $zip->close();
     }
 }

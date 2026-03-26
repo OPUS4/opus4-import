@@ -25,39 +25,49 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018-2022
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Console;
 
-use Exception;
-use ZipArchive;
+use Opus\Common\Document;
+use Opus\Common\Model\NotFoundException;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-use function is_readable;
-
-use const DIRECTORY_SEPARATOR;
-
-class ZipPackageReader extends AbstractPackageReader
+/**
+ * Imports Yaml as OPUS4 document.
+ */
+class YamlImportCommand extends Command
 {
     /**
-     * @param string $dirName
-     * @throws Exception
+     * @return void
      */
-    protected function extractPackage($dirName)
+    protected function configure()
     {
-        $filename = $dirName . DIRECTORY_SEPARATOR . 'package.zip';
-        $this->getLogger()->info('processing ZIP package in file system ' . $filename);
+        parent::configure();
 
-        if (! is_readable($filename)) {
-            $errMsg = 'ZIP package ' . $filename . ' is not readable!';
-            $this->getLogger()->err($errMsg);
-            throw new Exception($errMsg);
-        }
+        $help = <<<EOT
+<error>NOT IMPLEMENTED YET</error>
 
-        $zip = new ZipArchive();
-        $zip->open($filename);
-        $zip->extractTo($dirName . DIRECTORY_SEPARATOR . self::EXTRACTION_DIR_NAME);
-        $zip->close();
+The <fg=green>yaml:import</> command can be used to import documents
+from Yaml files. 
+EOT;
+
+        $this->setName('yaml:import')
+            ->setDescription('Import document from Yaml file')
+            ->setHelp($help);
+    }
+
+    /**
+     * @throws NotFoundException
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $doc = Document::new();
+
+        return self::SUCCESS;
     }
 }

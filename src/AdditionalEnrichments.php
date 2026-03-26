@@ -27,6 +27,16 @@
  *
  * @copyright   Copyright (c) 2016, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
+ */
+
+namespace Opus\Import;
+
+use function array_key_exists;
+use function gmdate;
+use function trim;
+
+/**
+ * Additional enrichments for imported documents.
  *
  * This class holds OPUS specific enrichments that are associated with every
  * document that is imported via SWORD API.
@@ -39,84 +49,20 @@
  *                        Content-Disposition header)
  * opus.import.checksum : md5 checksum of SWORD package (as specified in HTTP
  *                        Content-MD5 header)
- */
-
-namespace Opus\Import;
-
-use Exception;
-use Opus\Common\EnrichmentKey;
-
-use function array_key_exists;
-use function gmdate;
-use function trim;
-
-/**
- * Additional enrichments for imported documents.
  *
- * TODO each enrichment should have a separate class, so the list can be extended
- * TODO rename, there aren't any Enrichments here, just "info" (properties)
- * TODO map info properties to enrichments or Properties later
+ * TODO Does this class make sense?
  */
-class AdditionalEnrichments
+class AdditionalEnrichments implements ImportEnrichmentInterface
 {
-    /**
-     * Authenticated user account that performed the import.
-     */
-    const OPUS_IMPORT_USER = 'opus.import.user';
-
-    /**
-     * Date of import.
-     */
-    const OPUS_IMPORT_DATE = 'opus.import.date';
-
-    /**
-     * Name of import file.
-     */
-    const OPUS_IMPORT_FILE = 'opus.import.file';
-
-    /**
-     * Checksum of import file.
-     */
-    const OPUS_IMPORT_CHECKSUM = 'opus.import.checksum';
-
-    /**
-     * Source of added document like SWORD or the publish form.
-     */
-    const OPUS_SOURCE = 'opus.source';
-
     /** @var array */
     private $enrichmentMap;
 
     public function __construct()
     {
-        if (! $this->checkKeysExist()) {
-            throw new Exception('at least one import specific enrichment key does not exist');
-        }
-
+        // TODO are those defaults, especially 'sword', useful here?
+        // TODO Should it be GM or local time? It is probably more important what is displayed for users.
         $this->addEnrichment(self::OPUS_IMPORT_DATE, gmdate('c'));
         $this->addEnrichment(self::OPUS_SOURCE, 'sword');
-    }
-
-    /**
-     * @return bool
-     */
-    private function checkKeysExist()
-    {
-        return $this->keyExist(self::OPUS_IMPORT_USER)
-            && $this->keyExist(self::OPUS_IMPORT_DATE)
-            && $this->keyExist(self::OPUS_IMPORT_FILE)
-            && $this->keyExist(self::OPUS_IMPORT_CHECKSUM)
-            && $this->keyExist(self::OPUS_SOURCE);
-    }
-
-    /**
-     * @param string $key
-     * @return bool
-     */
-    private function keyExist($key)
-    {
-        $enrichmentkey = EnrichmentKey::fetchByName($key);
-        return $enrichmentkey !== null;
     }
 
     /**
@@ -165,10 +111,7 @@ class AdditionalEnrichments
      */
     public function getChecksum()
     {
-        if (! array_key_exists(self::OPUS_IMPORT_CHECKSUM, $this->enrichmentMap)) {
-            return null;
-        }
-        return $this->enrichmentMap[self::OPUS_IMPORT_CHECKSUM];
+        return $this->getValue(self::OPUS_IMPORT_CHECKSUM);
     }
 
     /**
@@ -176,9 +119,38 @@ class AdditionalEnrichments
      */
     public function getFileName()
     {
-        if (! array_key_exists(self::OPUS_IMPORT_FILE, $this->enrichmentMap)) {
+        return $this->getValue(self::OPUS_IMPORT_FILE);
+    }
+
+    /**
+     * @param string $source
+     * @return $this
+     */
+    public function setSource($source)
+    {
+        $this->addEnrichment(self::OPUS_SOURCE, $source);
+        return $this;
+    }
+
+    /**
+     * @param string $date
+     * @return $this
+     */
+    public function setDate($date)
+    {
+        $this->addEnrichment(self::OPUS_IMPORT_DATE, $date);
+        return $this;
+    }
+
+    /**
+     * @param string $key
+     * @return mixed|null
+     */
+    public function getValue($key)
+    {
+        if (! array_key_exists($key, $this->enrichmentMap)) {
             return null;
         }
-        return $this->enrichmentMap[self::OPUS_IMPORT_FILE];
+        return $this->enrichmentMap[$key];
     }
 }

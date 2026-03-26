@@ -25,68 +25,62 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2019, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace OpusTest\Import;
 
-use Opus\Import\TarPackageReader;
+use Opus\Common\Document;
+use Opus\Common\Enrichment;
+use Opus\Import\AdditionalEnrichments;
+use Opus\Import\ImportEnrichmentInterface;
 use OpusTest\Import\TestAsset\TestCase;
 
-use function copy;
-use function mkdir;
-
-use const DIRECTORY_SEPARATOR;
-
-class TarPackageReaderTest extends TestCase
+class AdditionalEnrichmentsTest extends TestCase
 {
     /** @var string */
     protected $additionalResources = 'database';
 
+    /** @var AdditionalEnrichments */
+    private $enrichments;
+
     public function setUp(): void
     {
         parent::setUp();
-        $this->makeConfigurationModifiable();
+
+        $this->enrichments = new AdditionalEnrichments();
     }
 
-    public function testReadPackageWithXmlFile()
+    public function testGetImportDate()
     {
-        $this->adjustConfiguration([
-            'filetypes' => [
-                'xml' => [
-                    'mimeType' => [
-                        'text/xml',
-                        'application/xml',
-                    ],
-                ],
-            ],
-        ]);
+        $importDate = $this->enrichments->getValue(ImportEnrichmentInterface::OPUS_IMPORT_DATE);
+        $this->assertNotNull($importDate);
+        $this->assertIsString($importDate);
+    }
 
-        $reader = new TarPackageReader();
+    public function testAddEnrichment()
+    {
+        $this->enrichments->addEnrichment('myKey', 'myValue');
+        $this->assertEquals('myValue', $this->enrichments->getValue('myKey'));
+    }
 
-        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/TarPackageReaderTest_ReadPackageWithXmlFile';
-        mkdir($tmpDir);
+    /**
+     * This test makes sure we can use the import enrichments without having to register them ahead of
+     * time. the foreign key relationship for enrichments in the database, was removed a while ago.
+     */
+    public function testStoringUnregisteredEnrichments()
+    {
+        $doc        = Document::new();
+        $enrichment = Enrichment::new();
+        $enrichment->setKeyName('UnknownEnrichment');
+        $enrichment->setValue('TestValue1');
+        $doc->addEnrichment($enrichment);
+        $docId = $doc->store();
 
-        copy(
-            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.tar',
-            $tmpDir . DIRECTORY_SEPARATOR . 'package.tar'
-        );
+        $doc = Document::get($docId);
 
-        $status = $reader->readPackage($tmpDir);
-
-        $this->assertFalse($status->noDocImported());
-        $this->assertCount(1, $status->getDocs());
-
-        $document = $status->getDocs()[0];
-
-        // TODO do wee need this?
-        // $this->addTestDocument($document); // for cleanup
-
-        $files = $document->getFile();
-
-        $this->assertCount(2, $files);
-
-        PackageReaderTest::cleanupTmpDir($tmpDir);
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('TestValue1', $doc->getEnrichment(0)->getValue());
     }
 }

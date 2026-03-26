@@ -44,6 +44,7 @@ use function trim;
  * TODO rename this class - is is not a collection, it is a helper class for getting the "import collection" - Is this
  *      class necessary at all? Couldn't it be just a function, somewhere? What is the purpose, the reasoning behind
  *      it?
+ * TODO make generic or move to opus4-sword (What is the concept here? Is SWORD specific?)
  */
 class ImportCollection
 {
@@ -118,7 +119,7 @@ class ImportCollection
     }
 
     /**
-     * @return Collection
+     * @return CollectionInterface
      */
     public function getCollection()
     {

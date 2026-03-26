@@ -25,68 +25,28 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2018, OPUS 4 development team
+ * @copyright   Copyright (c) 2025, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import;
+namespace OpusTest\Import\Console;
 
-use Opus\Import\ZipPackageReader;
+use Opus\Import\Console\ImportCommandProvider;
 use OpusTest\Import\TestAsset\TestCase;
+use Symfony\Component\Console\Command\Command;
 
-use function copy;
-use function mkdir;
-
-use const DIRECTORY_SEPARATOR;
-
-class ZipPackageReaderTest extends TestCase
+class ImportCommandProviderTest extends TestCase
 {
-    /** @var string */
-    protected $additionalResources = 'database';
-
-    public function setUp(): void
+    public function testGetCommands()
     {
-        parent::setUp();
-        $this->makeConfigurationModifiable();
-    }
+        $provider = new ImportCommandProvider();
 
-    public function testReadPackageWithXmlFile()
-    {
-        $this->adjustConfiguration([
-            'filetypes' => [
-                'xml' => [
-                    'mimeType' => [
-                        'text/xml',
-                        'application/xml',
-                    ],
-                ],
-            ],
-        ]);
+        $commands = $provider->getCommands();
 
-        $reader = new ZipPackageReader();
+        $this->assertCount(2, $commands);
 
-        $tmpDir = APPLICATION_PATH . '/build/workspace/tmp/ZipPackageReaderTest_ReadPackageWithXmlFile';
-        mkdir($tmpDir);
-
-        copy(
-            APPLICATION_PATH . '/test/_files/sword-packages/single-doc-pdf-xml.zip',
-            $tmpDir . DIRECTORY_SEPARATOR . 'package.zip'
-        );
-
-        $status = $reader->readPackage($tmpDir);
-
-        $this->assertFalse($status->noDocImported());
-        $this->assertCount(1, $status->getDocs());
-
-        $document = $status->getDocs()[0];
-
-        // TODO do we need this?
-        // $this->addTestDocument($document); // for cleanup
-
-        $files = $document->getFile();
-
-        $this->assertCount(2, $files);
-
-        PackageReaderTest::cleanupTmpDir($tmpDir);
+        foreach ($commands as $command) {
+            $this->assertInstanceOf(Command::class, $command);
+        }
     }
 }
