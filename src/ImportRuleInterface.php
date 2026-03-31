@@ -25,30 +25,12 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2023, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
 namespace Opus\Import;
 
-use Opus\Common\Document;
-
-/**
- * Imports documents from array.
- *
- * TODO What is the use case, besides an easy way to test import mechanisms.
- * TODO Interface?
- * TODO support multiple documents?
- */
-class ArrayImport
+interface ImportRuleInterface
 {
-    /**
-     * @param array $data
-     *
-     * TODO handling of collections
-     */
-    public function import($data)
-    {
-        $document = Document::fromArray($data);
-    }
 }

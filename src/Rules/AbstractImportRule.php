@@ -25,30 +25,56 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2023, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Rules;
 
-use Opus\Common\Document;
+use Opus\Common\DocumentInterface;
+use Opus\Import\ImportRuleConditionInterface;
+use Opus\Import\ImportRuleInterface;
+use Opus\Import\Rules\Conditions\AccountCondition;
+use Opus\Import\Rules\Conditions\KeywordCondition;
 
 /**
- * Imports documents from array.
- *
- * TODO What is the use case, besides an easy way to test import mechanisms.
- * TODO Interface?
- * TODO support multiple documents?
+ * TODO add base class for common code
  */
-class ArrayImport
+abstract class AbstractImportRule implements ImportRuleInterface
 {
+    /** @var ImportRuleConditionInterface */
+    private $condition;
+
     /**
-     * @param array $data
-     *
-     * TODO handling of collections
+     * @param array $options
      */
-    public function import($data)
+    public function setOptions($options)
     {
-        $document = Document::fromArray($data);
+        if (isset($options['condition'])) {
+            $condition = $options['condition'];
+            // TODO support multiple conditions
+            if (isset($condition['account'])) {
+                $this->condition = new AccountCondition($condition);
+            }
+            if (isset($condition['keyword'])) {
+                $this->condition = new KeywordCondition($condition);
+            }
+        }
+    }
+
+    /**
+     * @return ImportRuleConditionInterface
+     */
+    public function getCondition()
+    {
+        return $this->condition;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function apply($document)
+    {
+        // TODO condition check in base class?
     }
 }

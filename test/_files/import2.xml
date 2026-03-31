@@ -4,5 +4,10 @@
         <titlesMain>
             <titleMain language="deu">Der Titel</titleMain>
         </titlesMain>
+        <keywords>
+            <keyword type="swd">Test</keyword>
+            <keyword type="uncontrolled" language="eng">engTest</keyword>
+            <keyword>testWithDefaults</keyword>
+        </keywords>
     </opusDocument>
 </import>

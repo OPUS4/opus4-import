@@ -31,13 +31,21 @@
 
 namespace OpusTest\Import;
 
+use Opus\Common\Collection;
+use Opus\Common\CollectionRole;
 use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
 use Opus\Common\EnrichmentKey;
+use Opus\Common\Licence;
 use Opus\Common\Log;
+use Opus\Common\Model\ModelException;
+use Opus\Common\Security\SecurityException;
+use Opus\Common\Subject;
 use Opus\Import\Importer;
+use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\Import\TestAsset\TestCase;
+use Zend_Exception;
 
 use function file_get_contents;
 
@@ -57,6 +65,8 @@ class ImporterTest extends TestCase
         $enrichmentKey = EnrichmentKey::new();
         $enrichmentKey->setName('validtestkey');
         $enrichmentKey->store();
+
+        // TODO enable import rules here?
     }
 
     public function tearDown(): void
@@ -130,5 +140,214 @@ class ImporterTest extends TestCase
         $doc = Document::get(146);
 
         // var_dump($doc->toArray());
+    }
+
+    /**
+     * @return DocumentInterface
+     * @throws MetadataImportSkippedDocumentsException
+     * @throws ModelException
+     * @throws SecurityException
+     * @throws MetadataImportInvalidXmlException
+     * @throws Zend_Exception
+     */
+    protected function getTestImportDocument()
+    {
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import-rules-test.xml');
+
+        $importer = new Importer($xml, false, Log::get());
+
+        $importer->run();
+
+        $document = $importer->getDocument();
+
+        $this->assertNotNull($document);
+        $this->assertInstanceOf(DocumentInterface::class, $document);
+
+        return $document;
+    }
+
+    public function testImport()
+    {
+        $document = $this->getTestImportDocument();
+
+        $authors = $document->getPersonAuthor();
+
+        $this->assertCount(1, $authors);
+
+        $this->assertEquals('deu', $document->getLanguage());
+        $this->assertEquals('Der Titel', $document->getMainTitle()->getValue());
+    }
+
+    public function testImportRulesAddCollectionByAccount()
+    {
+        $doc = $this->getTestImportDocument();
+    }
+
+    public function testImportRulesAddCollectionForKeyword()
+    {
+        $this->prepareCollections();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $collections = $doc->getCollection();
+
+        $this->assertCount(1, $collections);
+        $this->assertEquals('col1', $collections[0]->getName());
+    }
+
+    public function testImportRulesAddLicenceForKeyword()
+    {
+        $licence = Licence::new();
+        $licence->setName('CC BY');
+        $licence->setNameLong('CC BY Test Licence');
+        $licence->setLinkLicence('URL');
+        $licenceId = $licence->store();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => [
+                'rulesConfigFile' => null,
+                'rules'           => [
+                    'licence' => [
+                        'type'      => 'AddLicence',
+                        'condition' => [
+                            'keyword' => 'ccby',
+                        ],
+                        'licenceId' => $licenceId,
+                    ],
+                ],
+            ],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $licences = $doc->getLicence();
+
+        $this->assertCount(1, $licences);
+        $this->assertEquals('CC BY', $licences[0]->getName());
+    }
+
+    public function testImportRulesRemoveKeyword()
+    {
+        $this->markTestIncomplete('TODO implement test');
+    }
+
+    public function testImportRulesAddCollectionAndRemoveKeyword()
+    {
+        $this->prepareCollections();
+
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $collections = $doc->getCollection();
+
+        $this->assertCount(1, $collections);
+
+        $this->markTestIncomplete('TODO check if collection was added and keyword removed');
+    }
+
+    public function testImportRulesDisabled()
+    {
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => false],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+        $doc = $this->getTestImportDocument();
+        $this->assertFalse($doc->hasSubject('RulesEnabled'));
+    }
+
+    public function testKeywordTypeDefaultUncontrolled()
+    {
+        $doc = $this->getTestImportDocument();
+
+        $keywords = $doc->getSubject();
+
+        $this->assertCount(4, $keywords);
+
+        $this->assertTrue($doc->hasSubject('oa-green', Subject::TYPE_UNCONTROLLED));
+        $this->assertTrue($doc->hasSubject('oa-gold', Subject::TYPE_UNCONTROLLED));
+    }
+
+    public function testAddKeyword()
+    {
+        $this->adjustConfiguration([
+            'sword'  => ['enableImportRules' => true],
+            'import' => ['rulesConfigFile' => APPLICATION_PATH . '/test/_files/import-rules-keywords.ini'],
+        ]);
+
+        $doc = $this->getTestImportDocument();
+
+        $this->assertTrue($doc->hasSubject('RulesEnabled'));
+    }
+
+    protected function prepareCollections()
+    {
+        $role = CollectionRole::new();
+        $role->setName('import');
+        $role->setOaiName('oaiImport');
+        $role->addRootCollection();
+        $role->store();
+
+        $rootCol = $role->getRootCollection();
+
+        $col = Collection::new();
+        $col->setName('col1');
+        $col->setNumber('col1number');
+        $rootCol->addFirstChild($col);
+
+        $col = Collection::new();
+        $col->setName('green');
+        $col->setNumber('col2number');
+        $rootCol->addLastChild($col);
+        $role->store();
+    }
+
+    public function testImportKeywordDefaults()
+    {
+        $xml = file_get_contents(APPLICATION_PATH . '/test/_files/import2.xml');
+
+        $importer = new Importer($xml, false, Log::get());
+
+        $importer->run();
+
+        $doc = $importer->getDocument();
+
+        $this->assertNotNull($doc);
+        $this->assertInstanceOf(DocumentInterface::class, $doc);
+
+        $subjects = $doc->getSubject();
+
+        $this->assertCount(3, $subjects);
+
+        // TODO this result check is overly complicated - better way?
+        foreach ($subjects as $subject) {
+            switch ($subject->getType()) {
+                case Subject::TYPE_SWD:
+                    $this->assertEquals('Test', $subject->getValue());
+                    $this->assertEquals('deu', $subject->getLanguage());
+                    break;
+                case Subject::TYPE_UNCONTROLLED:
+                    switch ($subject->getValue()) {
+                        case 'engTest':
+                            $this->assertEquals('eng', $subject->getLanguage());
+                            break;
+                        case 'testWithDefaults':
+                            $this->assertEquals('deu', $subject->getLanguage());
+                            break;
+                    }
+                    break;
+                default:
+                    $this->fail('Unexpected subject type ' . $subject->getType());
+            }
+        }
     }
 }

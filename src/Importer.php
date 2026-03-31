@@ -127,6 +127,9 @@ class Importer
     /** @var XmlDocument */
     private $xmlDocument;
 
+    /** @var ImportRules */
+    private $importRules;
+
     /** @var bool */
     private $updateExistingDocuments = true;
 
@@ -318,6 +321,9 @@ class Importer
                 $this->appendDocIdToRejectList($oldId);
                 continue;
             }
+
+            $importRules = $this->getImportRules();
+            $importRules->apply($doc);
 
             try {
                 // TODO post "import" processing before storing!
@@ -713,9 +719,11 @@ class Importer
     {
         foreach ($node->childNodes as $childNode) {
             if ($childNode instanceof DOMElement) {
-                $s = Subject::new();
-                $s->setLanguage(trim($childNode->getAttribute('language')));
-                $s->setType($childNode->getAttribute('type'));
+                $s        = Subject::new();
+                $language = $childNode->getAttribute('language');
+                $s->setLanguage($language ?: 'deu');
+                $type = $childNode->getAttribute('type');
+                $s->setType($type ?: 'uncontrolled');
                 $s->setValue(trim($childNode->textContent));
                 $doc->addSubject($s);
             }
@@ -1126,6 +1134,19 @@ class Importer
     public function getDocument(): DocumentInterface
     {
         return $this->document;
+    }
+
+    /**
+     * @return ImportRules
+     */
+    public function getImportRules()
+    {
+        if ($this->importRules === null) {
+            $this->importRules = new ImportRules();
+            $this->importRules->init();
+        }
+
+        return $this->importRules;
     }
 
     protected function setSingleDocImport(bool $singleDoc): self

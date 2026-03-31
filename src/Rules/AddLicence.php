@@ -25,30 +25,55 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2023, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace Opus\Import\Rules;
 
-use Opus\Common\Document;
+use Opus\Common\DocumentInterface;
+use Opus\Common\Licence;
+use Opus\Common\LicenceInterface;
 
 /**
- * Imports documents from array.
- *
- * TODO What is the use case, besides an easy way to test import mechanisms.
- * TODO Interface?
- * TODO support multiple documents?
+ * TODO logging, error handling
  */
-class ArrayImport
+class AddLicence extends AbstractImportRule
 {
+    /** @var LicenceInterface */
+    private $licence;
+
     /**
-     * @param array $data
-     *
-     * TODO handling of collections
+     * @param array $options
      */
-    public function import($data)
+    public function setOptions($options)
     {
-        $document = Document::fromArray($data);
+        parent::setOptions($options);
+
+        if (isset($options['licenceId'])) {
+            $this->licence = Licence::get($options['licenceId']);
+        }
+    }
+
+    /**
+     * @return LicenceInterface|null
+     */
+    public function getLicence()
+    {
+        return $this->licence;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function apply($document)
+    {
+        $condition = $this->getCondition();
+        if ($condition === null || $condition->applies($document)) {
+            $licence = $this->getLicence();
+            if ($licence !== null) {
+                $document->addLicence($licence);
+            }
+        }
     }
 }

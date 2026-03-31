@@ -48,7 +48,7 @@ class XmlDocumentTest extends TestCase
     {
         foreach (new DirectoryIterator(APPLICATION_PATH . '/test/_files') as $fileInfo) {
             if (
-                $fileInfo->getExtension() !== 'xsd' && ! $fileInfo->isDot()
+                $fileInfo->getExtension() === 'xml' && ! $fileInfo->isDot()
                     && strpos($fileInfo->getBasename(), 'import') === 0
             ) {
                 $xml = file_get_contents($fileInfo->getRealPath());

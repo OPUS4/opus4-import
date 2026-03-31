@@ -25,30 +25,34 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2020, OPUS 4 development team
+ * @copyright   Copyright (c) 2023, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import;
+namespace OpusTest\Import\TestAsset;
 
-use Opus\Common\Document;
+use Zend_Auth_Adapter_Interface;
+use Zend_Auth_Result;
 
-/**
- * Imports documents from array.
- *
- * TODO What is the use case, besides an easy way to test import mechanisms.
- * TODO Interface?
- * TODO support multiple documents?
- */
-class ArrayImport
+class MockAuthAdapter implements Zend_Auth_Adapter_Interface
 {
+    /** @var string */
+    protected $user;
+
     /**
-     * @param array $data
-     *
-     * TODO handling of collections
+     * @param string $user
      */
-    public function import($data)
+    public function __construct($user)
     {
-        $document = Document::fromArray($data);
+        $this->user = $user;
+    }
+
+    /**
+     * @return Zend_Auth_Result
+     */
+    public function authenticate()
+    {
+        $identity = ['username' => $this->user];
+        return new Zend_Auth_Result(Zend_Auth_Result::SUCCESS, $identity);
     }
 }
