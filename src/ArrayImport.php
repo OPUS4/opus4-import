@@ -33,6 +33,13 @@ namespace Opus\Import;
 
 use Opus\Common\Document;
 
+/**
+ * Imports documents from array.
+ *
+ * TODO What is the use case, besides an easy way to test import mechanisms.
+ * TODO Interface?
+ * TODO support multiple documents?
+ */
 class ArrayImport
 {
     /**

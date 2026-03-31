@@ -63,7 +63,7 @@ class RemoveKeywords extends AbstractImportRule
             if ($keywords !== null) {
                 $caseSensitive = $this->isCaseSensitive();
                 $keywordType   = $this->getKeywordType();
-                foreach ($this->getKeywords() as $keyword) {
+                foreach ($keywords as $keyword) {
                     $document->removeSubject($keyword, $keywordType, $caseSensitive);
                 }
             }

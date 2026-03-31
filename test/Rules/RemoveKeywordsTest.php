@@ -85,21 +85,29 @@ class RemoveKeywordsTest extends TestCase
     public function testSetKeywordsSingleValue()
     {
         $rule = new RemoveKeywords();
+        $rule->setKeywords('RemoveMe');
+        $this->assertEquals(['RemoveMe'], $rule->getKeywords());
     }
 
     public function testSetKeywordsNull()
     {
         $rule = new RemoveKeywords();
+        $rule->setKeywords(null);
+        $this->assertNull($rule->getKeywords());
     }
 
     public function testSetKeywordsCsv()
     {
         $rule = new RemoveKeywords();
+        $rule->setKeywords('keyword1,keyword2,keyword3');
+        $this->assertEquals(['keyword1', 'keyword2', 'keyword3'], $rule->getKeywords());
     }
 
     public function testSetKeywordsArray()
     {
         $rule = new RemoveKeywords();
+        $rule->setKeywords(['keyword1', 'keyword2', 'keyword3']);
+        $this->assertEquals(['keyword1', 'keyword2', 'keyword3'], $rule->getKeywords());
     }
 
     public function testRemoveKeyword()
@@ -122,16 +130,88 @@ class RemoveKeywordsTest extends TestCase
 
     public function testRemoveMultipleKeywords()
     {
+        $doc = Document::fromArray([
+            'Subject' => [
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key1',
+                    'Type'     => 'uncontrolled',
+                ],
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key2',
+                    'Type'     => 'psyndex',
+                ],
+            ],
+        ]);
+
+        $this->assertCount(2, $doc->getSubject());
+
         $rule = new RemoveKeywords();
+        $rule->setCaseSensitive(false);
+        $rule->setKeywords(['key1', 'KEY2']);
+
+        $rule->apply($doc);
+
+        $this->assertCount(0, $doc->getSubject());
     }
 
     public function testRemoveKeywordsUsingType()
     {
+        $doc = Document::fromArray([
+            'Subject' => [
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key1',
+                    'Type'     => 'uncontrolled',
+                ],
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key2',
+                    'Type'     => 'psyndex',
+                ],
+            ],
+        ]);
+
+        $this->assertCount(2, $doc->getSubject());
+
         $rule = new RemoveKeywords();
+        $rule->setCaseSensitive(false);
+        $rule->setKeywords(['key1', 'KEY2']);
+        $rule->setKeywordType('psyndex');
+
+        $rule->apply($doc);
+
+        $this->assertCount(1, $doc->getSubject());
+        $this->assertEquals('key1', $doc->getSubject(0)->getValue());
     }
 
     public function testRemoveKeywordsCaseSensitive()
     {
+        $doc = Document::fromArray([
+            'Subject' => [
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key1',
+                    'Type'     => 'uncontrolled',
+                ],
+                [
+                    'Language' => 'eng',
+                    'Value'    => 'key2',
+                    'Type'     => 'psyndex',
+                ],
+            ],
+        ]);
+
+        $this->assertCount(2, $doc->getSubject());
+
         $rule = new RemoveKeywords();
+        $rule->setCaseSensitive(true);
+        $rule->setKeywords(['key1', 'KEY2']);
+
+        $rule->apply($doc);
+
+        $this->assertCount(1, $doc->getSubject());
+        $this->assertEquals('key2', $doc->getSubject(0)->getValue());
     }
 }
