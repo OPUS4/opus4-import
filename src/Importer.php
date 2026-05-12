@@ -145,6 +145,9 @@ class Importer
     /** @var bool */
     protected $storeDocument = true;
 
+    /** @var bool  */
+    private $importAllFiles = false;
+
     /**
      * @param string|DOMDocument $xml
      * @param bool               $isFile
@@ -1064,8 +1067,13 @@ class Importer
         $finfo         = new finfo(FILEINFO_MIME_TYPE);
         $mimeTypeFound = $finfo->file($fullPath);
 
-        $fileTypes = new FileTypes();
+        if ($this->isImportAllFiles()) {
+            // TODO check exclude option
+            return true;
+        }
 
+        // TODO check "local" configuration
+        $fileTypes = new FileTypes();
         return $fileTypes->isValidMimeType($mimeTypeFound, $extension);
     }
 
@@ -1195,5 +1203,16 @@ class Importer
         }
 
         return $this->importedDocumentIds;
+    }
+
+    public function isImportAllFiles(): bool
+    {
+        return $this->importAllFiles;
+    }
+
+    public function setImportAllFiles(bool $importAllFiles): self
+    {
+        $this->importAllFiles = $importAllFiles;
+        return $this;
     }
 }
