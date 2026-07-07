@@ -350,4 +350,23 @@ class ImporterTest extends TestCase
             }
         }
     }
+
+    public function testImportOrcid()
+    {
+        $xml      = file_get_contents(APPLICATION_PATH . '/test/_files/import1.xml');
+        $importer = new Importer($xml, false, Log::get());
+        $importer->run();
+        $doc = $importer->getDocument();
+
+        // ORCID prefix URL gets automatically removed, when document is stored
+        $doc = Document::get($doc->store());
+
+        $this->assertNotNull($doc);
+        $this->assertInstanceOf(DocumentInterface::class, $doc);
+
+        $author = $doc->getPersonAuthor(0);
+        $this->assertNotNull($author);
+
+        $this->assertEquals('1111-2222-3333-4444', $author->getIdentifierOrcid());
+    }
 }

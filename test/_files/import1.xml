@@ -11,14 +11,15 @@
             <abstract language="deu">Deutsch Zusammenfassung</abstract>
         </abstracts>
         <persons>
-            <person role="author" firstName="John" lastName="Doe" />
+            <person role="author" firstName="John" lastName="Doe">
+                <identifiers>
+                    <identifier type="orcid">https://orcid.org/1111-2222-3333-4444</identifier>
+                </identifiers>
+            </person>
         </persons>
         <keywords>
             <keyword type="swd" language="deu">Test</keyword>
         </keywords>
-        <dnbInstitutions>
-            <dnbInstitution id="2" role="grantor" />
-        </dnbInstitutions>
         <dates>
             <date type="published" monthDay="--02-14" year="2011" />
         </dates>
