@@ -88,7 +88,10 @@ class MetadataImport
     /** @var XmlDocument */
     private $xmlDocument;
 
-    public function __construct(string $xml, bool $isFile = false)
+    /**
+     * TODO cleanup variable names, $xml
+     */
+    public function import(string $xml, bool $isFile = false)
     {
         if ($isFile) {
             $this->xmlFile = $xml;
@@ -97,10 +100,7 @@ class MetadataImport
         }
 
         $this->xmlDocument = new XmlDocument();
-    }
 
-    public function run()
-    {
         $output = $this->getOutput();
 
         $this->xml = $this->loadXML();

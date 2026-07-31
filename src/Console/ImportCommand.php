@@ -102,7 +102,7 @@ EOT;
             return self::FAILURE;
         }
 
-        $importer = new MetadataImport($xmlFile, true);
+        $importer = new MetadataImport();
         $importer->setOutput($output);
 
         $rejectLogPath = $input->getOption(self::OPTION_REJECT_FILE);
@@ -112,7 +112,7 @@ EOT;
         }
 
         try {
-            $importer->run();
+            $importer->import($xmlFile, true);
         } catch (MetadataImportSkippedDocumentsException $ex) {
             $output->writeln(sprintf('<error>%s</error>', $ex->getMessage()));
             return self::FAILURE;

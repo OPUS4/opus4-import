@@ -35,6 +35,7 @@ use Opus\Common\JobInterface;
 use Opus\Import\Xml\MetadataImport;
 use Opus\Job\AbstractWorker;
 use Opus\Job\InvalidJobException;
+use Symfony\Component\Console\Output\NullOutput;
 use Zend_Log;
 
 use function is_object;
@@ -87,7 +88,8 @@ class MetadataImportWorker extends AbstractWorker
             $this->logger->debug("Importing Metadata:\n" . $data->xml);
         }
 
-        $importer = new MetadataImport($data->xml);
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->import($data->xml);
     }
 }
