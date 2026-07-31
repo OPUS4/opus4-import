@@ -210,7 +210,7 @@ class MetadataImport
             $this->xmlDocument->validate();
             $output->writeln('OK');
         } catch (MetadataImportInvalidXmlException $exception) {
-            $this->writeln('<error>XML document is not valid:</error>');
+            $output->writeln('<error>XML document is not valid:</error>');
             throw $exception;
         }
     }
