@@ -47,18 +47,31 @@ use Opus\Common\Model\NotFoundException;
 use Opus\Common\Person;
 use Opus\Common\Series;
 use Opus\Common\Subject;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 use function array_diff;
 use function substr;
 use function trim;
 use function ucfirst;
 
+use const PHP_EOL;
+
+/**
+ * TODO consolidate with class Importer
+ * TODO 3 logger? OPUS log, console, reject log (optional)
+ * TODO use class for strings and files? should file loading be separated? (see Importer)
+ */
 class MetadataImport
 {
     use LoggingTrait;
 
-    /** @var mixed|null */
-    private $logfile;
+    /** @var OutputInterface */
+    private $output;
+
+    /** @var OutputInterface */
+    private $rejectOutput;
 
     /** @var DOMDocument */
     private $xml;
@@ -75,20 +88,8 @@ class MetadataImport
     /** @var XmlDocument */
     private $xmlDocument;
 
-    /**
-     * @param string     $xml
-     * @param bool       $isFile
-     * @param null|mixed $logger
-     * @param null|mixed $logfile
-     */
-    public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
+    public function __construct(string $xml, bool $isFile = false)
     {
-        if ($logger !== null) {
-            $this->setLogger($logger);
-        }
-
-        $this->logfile = $logfile;
-
         if ($isFile) {
             $this->xmlFile = $xml;
         } else {
@@ -100,9 +101,11 @@ class MetadataImport
 
     public function run()
     {
-        $this->xml = $this->__getXML();
+        $output = $this->getOutput();
 
-        $this->__validateXML();
+        $this->xml = $this->loadXML();
+
+        $this->validateXml();
 
         $numOfDocsImported = 0;
         $numOfSkippedDocs  = 0;
@@ -112,7 +115,9 @@ class MetadataImport
             $oldId = $opusDocumentElement->getAttribute('oldId');
             $opusDocumentElement->removeAttribute('oldId');
 
-            $this->log("Start processing of record #" . $oldId . " ...");
+            // TODO there is not always an old ID
+
+            $output->writeln("Start processing of record #{$oldId} ...");
 
             /*
              * @var Document
@@ -125,7 +130,7 @@ class MetadataImport
                     $doc = Document::get($docId);
                     $opusDocumentElement->removeAttribute('docId');
                 } catch (NotFoundException $e) {
-                    $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
+                    $output->writeln("<error>Could not load document #{$docId} from database: " . $e->getMessage() . "</error>");
                     $this->appendDocIdToRejectList($oldId);
                     $numOfSkippedDocs++;
                     continue;
@@ -141,50 +146,41 @@ class MetadataImport
                 $this->processAttributes($opusDocumentElement->attributes, $doc);
                 $this->processElements($opusDocumentElement->childNodes, $doc);
             } catch (Exception $e) {
-                $this->log('Error while processing document #' . $oldId . ': ' . $e->getMessage());
+                $output->writeln("<error>Error processing document #{$oldId}: " . $e->getMessage() . "</error>");
                 $this->appendDocIdToRejectList($oldId);
                 $numOfSkippedDocs++;
                 continue;
             }
 
             try {
-                $doc->store();
+                $docId = $doc->store();
             } catch (Exception $e) {
-                $this->log('Error while saving imported document #' . $oldId . ' to database: ' . $e->getMessage());
+                $output->writeln("<error>Error saving imported document #{$oldId}: " . $e->getMessage() . "</error>");
                 $this->appendDocIdToRejectList($oldId);
                 $numOfSkippedDocs++;
                 continue;
             }
 
             $numOfDocsImported++;
-            $this->log('... OK');
+            $output->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
         }
 
         if ($numOfSkippedDocs === 0) {
-            $this->log("Import finished successfully. $numOfDocsImported documents were imported.");
+            $output->writeln("Import finished successfully. {$numOfDocsImported} documents were imported.");
         } else {
-            $this->log("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
-            throw new MetadataImportSkippedDocumentsException("$numOfSkippedDocs documents were skipped during import.");
+            $output->writeln("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
+            throw new MetadataImportSkippedDocumentsException("Documents ({$numOfSkippedDocs}) skipped during import");
         }
-    }
-
-    /**
-     * @param string $string
-     */
-    private function log($string)
-    {
-        if ($this->logger === null) {
-            return;
-        }
-        $this->logger->log($string);
     }
 
     /**
      * @return DOMDocument
      */
-    private function __getXML()
+    private function loadXML()
     {
-        $this->log("Load XML ...");
+        $output = $this->getOutput();
+
+        $output->write('Loading XML ... ');
 
         try {
             if ($this->xmlFile !== null) {
@@ -193,10 +189,10 @@ class MetadataImport
                 $xml = $this->xmlDocument->loadXML($this->xmlString);
             }
 
-            $this->log('... OK');
+            $output->writeln('OK');
             return $xml;
         } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: Cannot load XML document "
+            $output->writeln(PHP_EOL . "<ERROR>Cannot load XML document "
                 . ($this->xmlFile ? $this->xmlFile : "")
                 . ": make sure it is well-formed."
                 . $this->xmlDocument->getErrorsPrettyPrinted());
@@ -204,15 +200,17 @@ class MetadataImport
         }
     }
 
-    private function __validateXML()
+    private function validateXml()
     {
-        $this->log("Validate XML ...");
+        $output = $this->getOutput();
+
+        $output->write('Validating XML ... ');
 
         try {
             $this->xmlDocument->validate();
-            $this->log('... OK');
+            $output->writeln('OK');
         } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: XML document is not valid: " . $exception->getMessage());
+            $this->writeln('<error>XML document is not valid:</error>');
             throw $exception;
         }
     }
@@ -222,11 +220,8 @@ class MetadataImport
      */
     private function appendDocIdToRejectList($docId)
     {
-        $this->log('... SKIPPED');
-        if ($this->logfile === null) {
-            return;
-        }
-        $this->logfile->log($docId);
+        $this->getOutput()->writeln("Record #{$docId} SKIPPED");
+        $this->getRejectOutput()->writeln($docId);
     }
 
     /**
@@ -635,5 +630,34 @@ class MetadataImport
                 $doc->$method($date);
             }
         }
+    }
+
+    public function setOutput(OutputInterface|null $output): self
+    {
+        $this->output = $output;
+        return $this;
+    }
+
+    public function getOutput(): OutputInterface
+    {
+        if ($this->output === null) {
+            $this->output = new ConsoleOutput();
+        }
+
+        return $this->output;
+    }
+
+    public function setRejectOutput(OutputInterface|null $output): self
+    {
+        $this->rejectOutput = $output;
+        return $this;
+    }
+
+    public function getRejectOutput(): OutputInterface
+    {
+        if ($this->rejectOutput === null) {
+            $this->rejectOutput = new NullOutput();
+        }
+        return $this->rejectOutput;
     }
 }
