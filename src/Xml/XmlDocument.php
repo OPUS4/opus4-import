@@ -71,6 +71,7 @@ class XmlDocument
      *
      * @param  string $xml XML string
      * @return DOMDocument
+     * @throws MetadataImportInvalidXmlException
      */
     public function loadXML($xml)
     {
