@@ -112,7 +112,7 @@ EOT;
         }
 
         try {
-            $importer->import($xmlFile, true);
+            $importer->importFile($xmlFile);
         } catch (MetadataImportSkippedDocumentsException $ex) {
             $output->writeln(sprintf('<error>%s</error>', $ex->getMessage()));
             return self::FAILURE;

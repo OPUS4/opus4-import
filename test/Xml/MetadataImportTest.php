@@ -41,8 +41,8 @@ use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\Import\TestAsset\TestCase;
-
 use Symfony\Component\Console\Output\NullOutput;
+
 use function array_pop;
 use function count;
 use function dirname;
@@ -176,7 +176,7 @@ class MetadataImportTest extends TestCase
 
         try {
             $importedDoc = Document::get(1);
-            $titleMain = $importedDoc->getTitleMain();
+            $titleMain   = $importedDoc->getTitleMain();
             $this->assertCount(1, $titleMain);
             $this->assertEquals('La Vie un Rose', $titleMain[0]->getValue());
         } catch (NotFoundException $e) {

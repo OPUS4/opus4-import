@@ -31,37 +31,24 @@
 
 namespace Opus\Import\Xml;
 
-use DOMDocument;
-use DOMElement;
-use DOMNamedNodeMap;
-use DOMNode;
-use DOMNodeList;
 use Exception;
-use Opus\Common\Collection;
-use Opus\Common\DnbInstitute;
-use Opus\Common\Document;
-use Opus\Common\EnrichmentKey;
-use Opus\Common\Licence;
+use Opus\Common\Console\Helper\ProgressBar;
 use Opus\Common\LoggingTrait;
 use Opus\Common\Model\NotFoundException;
-use Opus\Common\Person;
-use Opus\Common\Series;
-use Opus\Common\Subject;
+use Opus\Import\ImportFormatInterface;
+use Opus\Import\StoreDocument;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use function array_diff;
-use function substr;
-use function trim;
-use function ucfirst;
-
-use const PHP_EOL;
+use function sprintf;
 
 /**
- * TODO consolidate with class Importer
- * TODO 3 logger? OPUS log, console, reject log (optional)
- * TODO use class for strings and files? should file loading be separated? (see Importer)
+ * Imports OPUS-XML on command line.
+ *
+ * TODO Do we need a separate reject log? NO remove
+ * TODO support additional formats
+ * TODO how to do reject log (independent of if it is really needed)?
  */
 class MetadataImport
 {
@@ -73,158 +60,132 @@ class MetadataImport
     /** @var OutputInterface */
     private $rejectOutput;
 
-    /** @var string */
-    private $xmlFile;
+    /** @var ProgressBar */
+    private $progressBar;
 
     /**
-     * TODO cleanup variable names, $xml
+     * Imports documents from file.
      */
-    public function import(string $xml, bool $isFile = false)
+    public function importFile(string $path): void
     {
-        if ($isFile) {
-            $this->xmlFile = $xml;
-        } else {
-            $this->xmlString = $xml;
-        }
+        $parser = $this->getParser();
+        $parser->parseFile($path);
+        $this->process($parser);
+    }
 
-        $this->xmlDocument = new XmlDocument();
+    /**
+     * Imports documents from XML string.
+     */
+    public function import(string $data): void
+    {
+        $parser = $this->getParser();
+        $parser->parse($data);
+        $this->process($parser);
+    }
 
+    /**
+     * @throws MetadataImportSkippedDocumentsException
+     *
+     * TODO support configurable DocumentProcessor chain
+     * TODO review $parser as parameter
+     */
+    protected function process(ImportFormatInterface $parser)
+    {
         $output = $this->getOutput();
 
-        $this->xml = $this->loadXML();
+        $processor = new StoreDocument();
 
-        $this->validateXml();
+        // TODO setup progress bar and such
+        $importedCount = 0;
+        $skippedCount  = 0;
 
-        $numOfDocsImported = 0;
-        $numOfSkippedDocs  = 0;
+        $this->importStarted($parser->getDocumentCount());
 
-        foreach ($this->xml->getElementsByTagName('opusDocument') as $opusDocumentElement) {
-            // save oldId for later referencing of the record under consideration
-            $oldId = $opusDocumentElement->getAttribute('oldId');
-            $opusDocumentElement->removeAttribute('oldId');
+        do {
+            $document = null;
 
-            // TODO there is not always an old ID
-
-            $output->writeln("Start processing of record #{$oldId} ...");
-
-            /*
-             * @var Document
-             */
-            $doc = null;
-            if ($opusDocumentElement->hasAttribute('docId')) {
-                // perform metadata update on given document
-                $docId = $opusDocumentElement->getAttribute('docId');
-                try {
-                    $doc = Document::get($docId);
-                    $opusDocumentElement->removeAttribute('docId');
-                } catch (NotFoundException $e) {
-                    $output->writeln("<error>Could not load document #{$docId} from database: " . $e->getMessage() . "</error>");
-                    $this->appendDocIdToRejectList($oldId);
-                    $numOfSkippedDocs++;
-                    continue;
-                }
-
-                $this->resetDocument($doc);
-            } else {
-                // create new document
-                $doc = Document::new();
-            }
+            // TODO how to get line no, how to get old ID or doc ID if not found (part of exception?)
 
             try {
-                $this->processAttributes($opusDocumentElement->attributes, $doc);
-                $this->processElements($opusDocumentElement->childNodes, $doc);
-            } catch (Exception $e) {
-                $output->writeln("<error>Error processing document #{$oldId}: " . $e->getMessage() . "</error>");
-                $this->appendDocIdToRejectList($oldId);
-                $numOfSkippedDocs++;
+                $document = $parser->next();
+            } catch (NotFoundException $nfe) {
+                $oldId = $nfe->getModelId();
+                $this->getOutput()->writeln(
+                    "<error>Error updating document: " . $nfe->getMessage() . "</error>"
+                );
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                continue;
+            } catch (Exception $ex) {
+                $this->getOutput()->writeln(
+                    "<error>Error processing document: " . $ex->getMessage() . "</error>"
+                );
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
                 continue;
             }
 
             try {
-                $docId = $doc->store();
-            } catch (Exception $e) {
-                $output->writeln("<error>Error saving imported document #{$oldId}: " . $e->getMessage() . "</error>");
-                $this->appendDocIdToRejectList($oldId);
-                $numOfSkippedDocs++;
+                $processor->processDocument($document);
+            } catch (Exception $ex) {
+                $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
                 continue;
             }
 
-            $numOfDocsImported++;
-            $output->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
-        }
-
-        if ($numOfSkippedDocs === 0) {
-            $output->writeln("Import finished successfully. {$numOfDocsImported} documents were imported.");
-        } else {
-            $output->writeln("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
-            throw new MetadataImportSkippedDocumentsException("Documents ({$numOfSkippedDocs}) skipped during import");
-        }
-    }
-
-    /**
-     * @return DOMDocument
-     *
-     * TODO load XML from file
-     */
-    private function loadXML()
-    {
-        $output = $this->getOutput();
-
-        $output->write('Loading XML ... ');
-
-        try {
-            if ($this->xmlFile !== null) {
-                $xml = $this->xmlDocument->load($this->xmlFile);
+            if (null !== $document) {
+                $importedCount++;
+                $docId = $document->getId();
+                $this->importDocumentSuccess($docId);
             } else {
-                $xml = $this->xmlDocument->loadXML($this->xmlString);
+                $this->getOutput()->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
+                $skippedCount++;
+                $this->importDocumentSkipped(null); // TODO  $parser->getCurrentLineNo()
             }
+        } while ($document !== null);
 
-            $output->writeln('OK');
-            return $xml;
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $output->writeln(PHP_EOL . "<ERROR>Cannot load XML document "
-                . ($this->xmlFile ? $this->xmlFile : "")
-                . ": make sure it is well-formed."
-                . $this->xmlDocument->getErrorsPrettyPrinted());
-            throw new MetadataImportInvalidXmlException('XML is not well-formed.');
+        $this->importFinished();
+
+        if ($skippedCount === 0) {
+            $output->writeln("Import finished successfully. {$importedCount} documents were imported.");
+        } else {
+            $output->writeln(sprintf(
+                "Import finished. %s documents were imported. %s documents were skipped.",
+                $importedCount,
+                $skippedCount,
+            ));
+            throw new MetadataImportSkippedDocumentsException("Documents ({$skippedCount}) skipped during import");
         }
     }
 
-    private function validateXml()
+    public function importStarted(int $docCount): void
     {
-        $output = $this->getOutput();
+        $this->progressBar = new ProgressBar($this->getOutput(), $docCount);
+        $this->progressBar->start();
+    }
 
-        $output->write('Validating XML ... ');
+    public function importFinished(): void
+    {
+        $this->progressBar->finish();
+    }
 
-        try {
-            $this->xmlDocument->validate();
-            $output->writeln('OK');
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $output->writeln('<error>XML document is not valid:</error>');
-            throw $exception;
-        }
+    public function importDocumentSuccess(int $docId): void
+    {
+        $this->progressBar->advance();
+    }
+
+    public function importDocumentSkipped(int $docId): void
+    {
+        $this->progressBar->advance();
     }
 
     /**
-     * @param int $docId
+     * TODO support $format parameter
      */
-    private function appendDocIdToRejectList($docId)
+    protected function getParser(?string $format = null): ImportFormatInterface
     {
-        $this->getOutput()->writeln("Record #{$docId} SKIPPED");
-        $this->getRejectOutput()->writeln($docId);
+        return new OpusXmlParser();
     }
 
-    /**
-     * Allows certain fields to be kept on update.
-     *
-     * @param array $fields DescriptionArray of fields to keep on update
-     */
-    public function keepFieldsOnUpdate($fields)
-    {
-        $this->fieldsToKeepOnUpdate = $fields;
-    }
-
-    public function setOutput(OutputInterface|null $output): self
+    public function setOutput(?OutputInterface $output): self
     {
         $this->output = $output;
         return $this;
@@ -239,7 +200,7 @@ class MetadataImport
         return $this->output;
     }
 
-    public function setRejectOutput(OutputInterface|null $output): self
+    public function setRejectOutput(?OutputInterface $output): self
     {
         $this->rejectOutput = $output;
         return $this;
@@ -251,5 +212,17 @@ class MetadataImport
             $this->rejectOutput = new NullOutput();
         }
         return $this->rejectOutput;
+    }
+
+    protected function eventStartProcessingDocument(?string $oldId, ?int $lineNo)
+    {
+        // TODO there is not always an old ID
+        $this->getOutput()->writeln("Start processing of record #{$oldId} (line {$lineNo})...");
+    }
+
+    protected function appendDocIdToRejectList(int $docId): void
+    {
+        $this->getOutput()->writeln("Record #{$docId} SKIPPED");
+        $this->getRejectOutput()->writeln($docId);
     }
 }

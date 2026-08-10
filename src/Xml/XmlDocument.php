@@ -44,25 +44,26 @@ use const LIBXML_ERR_FATAL;
 use const LIBXML_ERR_WARNING;
 
 /**
- * A class for loading and validating OPUS-XML.
+ * A class for loading and validating XML.
  */
 class XmlDocument
 {
     /** @var DOMDocument|null */
-    private $xml;
+    private $dom;
 
     /** @var array|null */
     private $errors;
 
+    /** @var string */
+    private $schemaPath = __DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd';
+
     /**
-     * Constructor of the class
-     *
-     * @param DOMDocument|null $doc
+     * Construct object optionally with existing DOMDocument.
      */
-    public function __construct($doc = null)
+    public function __construct(?DOMDocument $dom = null)
     {
-        if ($doc) {
-            $this->xml = $doc;
+        if (null !== $dom) {
+            $this->dom = $dom;
         }
     }
 
@@ -73,37 +74,36 @@ class XmlDocument
      * @return DOMDocument
      * @throws MetadataImportInvalidXmlException
      */
-    public function loadXML($xml)
+    public function loadXml($xml)
     {
-        return $this->loadXmlData($xml, false);
+        return $this->loadXmlData($xml);
     }
 
     /**
      * Loads XML from a file
      *
-     * @param  string $xmlFilePath Path to the xml file
-     * @return DOMDocument
+     * TODO Error handling for missing files etc.
      */
-    public function load($xmlFilePath)
+    public function load(string $xmlFilePath): DOMDocument
     {
-        // TODO: Error handling for missing files etc.
-
         return $this->loadXmlData($xmlFilePath, true);
     }
 
-    public function setXml(DOMDocument $xml)
+    public function setDom(?DOMDocument $xml): self
     {
-        $this->xml = $xml;
+        $this->dom = $xml;
+        return $this;
+    }
+
+    public function getDom(): ?DOMDocument
+    {
+        return $this->dom;
     }
 
     /**
      * Loads XML from a string or a file
-     *
-     * @param  string $xml Xml string or a path to an xml file
-     * @param  bool   $isFile True if the given $xml is a file path
-     * @return DOMDocument
      */
-    protected function loadXmlData($xml, $isFile = false)
+    protected function loadXmlData(string $xml, bool $isFile = false): DOMDocument
     {
         // Enable user error handling
         libxml_clear_errors();
@@ -127,17 +127,23 @@ class XmlDocument
             throw new MetadataImportInvalidXmlException($this->getErrorsPrettyPrinted());
         }
 
-        $this->xml = $doc;
+        $this->dom = $doc;
+
         return $doc;
     }
 
-    public function validate()
+    /**
+     * Validate loaded XML against a schema.
+     *
+     * @throws MetadataImportInvalidXmlException
+     */
+    public function validate(): void
     {
         // Enable user error handling
         libxml_clear_errors();
         $useInternalErrors = libxml_use_internal_errors(true);
 
-        $success      = $this->xml->schemaValidate(__DIR__ . DIRECTORY_SEPARATOR . 'opus-import.xsd');
+        $success      = $this->dom->schemaValidate($this->getSchemaPath());
         $this->errors = libxml_get_errors();
 
         // Disable user error handling
@@ -158,9 +164,9 @@ class XmlDocument
     }
 
     /**
-     * @return string
+     * Formats errors in a readable way.
      */
-    public function getErrorsPrettyPrinted()
+    public function getErrorsPrettyPrinted(): string
     {
         $errorMsg = '';
         foreach ($this->getErrors() as $error) {
@@ -179,5 +185,16 @@ class XmlDocument
             $errorMsg .= trim($error->message);
         }
         return $errorMsg;
+    }
+
+    public function setSchemaPath(?string $schemaPath): self
+    {
+        $this->schemaPath = $schemaPath;
+        return $this;
+    }
+
+    public function getSchemaPath(): ?string
+    {
+        return $this->schemaPath;
     }
 }
