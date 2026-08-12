@@ -14,6 +14,7 @@
     "ext-fileinfo": "*",
     "ext-libxml": "*",
     "ext-mbstring": "*",
+    "ext-yaml": "*",
     "ext-zip": "*",
     "opus4-repo/opus4-common": "^4.10",
     "opus4-repo/opus4-app-common": "^4.10",

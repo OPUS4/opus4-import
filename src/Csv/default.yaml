@@ -1,0 +1,81 @@
+---
+#
+# Default CSV export/import configuration.
+#
+# TODO this should also be supported by the CSV export
+# TODO allow for column labels
+# TODO support configuring special import/export handlers (conversion of values)
+# TODO support named collection/licence/... mapping (e.g. 'CCBY' = 4)
+# TODO support identifying collections with ROLENAME:OAINAME
+# TODO support debugging (report ignored columns)
+# TODO support converting header to config and back (for auto config debugging)
+# TODO extend CvsCommand for new features like config-file, auto-mode and such
+#
+# default requires 33 columns
+#
+# Supported attributes:
+# - label (default: field name)
+# - type
+# - required (default: false)
+# - ignore
+#
+
+# Specific identifier type in a single column
+Identifier-Old:
+
+Language:
+
+Type:
+
+ServerState:
+
+TitleMain-Language:
+TitleMain-Value:
+
+# TODO supports ||
+TitleAbstract-Language:
+TitleAbstract-Value:
+
+# TODO OtherTitle is no field - requires special handling
+OtherTitle-Type:
+OtherTitle-Language:
+OtherTitle-Value:
+
+# TODO Multiple persons can be added as lists with separator `||`
+Person-TYPE:
+Person-FIRSTNAME:
+Person-LASTNAME:
+
+Date-Type:
+Date-Value:
+
+# One or more identifiers defined in two colums separated by `||`
+Identifier-Type:
+Identifier-Value:
+  
+Note-Visibility:
+Note-Value:
+  
+# TODO supports ||  
+Collection-Id:
+  
+# TODO supports ||  
+Series-Id:
+  
+Volume:
+
+Licence-Id:
+
+# TODO supports ||
+# TODO is currently ignored
+Enrichments:
+
+Enrichment-Availability:
+Enrichment-Format:
+Enrichment-KindOfPublication:
+Enrichment-IdNo:
+Enrichment-CopyrightPrint:
+Enrichment-CopyrightEBook:
+Enrichment-Relevance:
+
+Filename:
