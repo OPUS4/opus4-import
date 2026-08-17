@@ -41,12 +41,13 @@ use Opus\Common\Model\NotFoundException;
 use Opus\Common\Security\SecurityException;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Import\Xml\XmlDocument;
+use Opus\Import\Xml\OpusXmlParser;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Zend_Log;
 
 use function count;
+use function strlen;
 use function substr;
 use function trim;
 
@@ -64,17 +65,11 @@ class Importer
     /** @var Zend_Log|null */
     private $logger;
 
-    /** @var DOMDocument */
-    private $xml;
+    /** @var string|DOMDocument */
+    private $input;
 
-    /** @var string */
-    private $xmlFile;
-
-    /** @var string */
-    private $xmlString;
-
-    /** @var array */
-    private $fieldsToKeepOnUpdate = [];
+    /** @var bool */
+    private $inputIsFile;
 
     /** @var string */
     private $importDir;
@@ -96,9 +91,6 @@ class Importer
 
     /** @var DocumentInterface Last imported document. Contains the document object if the import was successful. */
     private $document;
-
-    /** @var XmlDocument */
-    private $xmlDocument;
 
     /** @var ImportRules */
     private $importRules;
@@ -126,22 +118,17 @@ class Importer
      * @param bool               $isFile
      * @param null|Zend_Log      $logger
      * @param null|string        $logfile
+     *
+     * TODO trim down constructor
+     * TODO check if there are unit tests for invalid $xml
      */
     public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
     {
         $this->logger  = $logger;
         $this->logfile = $logfile;
 
-        $this->xmlDocument = new XmlDocument();
-
-        if ($isFile) {
-            $this->xmlFile = $xml;
-        } elseif ($xml instanceof DOMDocument) {
-            $this->xml = $xml;
-            $this->xmlDocument->setXml($xml);
-        } else {
-            $this->xmlString = $xml;
-        }
+        $this->input       = $xml;
+        $this->inputIsFile = $isFile;
     }
 
     /**
@@ -204,74 +191,72 @@ class Importer
      * @throws SecurityException
      *
      * TODO break up processing
+     * TODO use new OpusXmlParser
      */
     public function run()
     {
         $this->importedDocumentIds = [];
 
-        $this->loadXml();
-        $this->validateXml();
+        $parser = new OpusXmlParser();
+
+        if ($this->inputIsFile) {
+            $parser->parseFile($this->input);
+        } elseif ($this->input instanceof DOMDocument) {
+            $parser->parseDom($this->input);
+        } else {
+            $parser->parse($this->input);
+        }
 
         $numOfDocsImported = 0;
         $numOfSkippedDocs  = 0;
 
-        $opusDocuments = $this->xml->getElementsByTagName('opusDocument');
-
         // in case of a single document deposit (via SWORD, ...) we allow to omit
         // the explicit declaration of file elements (within <files>..</files>)
         // and automatically import all files in the root level of the package
-        $this->setSingleDocImport($opusDocuments->length === 1);
+        $this->setSingleDocImport($parser->getDocumentCount() === 1);
 
-        foreach ($opusDocuments as $opusDocumentElement) {
+        do {
+            $document = null;
+
             $this->storeDocument = true;
+
+            try {
+                $document = $parser->next();
+            } catch (NotFoundException $e) {
+                // TODO include lineNo
+                $docId = $parser->getCurrentId();
+                $oldId = $parser->getCurrentReferenceId();
+                $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
+                $this->appendDocIdToRejectList($oldId);
+                $numOfSkippedDocs++;
+                continue;
+            } catch (Exception $e) {
+                // TODO include lineNo
+                $oldId = $parser->getCurrentReferenceId();
+                $this->log('Error while parsing document #' . $oldId . ': ' . $e->getMessage());
+                $this->appendDocIdToRejectList($oldId);
+                $numOfSkippedDocs++;
+            }
+
+            if ($document === null) {
+                // import finished
+                continue;
+            }
 
             // save oldId for later referencing of the record under consideration
             // according to the latest documentation the value of oldId is not
             // stored as an OPUS identifier
-            $oldId = $opusDocumentElement->getAttribute('oldId');
-            if ($oldId !== '') { // oldId is now an optional attribute
-                $opusDocumentElement->removeAttribute('oldId');
+            $oldId = $parser->getCurrentReferenceId();
+            if ($oldId !== null) { // oldId is now an optional attribute
                 $this->log("Start processing of record #" . $oldId . " ...");
             }
 
-            // @var DocumentInterface
-            $doc = null;
-
-            // TODO move creation of Document object into separata function
-            if ($opusDocumentElement->hasAttribute('docId') && $this->isUpdateExistingDocuments()) {
-                // perform metadata update on given document
-                // please note that existing files that are already associated
-                // with the given document are not deleted or updated
-                $docId = $opusDocumentElement->getAttribute('docId');
-                try {
-                    $doc = Document::get($docId);
-                    $opusDocumentElement->removeAttribute('docId');
-                } catch (NotFoundException $e) {
-                    $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
-                    $this->appendDocIdToRejectList($oldId);
-                    $numOfSkippedDocs++;
-                    continue;
-                }
-
-                $this->resetDocument($doc);
-            } else {
-                // ignore docId and create an empty document instead
-                // TODO necessary? error if docId not present?
-                $opusDocumentElement->removeAttribute('docId');
-
-                $this->log('Ignore value of attribute docId');
-
-                // create a new OPUS document and populate it with data
-                $doc = $this->initDocument();
-            }
+            // TODO set serverState = 'unpublished' as default - where should this go?
 
             try {
-                $this->processAttributes($opusDocumentElement->attributes, $doc);
-                $this->processElements($opusDocumentElement->childNodes, $doc);
-
                 // Files may already have been added in processElements
-                if (! $this->isFilesAdded()) {
-                    $this->processFiles($doc);
+                if (! $parser->isFilesAdded()) {
+                    $this->processFiles($document);
                 }
             } catch (Exception $e) {
                 $this->log('Error while processing document #' . $oldId . ': ' . $e->getMessage());
@@ -280,33 +265,37 @@ class Importer
                 continue;
             }
 
+            // TODO this should become a DocumentProcessor and configurable
             if ($this->additionalEnrichments !== null) {
                 $enrichments = $this->additionalEnrichments->getEnrichments();
                 foreach ($enrichments as $key => $value) {
-                    $this->addEnrichment($doc, $key, $value);
+                    $this->addEnrichment($document, $key, $value);
                 }
             }
 
-            // TODO should this be handled by Import Rules?
+            // TODO should this be handled by Import Rules or a DocumentProcessor
             if ($this->importCollection !== null) {
-                $doc->addCollection($this->importCollection);
+                $document->addCollection($this->importCollection);
             }
 
+            // TODO this should be handled by a StoreDocument processor */
+            // TODO !!! during processing (old OpusXmlCode) this could habe been set to false - recreate behaviour with OpusXmlParser
             if (! $this->storeDocument) {
                 $numOfSkippedDocs++;
                 $this->appendDocIdToRejectList($oldId);
                 continue;
             }
 
+            // TODO this should be a DocumentProcessor in the import pipeline
             $importRules = $this->getImportRules();
-            $importRules->apply($doc);
+            $importRules->apply($document);
 
             try {
                 // TODO post "import" processing before storing!
-                $newDocId                    = $doc->store();
-                $this->document              = $doc;
+                $newDocId                    = $document->store();
+                $this->document              = $document;
                 $this->importedDocumentIds[] = $newDocId;
-                $this->postStore($doc);
+                $this->postStore($document);
             } catch (Exception $e) {
                 $this->log('Error while saving imported document #' . $oldId . ' to database: ' . $e->getMessage());
                 $this->appendDocIdToRejectList($oldId);
@@ -316,7 +305,7 @@ class Importer
 
             $numOfDocsImported++;
             $this->log('... OK');
-        }
+        } while ($document !== null);
 
         if ($numOfSkippedDocs === 0) {
             $this->log("Import finished successfully. $numOfDocsImported documents were imported.");
@@ -324,6 +313,21 @@ class Importer
             $this->log("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
             throw new MetadataImportSkippedDocumentsException("$numOfSkippedDocs documents were skipped during import.");
         }
+    }
+
+    /**
+     * TODO move to processor
+     */
+    protected function addEnrichment(DocumentInterface $doc, string $key, string $value): void
+    {
+        if ($value === null || strlen(trim($value)) === 0) {
+            // enrichment must have a value
+            // TODO log? how to identify the document before storing? improve import for easier monitoring
+            return;
+        }
+        $enrichment = $doc->addEnrichment();
+        $enrichment->setKeyName($key);
+        $enrichment->setValue(trim($value));
     }
 
     /**
@@ -366,6 +370,8 @@ class Importer
 
     /**
      * Loading XML from $xmlString or a $xmlFile
+     *
+     * TODO replaced by OpusXmlParser?
      */
     protected function loadXml()
     {
@@ -392,6 +398,8 @@ class Importer
 
     /**
      * Validates the XML
+     *
+     * TODO replaced by OpusXmlParser
      */
     protected function validateXml()
     {

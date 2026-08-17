@@ -31,6 +31,7 @@
 
 namespace Opus\Import;
 
+use DOMDocument;
 use Opus\Common\DocumentInterface;
 
 /**
@@ -53,6 +54,11 @@ interface ImportFormatInterface
      * Import data provided as string.
      */
     public function parse(string $data): ImportFormatInterface;
+
+    /**
+     * Import data from DOMDocument.
+     */
+    public function parseDom(DOMDocument $data): ImportFormatInterface;
 
     /**
      * Returns the next DocumentInterface object.

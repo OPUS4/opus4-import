@@ -31,6 +31,7 @@
 
 namespace Opus\Import\Xml;
 
+use DOMDocument;
 use DOMElement;
 use DOMNamedNodeMap;
 use DOMNode;
@@ -84,6 +85,8 @@ use const PATHINFO_EXTENSION;
  * TODO MetadataImport did not support files
  * TODO SWORD supports adding files after parsing XML, but also during parsing
  * TODO consolidate with class Importer (Importer should use OpusXmlImport - sync improvements)
+ * TODO support parsing existing DOMDocument? (is allowed in Importer right now)
+ * TODO support setting default values like serverState = 'unpublished'
  */
 class OpusXmlParser implements ImportFormatInterface
 {
@@ -91,6 +94,9 @@ class OpusXmlParser implements ImportFormatInterface
 
     /** @var array */
     private $fieldsToKeepOnUpdate = [];
+
+    /** @var bool */
+    private $updateExistingDocuments = false;
 
     /** @var ?string Path document files */
     private $importPath;
@@ -104,11 +110,17 @@ class OpusXmlParser implements ImportFormatInterface
     /** @var int Index of current document element. */
     private $currentIndex = 0;
 
-    /** @var int */
+    /** @var ?string Old identifier of document (optional) */
+    private $oldId;
+
+    /** @var int ID of existing record TODO probably should be renamed */
     private $currentId = 0;
 
     /** @var int */
     private $currentLineNo = 0;
+
+    /** @var bool */
+    private $filesAdded = 0;
 
     /**
      * @throws MetadataImportInvalidXmlException
@@ -128,6 +140,17 @@ class OpusXmlParser implements ImportFormatInterface
     {
         $doc = new XmlDocument();
         $doc->loadXML($data);
+        $this->open($doc);
+        return $this;
+    }
+
+    /**
+     * @throws MetadataImportInvalidXmlException
+     */
+    public function parseDom(DOMDocument $data): ImportFormatInterface
+    {
+        $doc = new XmlDocument();
+        $doc->setDom($data);
         $this->open($doc);
         return $this;
     }
@@ -186,7 +209,8 @@ class OpusXmlParser implements ImportFormatInterface
         $this->currentId = 0;
 
         // save oldId for later referencing of the record under consideration
-        $oldId = $opusDocumentElement->getAttribute('oldId');
+        $oldId       = $opusDocumentElement->getAttribute('oldId');
+        $this->oldId = $oldId !== '' ? $oldId : null;
         $opusDocumentElement->removeAttribute('oldId');
 
         // $this->eventStartProcessingDocument($oldId, $opusDocumentElement->getLineNo());
@@ -194,7 +218,7 @@ class OpusXmlParser implements ImportFormatInterface
         $docId = null;
 
         // Check if docId for update is provided
-        if ($opusDocumentElement->hasAttribute('docId')) {
+        if ($opusDocumentElement->hasAttribute('docId') && $this->isUpdateExistingDocuments()) {
             $docId           = intval($opusDocumentElement->getAttribute('docId'));
             $this->currentId = $docId;
             $opusDocumentElement->removeAttribute('docId');
@@ -218,6 +242,7 @@ class OpusXmlParser implements ImportFormatInterface
             $this->resetDocument($doc);
         } else {
             $doc = Document::new();
+            // TODO log 'Ingore value of attribute docId'
         }
 
         return $doc;
@@ -298,7 +323,7 @@ class OpusXmlParser implements ImportFormatInterface
             $value  = trim($attribute->value);
 
             if ($attribute->name === 'belongsToBibliography') {
-                $value = $doc->$method(filter_var($value, FILTER_VALIDATE_BOOLEAN));
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
             }
 
             $doc->$method($value);
@@ -881,5 +906,29 @@ class OpusXmlParser implements ImportFormatInterface
     public function getCurrentLineNo(): int
     {
         return $this->currentLineNo;
+    }
+
+    public function getCurrentReferenceId(): ?string
+    {
+        return $this->oldId;
+    }
+
+    public function setUpdateExistingDocuments(bool $updateExistingDocuments): self
+    {
+        $this->updateExistingDocuments = $updateExistingDocuments;
+        return $this;
+    }
+
+    public function isUpdateExistingDocuments(): bool
+    {
+        return $this->updateExistingDocuments;
+    }
+
+    /**
+     * TODO find better name to make clear it is meant for the CURRENT document
+     */
+    public function isFilesAdded(): bool
+    {
+        return $this->filesAdded;
     }
 }

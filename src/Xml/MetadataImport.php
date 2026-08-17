@@ -109,7 +109,7 @@ class MetadataImport
             try {
                 $document = $parser->next();
             } catch (NotFoundException $nfe) {
-                $oldId = $nfe->getModelId();
+                // $oldId = $nfe->getModelId();
                 $this->getOutput()->writeln(
                     "<error>Error updating document: " . $nfe->getMessage() . "</error>"
                 );
@@ -123,22 +123,24 @@ class MetadataImport
                 continue;
             }
 
-            try {
-                $processor->processDocument($document);
-            } catch (Exception $ex) {
-                $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
-                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
-                continue;
-            }
-
             if (null !== $document) {
+                try {
+                    $processor->processDocument($document);
+                } catch (Exception $ex) {
+                    $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
+                    $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                    continue;
+                }
+
                 $importedCount++;
                 $docId = $document->getId();
                 $this->importDocumentSuccess($docId);
             } else {
+                /* TODO this message cannot be correct (bad copy & paste)
                 $this->getOutput()->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
+                */
                 $skippedCount++;
-                $this->importDocumentSkipped(null); // TODO  $parser->getCurrentLineNo()
+                $this->importDocumentSkipped($parser->getCurrentLineNo()); // TODO  $parser->getCurrentLineNo()
             }
         } while ($document !== null);
 
@@ -172,7 +174,7 @@ class MetadataImport
         $this->progressBar->advance();
     }
 
-    public function importDocumentSkipped(int $docId): void
+    public function importDocumentSkipped(int $lineNo): void
     {
         $this->progressBar->advance();
     }
