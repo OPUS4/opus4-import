@@ -42,6 +42,7 @@ class ImportCommandProvider implements CommandProviderInterface
     {
         return [
             new ImportCommand(),
+            new CsvImportCommand(),
             new YamlExportCommand(),
             new YamlImportCommand(),
         ];

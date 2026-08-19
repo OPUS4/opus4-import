@@ -29,14 +29,6 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-/**
- * TODO: dieses Skript wird aktuell nicht in den Tarball / Deb-Package aufgenommen
- * Es ist noch sehr stark an die Anforderungen einer Testinstanz angepasst und
- * müsste vor der offiziellen Aufnahme noch generalisiert werden. Die Steuerung
- * sollte über eine externe Konfigurationsdatei erfolgen, so dass der Quellcode
- * später nicht mehr angepasst werden muss.
- */
-
 namespace Opus\Import;
 
 use Exception;
@@ -51,7 +43,9 @@ use Opus\Common\Model\ModelException;
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\Person;
 use Opus\Common\Series;
-use Opus\Common\UserRole;
+use Opus\Common\UserRoleInterface;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 use function array_key_exists;
 use function count;
@@ -70,6 +64,17 @@ use function ucfirst;
 
 use const DIRECTORY_SEPARATOR;
 
+/**
+ * TODO: dieses Skript wird aktuell nicht in den Tarball / Deb-Package aufgenommen
+ * Es ist noch sehr stark an die Anforderungen einer Testinstanz angepasst und
+ * müsste vor der offiziellen Aufnahme noch generalisiert werden. Die Steuerung
+ * sollte über eine externe Konfigurationsdatei erfolgen, so dass der Quellcode
+ * später nicht mehr angepasst werden muss.
+ *
+ * TODO rename ignoreHeader to ignoreFirstLine
+ * TODO make configurable
+ * TODO use OutputInterface
+ */
 class CsvImporter
 {
     // das ist aktuell nur eine Auswahl der Metadatenfelder (speziell für Fromm zugeschnitten)
@@ -101,7 +106,8 @@ class CsvImporter
     const VOL_ID               = 22;
     const LICENCE_ID           = 23;
     const ENRICHMENTS          = 24; // wird aktuell ignoriert
-    //TODO bei Fromm gibt es 7 Enrichmentkeys
+
+    // TODO bei Fromm gibt es 7 Enrichmentkeys (move to local configuration)
     const ENRICHMENT_AVAILABILITY      = 25;
     const ENRICHMENT_FORMAT            = 26;
     const ENRICHMENT_KINDOFPUBLICATION = 27;
@@ -115,43 +121,25 @@ class CsvImporter
     private $seriesIdsMap = [];
 
     /** @var string */
-    private $fulltextDir;
+    private $fulltextPath;
 
-    /** @var string */
+    /** @var UserRoleInterface */
     private $guestRole;
 
-    /**
-     * @param array $argv
-     */
-    public function run($argv)
+    /** @var bool Ignore first line of CSV */
+    private $ignoreHeader;
+
+    /** @var OutputInterface */
+    private $output;
+
+    public function import(string $filename)
     {
-        if (count($argv) < 2) {
-            echo "missing file name\n";
-            return;
-        }
-
-        $ignoreHeader = true;
-        if (count($argv) > 3 && $argv[3] === 'noheader') {
-            $ignoreHeader = false;
-        }
-
-        if (count($argv) > 2) {
-            if (! is_readable($argv[2])) {
-                echo "fulltext directory '" . $argv[2] . "' is not readable -- check path or permissions\n";
-            } else {
-                $this->fulltextDir = $argv[2];
-                $this->guestRole   = UserRole::fetchByName('guest');
-            }
-        }
-
-        $filename = $argv[1];
-        if (! is_readable($filename)) {
-            echo "import file does not exist or is not readable\n";
-        }
+        $output = $this->getOutput();
 
         $file = fopen($filename, 'r');
+
         if (! $file) {
-            echo "Error while opening import file\n";
+            $output->writeln("<error>Could not open import file</error>");
         }
 
         $rowCounter   = 0;
@@ -162,11 +150,11 @@ class CsvImporter
             $rowCounter++;
             $numOfCols = count($row);
             if ($numOfCols !== self::NUM_OF_COLUMNS) {
-                echo "unexpected number of columns ($numOfCols) in row $rowCounter: row is skipped\n";
+                $output->writeln("unexpected number of columns ($numOfCols) in row $rowCounter: row is skipped");
                 // TODO add to reject.log
                 continue;
             }
-            if ($ignoreHeader && $rowCounter === 1) {
+            if ($this->getIgnoreHeader() && $rowCounter === 1) {
                 continue;
             }
             if ($this->processRow($row)) {
@@ -176,13 +164,13 @@ class CsvImporter
             }
         }
 
-        echo "number of rows: $rowCounter\n";
-        echo "number of created docs: $docCounter\n";
-        echo "number of skipped docs: $errorCounter\n";
+        $output->writeln("number of rows: $rowCounter");
+        $output->writeln("number of created docs: $docCounter");
+        $output->writeln("number of skipped docs: $errorCounter");
 
         // Informationen zu den vergebenen Bandnummern
         foreach ($this->seriesIdsMap as $seriesId => $number) {
-            echo "series # $seriesId : max. number is $number\n";
+            $output->writeln("series # $seriesId : max. number is $number");
         }
 
         fclose($file);
@@ -194,6 +182,8 @@ class CsvImporter
      */
     private function processRow($row)
     {
+        $output = $this->getOutput();
+
         $doc = Document::new();
 
         $oldId = $row[self::OLD_ID];
@@ -236,12 +226,14 @@ class CsvImporter
 
             $doc->store();
 
-            if ($file !== null && $file instanceof File && $this->guestRole !== null) {
-                $this->guestRole->appendAccessFile($file->getId());
-                $this->guestRole->store();
+            $guestRole = $this->getGuestRole();
+
+            if ($file !== null && $file instanceof File && $guestRole !== null) {
+                $guestRole->appendAccessFile($file->getId());
+                $guestRole->store();
             }
         } catch (Exception $e) {
-            echo "import of document " . $oldId . " was not successful: " . $e->getMessage() . "\n";
+            $output->writeln("import of document " . $oldId . " was not successful: " . $e->getMessage());
         }
 
         try {
@@ -249,7 +241,7 @@ class CsvImporter
             $doc->store();
             return true;
         } catch (Exception $e) {
-            echo "import of person(s) for document " . $oldId . " was not successful: " . $e->getMessage() . "\n";
+            $output->writeln("import of person(s) for document " . $oldId . " was not successful: " . $e->getMessage());
         }
 
         return false;
@@ -262,6 +254,8 @@ class CsvImporter
      */
     private function processTitlesAndAbstract($row, $doc, $oldId)
     {
+        $output = $this->getOutput();
+
         $t = $doc->addTitleMain();
         $t->setValue(trim($row[self::TITLE_MAIN_VALUE]));
         $t->setLanguage(trim($row[self::TITLE_MAIN_LANGUAGE]));
@@ -275,7 +269,7 @@ class CsvImporter
                 $languages = explode('||', trim($row[self::ABSTRACT_LANGUAGE]));
 
                 if (count($values) !== count($languages)) {
-                    echo "Dokument $oldId mit Mismatch zwischen Anzahl Abstracts und zugehörigen Sprachen\n";
+                    $output->writeln("Dokument $oldId mit Mismatch zwischen Anzahl Abstracts und zugehörigen Sprachen");
                     return;
                 }
 
@@ -285,7 +279,7 @@ class CsvImporter
                     $t->setLanguage(trim($languages[$i]));
                 }
             } else {
-                echo "Dokument $oldId mit leerem Abstract, aber vorhandener Sprachangabe\n";
+                $output->writeln("Dokument $oldId mit leerem Abstract, aber vorhandener Sprachangabe");
             }
         }
 
@@ -297,8 +291,8 @@ class CsvImporter
                 $t->setValue(trim($row[self::OTHER_TITLE_VALUE]));
                 $t->setLanguage(trim($row[self::OTHER_TITLE_LANGUAGE]));
             } else {
-                echo "Dokument $oldId mit leerem Titel (Typ: " . $row[self::OTHER_TITLE_TYPE]
-                    . "), aber vorhandener Sprachangabe\n";
+                $output->writeln("Dokument $oldId mit leerem Titel (Typ: " . $row[self::OTHER_TITLE_TYPE]
+                    . "), aber vorhandener Sprachangabe");
             }
         }
     }
@@ -367,7 +361,7 @@ class CsvImporter
     {
         $p = Person::new();
         if (trim($firstname) === '') {
-            echo "Datensatz $oldId ohne Wert für $type.firstname\n";
+            $this->getOutput()->writeln("Datensatz $oldId ohne Wert für $type.firstname");
         } else {
             $p->setFirstName(trim($firstname));
         }
@@ -390,7 +384,7 @@ class CsvImporter
             $method = 'set' . ucfirst($row[self::DATE_TYPE]) . "Year";
             $doc->$method($date);
         } else {
-            echo "Dokument $oldId mit ungültiger Jahresangabe '$date' : wird ignoriert\n";
+            $this->getOutput()->writeln("Dokument $oldId mit ungültiger Jahresangabe '$date' : wird ignoriert");
         }
     }
 
@@ -451,7 +445,7 @@ class CsvImporter
             $visibility = trim($row[self::NOTE_VISIBILITY]);
             if (empty($visibility)) {
                 $visibility = 'private';
-                echo "Dokument $oldId: Sichtbarkeit des Bemerkungsfelds nicht angegeben, wird auf 'private' gesetzt.\n";
+                $this->getOutput()->writeln("Dokument $oldId: Sichtbarkeit des Bemerkungsfelds nicht angegeben, wird auf 'private' gesetzt.");
             }
             $n->setVisibility($visibility);
         }
@@ -532,8 +526,8 @@ class CsvImporter
                 return;
             }
 
-            echo "Dokument $oldId: Lizenz konnte nicht ermittelt werden, da im format-Enrichment unerwarteter"
-                . " Wert '$format'\n";
+            $this->getOutput()->writeln("Dokument $oldId: Lizenz konnte nicht ermittelt werden, da im format-Enrichment unerwarteter"
+                . " Wert '$format'");
         }
     }
 
@@ -636,6 +630,8 @@ class CsvImporter
      */
     private function processFile($row, $doc, $oldId, $extension = 'pdf')
     {
+        $output = $this->getOutput();
+
         $format   = trim($row[self::ENRICHMENT_FORMAT]);
         $filename = trim($row[self::FILENAME]);
 
@@ -647,8 +643,8 @@ class CsvImporter
                 (strpos($format, 'to download') === false) &&
                 (strpos($format, 'upon request') === false)
         ) {
-            echo "Dokument $oldId: [ERR001] Inhalt '$format' des format-Enrichments entspricht nicht dem zulässigen"
-                . " Vokabular -- evtl. vorhandene Datei wird nicht importiert\n";
+            $output->writeln("Dokument $oldId: [ERR001] Inhalt '$format' des format-Enrichments entspricht nicht dem zulässigen"
+                . " Vokabular -- evtl. vorhandene Datei wird nicht importiert");
             return null;
         }
 
@@ -660,8 +656,8 @@ class CsvImporter
                 ! (strpos($format, 'to purchase') === false)
         ) {
             if ($filename !== '') {
-                echo "Dokument $oldId: [ERR002] Dateiname angegeben aber format-Enrichment mit unerwartetem Inhalt"
-                    . " '$format' -- Datei wird nicht importiert\n";
+                $output->writeln("Dokument $oldId: [ERR002] Dateiname angegeben aber format-Enrichment mit unerwartetem Inhalt"
+                    . " '$format' -- Datei wird nicht importiert");
             }
             return null;
         }
@@ -673,30 +669,32 @@ class CsvImporter
         ) {
             // bei 'xerox upon request' wird keine Datei erwartet
             if (strpos($format, 'xerox upon request') === false) {
-                echo "Dokument $oldId: [ERR003] Dateiname erwartet, aber leeren Inhalt in Spalte für Dateinamen"
-                    . " vorgefunden -- Datei wird nicht importiert\n";
+                $output->writeln("Dokument $oldId: [ERR003] Dateiname erwartet, aber leeren Inhalt in Spalte für Dateinamen"
+                    . " vorgefunden -- Datei wird nicht importiert");
             }
             return null;
         }
 
+        $fulltextPath = $this->getFulltextPath();
+
         // Dateiname ist gesetzt und format-Enrichment mit 'to download' oder 'upon request'
-        if ($this->fulltextDir === null) {
-            echo "Dokument $oldId: [ERR004] zugeordnete Datei wurden nicht importiert, da Importverzeichnis nicht"
-                . " lesbar oder nicht existent\n";
+        if ($fulltextPath === null) {
+            $output->writeln("Dokument $oldId: [ERR004] zugeordnete Datei wurden nicht importiert, da Importverzeichnis nicht"
+                . " lesbar oder nicht existent");
             return null;
         }
 
         $filename .= '.' . $extension;
-        $tempfile  = $this->fulltextDir . DIRECTORY_SEPARATOR . $filename;
+        $tempfile  = $fulltextPath . DIRECTORY_SEPARATOR . $filename;
 
         if (! file_exists($tempfile)) {
-            echo "Dokument $oldId: [ERR006] zugeordnete Datei wurden nicht importiert, da sie nicht im angegebenen"
-                . " Ordner existiert\n";
+            $output->writeln("Dokument $oldId: [ERR006] zugeordnete Datei wurden nicht importiert, da sie nicht im angegebenen"
+                . " Ordner existiert");
             return null;
         }
 
         if (! is_readable($tempfile)) {
-            echo "Dokument $oldId: [ERR005] zugeordnete Datei wurden nicht importiert, da nicht lesbar\n";
+            $output->writeln("Dokument $oldId: [ERR005] zugeordnete Datei wurden nicht importiert, da nicht lesbar");
             return null;
         }
 
@@ -715,5 +713,53 @@ class CsvImporter
         }
 
         return null;
+    }
+
+    public function setGuestRole(?UserRoleInterface $role): self
+    {
+        $this->guestRole = $role;
+        return $this;
+    }
+
+    public function getGuestRole(): ?UserRoleInterface
+    {
+        return $this->guestRole;
+    }
+
+    public function setFulltextPath(?string $fulltextPath): self
+    {
+        $this->fulltextPath = $fulltextPath;
+        return $this;
+    }
+
+    public function getFulltextPath(): ?string
+    {
+        return $this->fulltextPath;
+    }
+
+    public function setIgnoreHeader(bool $ignoreHeader): self
+    {
+        $this->ignoreHeader = $ignoreHeader;
+        return $this;
+    }
+
+    public function getIgnoreHeader(): bool
+    {
+        return $this->ignoreHeader;
+    }
+
+    public function setOutput(?OutputInterface $output): self
+    {
+        $this->output = $output;
+        return $this;
+    }
+
+    public function getOutput(): ?OutputInterface
+    {
+        if ($this->output === null) {
+            $this->output = new ConsoleOutput();
+        }
+
+        return $this->output;
     }
 }
