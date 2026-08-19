@@ -115,4 +115,12 @@ class OpusXmlParserTest extends TestCase
 
         $this->assertNull($parser->next());
     }
+
+    public function testUpdateDocument()
+    {
+        $this->markTestIncomplete('Test not implemented yet');
+        // TODO create test document
+        // TODO update document from file
+        // TODO check changes
+    }
 }

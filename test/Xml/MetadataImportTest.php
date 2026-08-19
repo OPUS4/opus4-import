@@ -229,7 +229,7 @@ class MetadataImportTest extends TestCase
 
         $importer = new MetadataImport();
         $importer->setOutput(new NullOutput());
-        $importer->keepFieldsOnUpdate(['TitleAbstract']);
+        $importer->setFieldsToKeepOnUpdate(['TitleAbstract']);
         $importer->import($this->xml);
 
         $updatedDoc = Document::get(1);

@@ -47,8 +47,8 @@ use function sprintf;
  * Imports OPUS-XML on command line.
  *
  * TODO Do we need a separate reject log? NO remove
- * TODO support additional formats
  * TODO how to do reject log (independent of if it is really needed)?
+ * TODO support configurable DocumentProcessor chain
  */
 class MetadataImport
 {
@@ -62,6 +62,9 @@ class MetadataImport
 
     /** @var ProgressBar */
     private $progressBar;
+
+    /** @var ?string[] */
+    private $fieldsToKeepOnUpdate;
 
     /**
      * Imports documents from file.
@@ -86,7 +89,6 @@ class MetadataImport
     /**
      * @throws MetadataImportSkippedDocumentsException
      *
-     * TODO support configurable DocumentProcessor chain
      * TODO review $parser as parameter
      */
     protected function process(ImportFormatInterface $parser)
@@ -107,6 +109,7 @@ class MetadataImport
             // TODO how to get line no, how to get old ID or doc ID if not found (part of exception?)
 
             try {
+                // $this->getOutput()->writeln("Start processing of record #{$oldId} (line {$lineNo})...");
                 $document = $parser->next();
             } catch (NotFoundException $nfe) {
                 // $oldId = $nfe->getModelId();
@@ -114,34 +117,34 @@ class MetadataImport
                     "<error>Error updating document: " . $nfe->getMessage() . "</error>"
                 );
                 $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                $skippedCount++;
                 continue;
             } catch (Exception $ex) {
                 $this->getOutput()->writeln(
                     "<error>Error processing document: " . $ex->getMessage() . "</error>"
                 );
                 $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                $skippedCount++;
                 continue;
             }
 
-            if (null !== $document) {
-                try {
-                    $processor->processDocument($document);
-                } catch (Exception $ex) {
-                    $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
-                    $this->appendDocIdToRejectList($parser->getCurrentLineNo());
-                    continue;
-                }
-
-                $importedCount++;
-                $docId = $document->getId();
-                $this->importDocumentSuccess($docId);
-            } else {
-                /* TODO this message cannot be correct (bad copy & paste)
-                $this->getOutput()->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
-                */
-                $skippedCount++;
-                $this->importDocumentSkipped($parser->getCurrentLineNo()); // TODO  $parser->getCurrentLineNo()
+            if (null === $document) {
+                // Import finished
+                break;
             }
+
+            try {
+                $processor->processDocument($document);
+            } catch (Exception $ex) {
+                $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                continue;
+            }
+
+            $importedCount++;
+            $docId = $document->getId();
+            $this->getOutput()->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
+            $this->importDocumentSuccess($docId);
         } while ($document !== null);
 
         $this->importFinished();
@@ -184,7 +187,9 @@ class MetadataImport
      */
     protected function getParser(?string $format = null): ImportFormatInterface
     {
-        return new OpusXmlParser();
+        $parser = new OpusXmlParser();
+        $parser->setFieldsToKeepOnUpdate($this->getFieldsToKeepOnUpdate());
+        return $parser;
     }
 
     public function setOutput(?OutputInterface $output): self
@@ -216,10 +221,15 @@ class MetadataImport
         return $this->rejectOutput;
     }
 
-    protected function eventStartProcessingDocument(?string $oldId, ?int $lineNo)
+    public function setFieldsToKeepOnUpdate(?array $fieldsToKeepOnUpdate): self
     {
-        // TODO there is not always an old ID
-        $this->getOutput()->writeln("Start processing of record #{$oldId} (line {$lineNo})...");
+        $this->fieldsToKeepOnUpdate = $fieldsToKeepOnUpdate;
+        return $this;
+    }
+
+    public function getFieldsToKeepOnUpdate(): ?array
+    {
+        return $this->fieldsToKeepOnUpdate;
     }
 
     protected function appendDocIdToRejectList(int $docId): void

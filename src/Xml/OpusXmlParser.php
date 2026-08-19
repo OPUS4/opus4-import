@@ -96,7 +96,7 @@ class OpusXmlParser implements ImportFormatInterface
     private $fieldsToKeepOnUpdate = [];
 
     /** @var bool */
-    private $updateExistingDocuments = false;
+    private $updateExistingDocuments = true;
 
     /** @var ?string Path document files */
     private $importPath;
@@ -250,12 +250,16 @@ class OpusXmlParser implements ImportFormatInterface
 
     /**
      * Allows certain fields to be kept on update.
-     *
-     * @param array $fields DescriptionArray of fields to keep on update
      */
-    public function keepFieldsOnUpdate($fields)
+    public function setFieldsToKeepOnUpdate(?array $fields): self
     {
         $this->fieldsToKeepOnUpdate = $fields;
+        return $this;
+    }
+
+    public function getFieldsToKeepOnUpdate(): ?array
+    {
+        return $this->fieldsToKeepOnUpdate;
     }
 
     /**
@@ -264,7 +268,7 @@ class OpusXmlParser implements ImportFormatInterface
      */
     protected function resetDocument(DocumentInterface $doc)
     {
-        $fieldsToDelete = array_diff([
+        $fields = [
             'TitleMain',
             'TitleAbstract',
             'TitleParent',
@@ -307,7 +311,9 @@ class OpusXmlParser implements ImportFormatInterface
             'ServerDateModified',
             'ServerDatePublished',
             'ServerDateDeleted',
-        ], $this->fieldsToKeepOnUpdate);
+        ];
+
+        $fieldsToDelete = array_diff($fields, $this->fieldsToKeepOnUpdate ?? []);
 
         $doc->deleteFields($fieldsToDelete);
     }
