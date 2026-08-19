@@ -43,7 +43,7 @@ class ImportCommandProviderTest extends TestCase
 
         $commands = $provider->getCommands();
 
-        $this->assertCount(3, $commands);
+        $this->assertCount(4, $commands);
 
         foreach ($commands as $command) {
             $this->assertInstanceOf(Command::class, $command);
