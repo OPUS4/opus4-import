@@ -31,15 +31,10 @@
 
 namespace Opus\Import;
 
-use Opus\Common\DocumentInterface;
-
 /**
- * Stores document in database.
+ * TODO is this class needed - will there be functions here later?
  */
-class StoreDocument extends AbstractDocumentProcessor
+
+abstract class AbstractImportFormat implements ImportFormatInterface
 {
-    public function processDocument(DocumentInterface $document): void
-    {
-        $document->store();
-    }
 }

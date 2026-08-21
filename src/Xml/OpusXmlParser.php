@@ -37,9 +37,7 @@ use DOMNamedNodeMap;
 use DOMNode;
 use DOMNodeList;
 use Exception;
-use finfo;
 use Opus\Common\Collection;
-use Opus\Common\Config\FileTypes;
 use Opus\Common\DnbInstitute;
 use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
@@ -52,6 +50,9 @@ use Opus\Common\Person;
 use Opus\Common\PersonInterface;
 use Opus\Common\Series;
 use Opus\Common\Subject;
+use Opus\Import\AbstractImportFormat;
+use Opus\Import\FilesProcessor;
+use Opus\Import\ImportErrorHandlerInterface;
 use Opus\Import\ImportFormatInterface;
 
 use function array_diff;
@@ -59,20 +60,15 @@ use function array_key_exists;
 use function basename;
 use function count;
 use function filter_var;
-use function hash_file;
 use function intval;
 use function is_readable;
-use function pathinfo;
-use function strcasecmp;
 use function strlen;
 use function substr;
 use function trim;
 use function ucfirst;
 
 use const DIRECTORY_SEPARATOR;
-use const FILEINFO_MIME_TYPE;
 use const FILTER_VALIDATE_BOOLEAN;
-use const PATHINFO_EXTENSION;
 
 /**
  * Convert OPUS-XML into Document objects.
@@ -88,7 +84,7 @@ use const PATHINFO_EXTENSION;
  * TODO support parsing existing DOMDocument? (is allowed in Importer right now)
  * TODO support setting default values like serverState = 'unpublished'
  */
-class OpusXmlParser implements ImportFormatInterface
+class OpusXmlParser extends AbstractImportFormat
 {
     use LoggingTrait;
 
@@ -98,11 +94,8 @@ class OpusXmlParser implements ImportFormatInterface
     /** @var bool */
     private $updateExistingDocuments = true;
 
-    /** @var ?string Path document files */
-    private $importPath;
-
-    /** @var bool Import all file types (ignore MIME type) */
-    private $importAllFiles = false;
+    /** @var ?string Path to document files */
+    private $importPath; // TODO where is this coming from?
 
     /** @var ?DOMNode[] Array with all XML elements for documents */
     private $documentElements;
@@ -121,6 +114,12 @@ class OpusXmlParser implements ImportFormatInterface
 
     /** @var bool */
     private $filesAdded = 0;
+
+    /** @var ImportErrorHandlerInterface */
+    private $errorHandler;
+
+    /** Processor for adding files to Document. TODO should use Interface */
+    private ?FilesProcessor $filesProcessor = null;
 
     /**
      * @throws MetadataImportInvalidXmlException
@@ -537,19 +536,6 @@ class OpusXmlParser implements ImportFormatInterface
         }
     }
 
-    /**
-     * @throws Exception
-     */
-    protected function errorMissingObject(string $msg): void
-    {
-        throw new Exception($msg);
-    }
-
-    protected function errorUnsupportedMimeType(string $name, string $msg)
-    {
-        $this->log($msg);
-    }
-
     protected function handleIdentifiers(DOMNode $node, DocumentInterface $doc)
     {
         foreach ($node->childNodes as $childNode) {
@@ -713,8 +699,7 @@ class OpusXmlParser implements ImportFormatInterface
                     $this->log('At least one of the file attributes name or path must be defined!');
                     continue;
                 }
-
-                $this->addSingleFile($doc, $name, $baseDir, $path, $childNode);
+                $this->handleFile($doc, $name, $baseDir, $path, $childNode);
             }
         }
 
@@ -722,49 +707,56 @@ class OpusXmlParser implements ImportFormatInterface
     }
 
     /**
-     * Add a single file to the given Document.
-     *
-     * @param DocumentInterface $doc the given document
-     * @param string            $name Name of the file that should be imported (relative to baseDir)
-     * @param string            $baseDir (optional) path of the file that should be imported (relative to the import directory)
-     * @param string            $path (optional) path (and name) of the file that should be imported (relative to baseDir)
-     * @param null|DOMNode      $childNode (optional) additional metadata of the file (taken from import XML)
-     *
-     * TODO public or protected - use from outside of Importer for DeepGreen? - design question
+     * Add a single file to a Document.
      */
-    public function addSingleFile($doc, $name, $baseDir = '', $path = '', $childNode = null)
-    {
+    protected function handleFile(
+        DocumentInterface $doc,
+        string $name,
+        ?string $basePath = null,
+        ?string $relPath = null,
+        ?DOMNode $childNode = null
+    ) {
         $fullPath = $this->getImportPath();
 
-        if ($baseDir !== '') {
-            $fullPath .= $baseDir . DIRECTORY_SEPARATOR;
+        if (null !== $basePath) {
+            $fullPath .= $basePath . DIRECTORY_SEPARATOR;
         }
-        $fullPath .= $path !== '' ? $path : $name;
+        $fullPath .= $relPath ?? $name;
 
+        // TODO move to FilesProcessor?
         if (! is_readable($fullPath)) {
             $this->log('Cannot read file ' . $fullPath . ': make sure that it is contained in import package');
             return;
         }
 
-        if (! $this->validMimeType($fullPath)) {
-            $this->errorUnsupportedMimeType($name, 'MIME type of file ' . $fullPath . ' is not allowed for import');
-            return;
-        }
-
-        if ($childNode !== null && ! $this->checksumValidation($childNode, $fullPath)) {
-            $this->log('Checksum validation of file ' . $fullPath . ' was not successful: check import package');
-            return;
-        }
-
         $file = File::new();
+
+        $checksum     = null;
+        $checksumAlgo = null;
+
         if ($childNode !== null) {
             $this->handleFileAttributes($childNode, $file);
+
+            $comments = $childNode->getElementsByTagName('comment');
+            if ($comments->length === 1) {
+                $comment = $comments->item(0);
+                $file->setComment(trim($comment->textContent));
+            }
+
+            $checksums = $childNode->getElementsByTagName('checksum');
+            if ($checksums->length !== 0) {
+                $checksumElement = $checksums->item(0);
+                $checksum        = trim($checksumElement->textContent);
+                $checksumAlgo    = $checksumElement->getAttribute('type');
+            }
         }
+
         if ($file->getLanguage() === null) {
             $file->setLanguage($doc->getLanguage());
         }
 
         $file->setTempFile($fullPath);
+
         // allow to overwrite file name (if attribute name was specified)
         $pathName = $name;
         if ($pathName === '') {
@@ -772,74 +764,16 @@ class OpusXmlParser implements ImportFormatInterface
         }
         $file->setPathName(basename($pathName));
 
-        if ($childNode !== null) {
-            $comments = $childNode->getElementsByTagName('comment');
-            if ($comments->length === 1) {
-                $comment = $comments->item(0);
-                $file->setComment(trim($comment->textContent));
-            }
-        }
+        $filesProc = $this->getFilesProcessor();
 
-        $doc->addFile($file);
+        if (null !== $filesProc) {
+            $filesProc->addFile($doc, $file, $checksum, $checksumAlgo);
+        }
     }
 
-    /**
-     * Prüft, ob die übergebene Datei überhaupt importiert werden darf.
-     * Dazu gibt es in der Konfiguration die Schlüssel filetypes.mimetypes.*
-     *
-     * @param string $fullPath
-     * @return bool
-     *
-     * TODO move check to file types helper?
-     */
-    protected function validMimeType($fullPath)
+    protected function handleFileAttributes(DOMNode $node, File $file): void
     {
-        $extension     = pathinfo($fullPath, PATHINFO_EXTENSION);
-        $finfo         = new finfo(FILEINFO_MIME_TYPE);
-        $mimeTypeFound = $finfo->file($fullPath);
-
-        if ($this->isImportAllFiles()) {
-            // TODO check exclude option
-            return true;
-        }
-
-        // TODO check "local" configuration
-        $fileTypes = new FileTypes();
-        return $fileTypes->isValidMimeType($mimeTypeFound, $extension);
-    }
-
-    /**
-     * Prüft, ob die im Element checksum angegebene Prüfsumme mit der Prüfsumme
-     * der zu importierenden Datei übereinstimmt. Liefert das Ergebnis des
-     * Vergleichs zurück.
-     *
-     * Wurde im Import-XML keine Prüfsumme für die Datei angegeben, so liefert
-     * die Methode ebenfalls true zurück.
-     *
-     * @param DOMNode $childNode
-     * @param string  $fullPath
-     * @return bool
-     */
-    protected function checksumValidation($childNode, $fullPath)
-    {
-        $checksums = $childNode->getElementsByTagName('checksum');
-        if ($checksums->length === 0) {
-            return true;
-        }
-
-        $checksumElement = $checksums->item(0);
-        $checksumVal     = trim($checksumElement->textContent);
-        $checksumAlgo    = $checksumElement->getAttribute('type');
-        $hashValue       = hash_file($checksumAlgo, $fullPath);
-        return strcasecmp($checksumVal, $hashValue) === 0;
-    }
-
-    /**
-     * @param DOMNode $node
-     * @param File    $file
-     */
-    protected function handleFileAttributes($node, $file)
-    {
+        // TODO generate list dynamically from model description?
         $attrsToConsider = [
             'language',
             'displayName',
@@ -847,26 +781,43 @@ class OpusXmlParser implements ImportFormatInterface
             'visibleInFrontdoor',
             'sortOrder',
         ];
+
         foreach ($attrsToConsider as $attribute) {
             $value = trim($node->getAttribute($attribute));
-            if ($value !== '') {
-                switch ($attribute) {
-                    case 'displayName':
-                        $attribute = 'label';
-                        break;
-                    case 'visibleInFrontdoor':
-                        $value = $value === 'true' ? true : false;
-                        break;
-                    case 'visibleInOai':
-                        $value = $value === 'true' ? true : false;
-                        break;
-                    case 'sortOrder':
-                        $value = intval($value);
-                        break;
-                }
-                $methodName = 'set' . ucfirst($attribute);
-                $file->$methodName($value);
+
+            if ($value === '') {
+                continue;
             }
+
+            $fieldName = ucfirst($attribute);
+
+            // TODO use FieldDescriptor to determine handling of field type
+            switch ($attribute) {
+                case 'displayName':
+                    $fieldName = 'Label';
+                    break;
+                case 'visibleInFrontdoor':
+                case 'visibleInOai':
+                    $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                    break;
+                case 'sortOrder':
+                    $value = intval($value);
+                    break;
+            }
+
+            $methodName = "set{$fieldName}";
+            $file->$methodName($value);
+        }
+    }
+
+    protected function errorMissingObject(string $msg): void
+    {
+        $errorHandler = $this->getErrorHandler();
+
+        if (null !== $errorHandler) {
+            $errorHandler->errorMissingObject($msg);
+        } else {
+            throw new Exception($msg);
         }
     }
 
@@ -936,5 +887,27 @@ class OpusXmlParser implements ImportFormatInterface
     public function isFilesAdded(): bool
     {
         return $this->filesAdded;
+    }
+
+    public function setFilesProcessor(?FilesProcessor $filesProcessor): self
+    {
+        $this->filesProcessor = $filesProcessor;
+        return $this;
+    }
+
+    public function getFilesProcessor(): ?FilesProcessor
+    {
+        return $this->filesProcessor;
+    }
+
+    public function setErrorHandler(?ImportErrorHandlerInterface $errorHandler): self
+    {
+        $this->errorHandler = $errorHandler;
+        return $this;
+    }
+
+    public function getErrorHandler(): ?ImportErrorHandlerInterface
+    {
+        return $this->errorHandler;
     }
 }

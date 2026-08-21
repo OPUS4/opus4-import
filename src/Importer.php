@@ -57,7 +57,7 @@ use const DIRECTORY_SEPARATOR;
  * TODO document loggers
  * TODO use OutputInterface?
  */
-class Importer
+class Importer implements ImportErrorHandlerInterface
 {
     /** @var Zend_Log|null */
     private $logfile;
@@ -83,7 +83,7 @@ class Importer
      */
     private $additionalEnrichments;
 
-    /** @var CollectionInterface */
+    /** @var CollectionInterface TODO should be DocumentProcessor*/
     private $importCollection;
 
     /** @var bool */
@@ -95,7 +95,7 @@ class Importer
     /** @var ImportRules */
     private $importRules;
 
-    /** @var bool */
+    /** @var bool TODO pass through to ImportFormat object */
     private $updateExistingDocuments = true;
 
     /** @var bool */
@@ -189,15 +189,13 @@ class Importer
      * @throws MetadataImportSkippedDocumentsException
      * @throws ModelException
      * @throws SecurityException
-     *
-     * TODO break up processing
-     * TODO use new OpusXmlParser
      */
     public function run()
     {
         $this->importedDocumentIds = [];
 
         $parser = new OpusXmlParser();
+        $parser->setErrorHandler($this);
 
         if ($this->inputIsFile) {
             $parser->parseFile($this->input);
@@ -369,53 +367,6 @@ class Importer
     }
 
     /**
-     * Loading XML from $xmlString or a $xmlFile
-     *
-     * TODO replaced by OpusXmlParser?
-     */
-    protected function loadXml()
-    {
-        if ($this->xml !== null) {
-            return;
-        }
-
-        $this->log("Load XML ...");
-
-        try {
-            if ($this->xmlFile !== null) {
-                $this->xml = $this->xmlDocument->load($this->xmlFile);
-            } else {
-                $this->xml = $this->xmlDocument->loadXML($this->xmlString);
-            }
-
-            $this->log('Loading Result: OK');
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlDocument->getErrorsPrettyPrinted());
-            throw new MetadataImportInvalidXmlException('XML is not well-formed.');
-        }
-    }
-
-    /**
-     * Validates the XML
-     *
-     * TODO replaced by OpusXmlParser
-     */
-    protected function validateXml()
-    {
-        $this->log("Validate XML ...");
-
-        try {
-            $this->xmlDocument->validate();
-            $this->log('Validation Result: OK');
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: Cannot load XML document: make sure it is well-formed."
-                . $this->xmlDocument->getErrorsPrettyPrinted());
-            throw $exception;
-        }
-    }
-
-    /**
      * @param int $docId
      */
     protected function appendDocIdToRejectList($docId)
@@ -522,5 +473,18 @@ class Importer
     {
         $this->importAllFiles = $importAllFiles;
         return $this;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function errorMissingObject(string $msg): void
+    {
+        throw new Exception($msg);
+    }
+
+    public function errorUnsupportedMimeType(string $name, string $msg): void
+    {
+        $this->log($msg);
     }
 }

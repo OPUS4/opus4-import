@@ -46,9 +46,12 @@ use function sprintf;
 /**
  * Imports OPUS-XML on command line.
  *
+ * TODO describe behaviour of console import
+ *
  * TODO Do we need a separate reject log? NO remove
  * TODO how to do reject log (independent of if it is really needed)?
  * TODO support configurable DocumentProcessor chain
+ * TODO should this implement ImportErrorHandlerInterface?
  */
 class MetadataImport
 {
@@ -96,6 +99,7 @@ class MetadataImport
         $output = $this->getOutput();
 
         $processor = new StoreDocument();
+        $processor->setOutput($output);
 
         // TODO setup progress bar and such
         $importedCount = 0;

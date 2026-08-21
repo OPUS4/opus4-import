@@ -31,15 +31,12 @@
 
 namespace Opus\Import;
 
-use Opus\Common\DocumentInterface;
-
 /**
- * Stores document in database.
+ * Interface for handling errors during import.
  */
-class StoreDocument extends AbstractDocumentProcessor
+interface ImportErrorHandlerInterface
 {
-    public function processDocument(DocumentInterface $document): void
-    {
-        $document->store();
-    }
+    public function errorMissingObject(string $msg): void;
+
+    public function errorUnsupportedMimeType(string $name, string $msg): void;
 }
