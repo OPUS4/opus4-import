@@ -14,61 +14,84 @@
 # default requires 33 columns
 #
 # Supported attributes:
+# - multiValue
+# - columns
 # - label (default: field name)
 # - type
 # - required (default: false)
 # - ignore
 #
+# TODO create unit test for this format
+#
+
 
 # Specific identifier type in a single column
 Identifier-Old:
-
 Language:
-
 Type:
-
 ServerState:
 
-TitleMain-Language:
-TitleMain-Value:
+# TODO
+TitleMain:
+  columns:
+    Language:
+    Value:
 
-# TODO supports ||
-TitleAbstract-Language:
-TitleAbstract-Value:
+# TODO
+TitleAbstract:
+  multiValue: true
+  columns:
+    Language:
+    Value:
 
-# TODO OtherTitle is no field - requires special handling
-OtherTitle-Type:
-OtherTitle-Language:
-OtherTitle-Value:
+# TODO Titles is no field - requires special handling
+Titles:
+  class: opus.import.csv.CsvTitlesProcessor
+  columns:
+    Type:
+    Language:
+    Value:
 
-# TODO Multiple persons can be added as lists with separator `||`
-Person-TYPE:
-Person-FIRSTNAME:
-Person-LASTNAME:
+# TODO
+Person:
+  multiValue: true
+  columns:
+    Type:
+    FirstName:
+    LastName:
 
-Date-Type:
-Date-Value:
+# TODO
+Date:
+  columns:
+    Type:
+    Value:
 
-# One or more identifiers defined in two colums separated by `||`
-Identifier-Type:
-Identifier-Value:
+Identifier:
+  multiValue: true # TODO add support
+  columns:
+    Type:
+    Value:
+
+# TODO
+Note:
+  columns:
+    Visibility:
+    Value:
   
-Note-Visibility:
-Note-Value:
-  
-# TODO supports ||  
-Collection-Id:
-  
-# TODO supports ||  
-Series-Id:
+Collection2:
+  multiValue: true
+
+# TODO
+Series:
+  multiValue: true
   
 Volume:
 
 Licence-Id:
 
-# TODO supports ||
 # TODO is currently ignored
 Enrichments:
+  multiValue: true
 
 Enrichment-Availability:
 Enrichment-Format:
@@ -78,4 +101,5 @@ Enrichment-CopyrightPrint:
 Enrichment-CopyrightEBook:
 Enrichment-Relevance:
 
+# TODO
 Filename:

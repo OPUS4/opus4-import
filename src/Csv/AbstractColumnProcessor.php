@@ -31,7 +31,12 @@
 
 namespace Opus\Import\Csv;
 
-abstract class AbstractColumnProcessor
+use Opus\Common\DocumentInterface;
+
+/**
+ * TODO there probably should be an Interface as well
+ */
+abstract class AbstractColumnProcessor implements ColumnProcessorInterface
 {
     /** @var int */
     private $columnNo;
@@ -46,4 +51,16 @@ abstract class AbstractColumnProcessor
     {
         return $this->columnNo;
     }
+
+    /**
+     * Returns number of columns a processor uses.
+     *
+     * This is useful when the fields of an object, like a title, are spread across multiple columns.
+     */
+    public function getColumnCount(): int
+    {
+        return 1;
+    }
+
+    abstract public function process(array $row, DocumentInterface $document): void;
 }

@@ -31,30 +31,9 @@
 
 namespace Opus\Import\Csv;
 
-use Opus\Common\Collection;
-use Opus\Common\DocumentInterface;
-
-use function array_map;
-use function explode;
-
-/**
- * TODO handle missing collection gracefully
- */
-class CsvCollectionProcessor extends AbstractColumnProcessor
+interface CsvConfigInterface
 {
-    public function process(array $row, DocumentInterface $doc): void
-    {
-        $columnValue = $row[$this->getColumnNo()];
-        $values      = array_map('trim', explode('||', $columnValue));
+    public function getProcessors(): array;
 
-        foreach ($values as $value) {
-            $this->addCollection((int) $value, $doc);
-        }
-    }
-
-    protected function addCollection(int $value, DocumentInterface $doc): void
-    {
-        $coll = Collection::get($value);
-        $doc->addCollection($coll);
-    }
+    public function getColumnCount(): int;
 }

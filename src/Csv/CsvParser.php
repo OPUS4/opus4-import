@@ -79,7 +79,8 @@ class CsvParser
             throw new FileNotFoundException('CSV file not found');
         }
 
-        $this->config = new CsvConfig(); // TODO configurable
+        $this->config = new CsvConfigYaml(); // TODO configurable
+        $this->config->load();
 
         $this->csvFile = $file;
     }

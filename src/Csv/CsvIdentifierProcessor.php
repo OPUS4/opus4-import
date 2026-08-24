@@ -37,20 +37,33 @@ use Opus\Common\Identifier;
 use function trim;
 
 /**
- * TODO type comes from configuration column name
- * TODO handle multi-column identifier in same class?
+ * TODO support configuration from header
+ * TODO support multi value
+ * TODO error handling
  */
-class CsvIdentifierProcessor extends AbstractColumnProcessor
+class CsvIdentifierProcessor extends AbstractMultiColumnProcessor
 {
-    /** @var string Identifier type */
+    /** @var ?string Identifier type */
     private $type;
 
-    public function process(array $row, DocumentInterface $doc)
+    public function setShortcutOption(?string $shortcutOption): self
     {
-        $value = $row[$this->getColumnNo()];
+        $this->setType($shortcutOption);
+        return $this;
+    }
 
-        // TODO handle empty value
-        $this->addIdentifier($doc, $value, $this->getType());
+    public function process(array $row, DocumentInterface $doc): void
+    {
+        $type = $this->getType();
+
+        if (null !== $type) {
+            $value = $row[$this->getColumnNo()];
+        } else {
+            $type  = $row[$this->getFieldColumn('Type')];
+            $value = $row[$this->getFieldColumn('Value')];
+        }
+
+        $this->addIdentifier($doc, $value, $type);
     }
 
     public function setType(string $type): self
@@ -59,13 +72,14 @@ class CsvIdentifierProcessor extends AbstractColumnProcessor
         return $this;
     }
 
-    public function getType(): string
+    public function getType(): ?string
     {
         return $this->type;
     }
 
     protected function addIdentifier(DocumentInterface $document, string $value, string $type): void
     {
+        // TODO handle empty value
         $identifier = Identifier::new();
         $identifier->setValue(trim($value));
         $identifier->setType(trim($type));

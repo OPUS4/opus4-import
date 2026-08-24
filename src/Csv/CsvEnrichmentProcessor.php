@@ -31,55 +31,52 @@
 
 namespace Opus\Import\Csv;
 
-use function yaml_parse_file;
+use Opus\Common\DocumentInterface;
+use Opus\Common\Enrichment;
 
-/**
- * Configuration for CSV import/export.
- *
- * TODO support default mapping of configured columsn to processors
- * TODO allow configuring special processors for columns
- * TODO how to distinguish between single line and multi line processing
- */
-class CsvConfig
+class CsvEnrichmentProcessor extends AbstractMultiColumnProcessor
 {
-    /** @var array */
-    private $config;
+    private ?string $keyName = null;
 
-    public function load()
+    public function setShortcutOption(?string $shortcutOption): self
     {
-        $this->config = yaml_parse_file(__DIR__ . '/default.yaml');
+        $this->setKeyName($shortcutOption);
+        return $this;
     }
 
-    public function getProcessors(): array
+    public function process(array $row, DocumentInterface $document): void
     {
-        $count = 0;
+        $keyName = $this->getKeyName();
 
-        foreach ($this->config as $key => $value) {
-            // TODO instantiate processors
-            $count++;
+        if (null !== $keyName) {
+            $value = $row[$this->getColumnNo()];
+        } else {
+            $keyName = $row[$this->getFieldColumn('KeyName')];
+            $value   = $row[$this->getFieldColumn('Value')];
         }
 
-        $identifier = new CsvIdentifierProcessor();
-        $identifier->setColumnNo(0);
-        $identifier->setType('Old');
+        $this->addEnrichment($document, $keyName, $value);
+    }
 
-        $language = new CsvFieldProcessor();
-        $language->setColumnNo(1);
-        $language->setFieldName('Language');
+    /**
+     * TODO handle empty value
+     */
+    protected function addEnrichment(DocumentInterface $document, string $keyName, string $value): void
+    {
+        $enrichment = Enrichment::new();
+        $enrichment->setKeyName($keyName);
+        $enrichment->setValue($value);
+        $document->addEnrichment($enrichment);
+    }
 
-        $type = new CsvFieldProcessor();
-        $type->setColumnNo(2);
-        $type->setFieldName('Type');
+    public function setKeyName(string $keyName): self
+    {
+        $this->keyName = $keyName;
+        return $this;
+    }
 
-        $serverState = new CsvFieldProcessor();
-        $serverState->setColumnNo(3);
-        $serverState->setFieldName('ServerState');
-
-        return [
-            $identifier,
-            $language,
-            $type,
-            $serverState,
-        ];
+    public function getKeyName(): ?string
+    {
+        return $this->keyName;
     }
 }

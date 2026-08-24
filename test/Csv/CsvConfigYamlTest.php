@@ -29,32 +29,17 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-use Opus\Common\Collection;
-use Opus\Common\DocumentInterface;
+use Opus\Import\Csv\CsvConfigYaml;
+use OpusTest\Import\TestAsset\TestCase;
 
-use function array_map;
-use function explode;
-
-/**
- * TODO handle missing collection gracefully
- */
-class CsvCollectionProcessor extends AbstractColumnProcessor
+class CsvConfigYamlTest extends TestCase
 {
-    public function process(array $row, DocumentInterface $doc): void
+    public function testLoad()
     {
-        $columnValue = $row[$this->getColumnNo()];
-        $values      = array_map('trim', explode('||', $columnValue));
-
-        foreach ($values as $value) {
-            $this->addCollection((int) $value, $doc);
-        }
-    }
-
-    protected function addCollection(int $value, DocumentInterface $doc): void
-    {
-        $coll = Collection::get($value);
-        $doc->addCollection($coll);
+        $config = new CsvConfigYaml();
+        $config->load();
+        $config->getProcessors();
     }
 }

@@ -31,30 +31,24 @@
 
 namespace Opus\Import\Csv;
 
-use Opus\Common\Collection;
 use Opus\Common\DocumentInterface;
-
-use function array_map;
-use function explode;
+use Opus\Common\Title;
 
 /**
- * TODO handle missing collection gracefully
+ * Imports titles.
  */
-class CsvCollectionProcessor extends AbstractColumnProcessor
+class CsvTitlesProcessor extends AbstractColumnProcessor
 {
-    public function process(array $row, DocumentInterface $doc): void
+    public function init(?array $columnConfig): void
     {
-        $columnValue = $row[$this->getColumnNo()];
-        $values      = array_map('trim', explode('||', $columnValue));
-
-        foreach ($values as $value) {
-            $this->addCollection((int) $value, $doc);
-        }
+        // TODO parse 'columns'
     }
 
-    protected function addCollection(int $value, DocumentInterface $doc): void
+    public function process(array $row, DocumentInterface $document): void
     {
-        $coll = Collection::get($value);
-        $doc->addCollection($coll);
+    }
+
+    protected function addTitle(Title $title, DocumentInterface $doc): void
+    {
     }
 }

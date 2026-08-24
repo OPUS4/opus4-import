@@ -74,7 +74,8 @@ class CsvParserTest extends TestCase
         $doc = $parser->next();
 
         $this->assertNotNull($doc);
-        $this->assertCount(1, $doc->getIdentifier());
+        $this->assertCount(2, $doc->getIdentifier());
+        // TODO test identifier values
 
         $this->assertEquals('zho', $doc->getLanguage());
         $this->assertEquals('Article', $doc->getType());

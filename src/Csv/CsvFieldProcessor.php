@@ -40,7 +40,7 @@ class CsvFieldProcessor extends AbstractColumnProcessor
     /** @var string Field name */
     private $fieldName;
 
-    public function process(array $row, DocumentInterface $doc)
+    public function process(array $row, DocumentInterface $doc): void
     {
         $value = $row[$this->getColumnNo()];
 
