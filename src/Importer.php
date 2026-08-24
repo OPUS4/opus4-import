@@ -79,9 +79,9 @@ class Importer implements ImportErrorHandlerInterface
      *
      * This could be for instance a timestamp and other information about the import.
      *
-     * @var AdditionalEnrichments
+     * TODO can this be moved to a DocumentProcessorInterfact implementing class?
      */
-    private $additionalEnrichments;
+    private ?AdditionalEnrichments $additionalEnrichments = null;
 
     /** @var CollectionInterface TODO should be DocumentProcessor*/
     private $importCollection;
@@ -195,6 +195,7 @@ class Importer implements ImportErrorHandlerInterface
         $this->importedDocumentIds = [];
 
         $parser = new OpusXmlParser();
+        $parser->setImportPath($this->getImportDir());
         $parser->setErrorHandler($this);
 
         if ($this->inputIsFile) {

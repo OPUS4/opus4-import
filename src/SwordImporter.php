@@ -35,9 +35,6 @@ use Opus\Common\DocumentInterface;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Zend_Log;
 
-use function array_diff;
-use function in_array;
-use function scandir;
 use function sprintf;
 
 /**
@@ -110,12 +107,10 @@ class SwordImporter extends Importer
     protected function processFiles($doc)
     {
         if ($this->isSingleDocImport()) {
-            $files = array_diff(scandir($this->getImportDir()), ['..', '.', 'opus.xml']);
-            foreach ($files as $file) {
-                if (! in_array($file, $this->ignoreFiles)) {
-                    $this->addSingleFile($doc, $file);
-                }
-            }
+            $filesProc = new FilesProcessor();
+            $filesProc->setImportPath($this->getImportDir());
+            $filesProc->setIgnoredFiles(['opus.xml']);
+            $filesProc->processDocument($doc);
         }
     }
 

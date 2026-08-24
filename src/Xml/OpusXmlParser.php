@@ -43,6 +43,7 @@ use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
 use Opus\Common\EnrichmentKey;
 use Opus\Common\File;
+use Opus\Common\FileInterface;
 use Opus\Common\Licence;
 use Opus\Common\LoggingTrait;
 use Opus\Common\Model\NotFoundException;
@@ -703,7 +704,7 @@ class OpusXmlParser extends AbstractImportFormat
             }
         }
 
-        // $this->setFilesAdded(true); TODO is this still needed?
+        $this->setFilesAdded(true); // TODO is this still needed?
     }
 
     /**
@@ -718,7 +719,7 @@ class OpusXmlParser extends AbstractImportFormat
     ) {
         $fullPath = $this->getImportPath();
 
-        if (null !== $basePath) {
+        if ('' !== $basePath && null !== $basePath) {
             $fullPath .= $basePath . DIRECTORY_SEPARATOR;
         }
         $fullPath .= $relPath ?? $name;
@@ -771,7 +772,7 @@ class OpusXmlParser extends AbstractImportFormat
         }
     }
 
-    protected function handleFileAttributes(DOMNode $node, File $file): void
+    protected function handleFileAttributes(DOMNode $node, FileInterface $file): void
     {
         // TODO generate list dynamically from model description?
         $attrsToConsider = [
@@ -879,6 +880,12 @@ class OpusXmlParser extends AbstractImportFormat
     public function isUpdateExistingDocuments(): bool
     {
         return $this->updateExistingDocuments;
+    }
+
+    public function setFilesAdded(bool $filesAdded): self
+    {
+        $this->filesAdded = $filesAdded;
+        return $this;
     }
 
     /**
