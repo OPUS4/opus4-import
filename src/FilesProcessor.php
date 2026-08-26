@@ -39,6 +39,7 @@ use Opus\Common\FileInterface;
 use Opus\Common\LoggingTrait;
 
 use function array_diff;
+use function basename;
 use function hash_file;
 use function in_array;
 use function is_array;
@@ -79,7 +80,7 @@ class FilesProcessor implements DocumentProcessorInterface
         foreach ($files as $file) {
             if (! in_array($file, $this->ignoreFiles)) {
                 $fullPath = $this->getImportPath() . $file;
-                $fileObj = File::new();
+                $fileObj  = File::new();
                 $fileObj->setTempFile($fullPath);
                 $fileObj->setPathName(basename($fullPath));
                 $fileObj->setLanguage($document->getLanguage());
@@ -99,7 +100,7 @@ class FilesProcessor implements DocumentProcessorInterface
         ?string $checksumAlgo = null
     ): void {
         if (! $this->validMimeType($fullPath)) {
-            $name = $file->getPathname();
+            $name   = $file->getPathname();
             $name ??= basename($fullPath);
             $this->errorUnsupportedMimeType($name, 'MIME type of file ' . $fullPath . ' is not allowed for import');
             return;
