@@ -194,9 +194,7 @@ class Importer implements ImportErrorHandlerInterface
     {
         $this->importedDocumentIds = [];
 
-        $parser = new OpusXmlParser();
-        $parser->setImportPath($this->getImportDir());
-        $parser->setErrorHandler($this);
+        $parser = $this->getParser();
 
         if ($this->inputIsFile) {
             $parser->parseFile($this->input);
@@ -487,5 +485,14 @@ class Importer implements ImportErrorHandlerInterface
     public function errorUnsupportedMimeType(string $name, string $msg): void
     {
         $this->log($msg);
+    }
+
+    protected function getParser(): ImportFormatInterface
+    {
+        $parser = new OpusXmlParser();
+        $parser->setImportPath($this->getImportDir());
+        $parser->setErrorHandler($this);
+        $parser->setFilesProcessor(new FilesProcessor());
+        return $parser;
     }
 }

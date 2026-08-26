@@ -218,10 +218,15 @@ class OpusXmlParser extends AbstractImportFormat
         $docId = null;
 
         // Check if docId for update is provided
-        if ($opusDocumentElement->hasAttribute('docId') && $this->isUpdateExistingDocuments()) {
-            $docId           = intval($opusDocumentElement->getAttribute('docId'));
-            $this->currentId = $docId;
+        if ($opusDocumentElement->hasAttribute('docId')) {
+            $docId = intval($opusDocumentElement->getAttribute('docId'));
             $opusDocumentElement->removeAttribute('docId');
+        }
+
+        if ($this->isUpdateExistingDocuments()) {
+            $this->currentId = $docId;
+        } else {
+            $docId = null;
         }
 
         $doc = $this->createDocument($docId);
@@ -523,7 +528,7 @@ class OpusXmlParser extends AbstractImportFormat
 
                     // check if dnbInstitute supports given role
                     $method = 'getIs' . ucfirst($instRole);
-                    if ($inst->$method() === '1') {
+                    if ($inst->$method()) {
                         $method = 'addThesis' . ucfirst($instRole);
                         $doc->$method($inst);
                     } else {
@@ -554,9 +559,7 @@ class OpusXmlParser extends AbstractImportFormat
             if ($childNode instanceof DOMElement) {
                 $n = $doc->addNote();
                 $n->setMessage(trim($childNode->textContent));
-                $n->setVisibility(
-                    filter_var($childNode->getAttribute('visibility'), FILTER_VALIDATE_BOOLEAN)
-                );
+                $n->setVisibility($childNode->getAttribute('visibility'));
             }
         }
     }
@@ -722,7 +725,11 @@ class OpusXmlParser extends AbstractImportFormat
         if ('' !== $basePath && null !== $basePath) {
             $fullPath .= $basePath . DIRECTORY_SEPARATOR;
         }
-        $fullPath .= $relPath ?? $name;
+        if ('' !== $relPath && null !== $relPath) {
+            $fullPath .= $relPath;
+        } else {
+            $fullPath .= $name;
+        }
 
         // TODO move to FilesProcessor?
         if (! is_readable($fullPath)) {
@@ -768,7 +775,7 @@ class OpusXmlParser extends AbstractImportFormat
         $filesProc = $this->getFilesProcessor();
 
         if (null !== $filesProc) {
-            $filesProc->addFile($doc, $file, $checksum, $checksumAlgo);
+            $filesProc->addFile($doc, $file, $fullPath, $checksum, $checksumAlgo);
         }
     }
 

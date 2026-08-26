@@ -132,4 +132,12 @@ class SwordImporter extends Importer
     {
         return $this->importDocumentsWithUnsupportedMimeTypes;
     }
+
+    protected function getParser(): ImportFormatInterface
+    {
+        $parser = parent::getParser();
+        $parser->setErrorHandler($this);
+        $parser->setUpdateExistingDocuments(false);
+        return $parser;
+    }
 }

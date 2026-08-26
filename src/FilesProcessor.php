@@ -34,6 +34,7 @@ namespace Opus\Import;
 use finfo;
 use Opus\Common\Config\FileTypes;
 use Opus\Common\DocumentInterface;
+use Opus\Common\File;
 use Opus\Common\FileInterface;
 use Opus\Common\LoggingTrait;
 
@@ -77,7 +78,12 @@ class FilesProcessor implements DocumentProcessorInterface
         $files = array_diff(scandir($this->getImportPath()), ['..', '.', 'opus.xml']); // TODO opus.xml is format specific
         foreach ($files as $file) {
             if (! in_array($file, $this->ignoreFiles)) {
-                $this->addFile($document, $file); // TODO $file is here a string
+                $fullPath = $this->getImportPath() . $file;
+                $fileObj = File::new();
+                $fileObj->setTempFile($fullPath);
+                $fileObj->setPathName(basename($fullPath));
+                $fileObj->setLanguage($document->getLanguage());
+                $this->addFile($document, $fileObj, $fullPath); // TODO $file is here a string
             }
         }
     }
@@ -88,13 +94,13 @@ class FilesProcessor implements DocumentProcessorInterface
     public function addFile(
         DocumentInterface $doc,
         FileInterface $file,
+        string $fullPath,
         ?string $checksum = null,
         ?string $checksumAlgo = null
     ): void {
-        // TODO $fullPath
-        // TOOD $name
-
         if (! $this->validMimeType($fullPath)) {
+            $name = $file->getPathname();
+            $name ??= basename($fullPath);
             $this->errorUnsupportedMimeType($name, 'MIME type of file ' . $fullPath . ' is not allowed for import');
             return;
         }
