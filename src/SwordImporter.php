@@ -35,14 +35,12 @@ use Opus\Common\DocumentInterface;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use Zend_Log;
 
-use function array_diff;
-use function in_array;
-use function is_array;
-use function scandir;
 use function sprintf;
 
 /**
  * Importer for SWORD interface.
+ *
+ * The SWORD interface adds a StatusDocument to the import process.
  *
  * TODO move into opus4-sword
  */
@@ -51,22 +49,11 @@ class SwordImporter extends Importer
     /** @var mixed */
     private $statusDoc;
 
-    /** @var string[]|null */
-    private $ignoreFiles = [];
-
     /** @var bool */
     private $importDocumentsWithUnsupportedMimeTypes = true;
 
-    /**
-     * @param string        $xml
-     * @param bool          $isFile
-     * @param null|Zend_Log $logger
-     * @param null|string   $logFile
-     */
-    public function __construct($xml, $isFile = false, $logger = null, $logFile = null)
+    public function __construct()
     {
-        parent::__construct($xml, $isFile, $logger, $logFile);
-
         $this->statusDoc = new ImportStatusDocument();
 
         // update of existing documents is not supported in SWORD context
@@ -83,16 +70,13 @@ class SwordImporter extends Importer
 
     /**
      * SWORD imports should not stop at missing objects, like licences.
-     *
-     * @param string $msg
-     * @return void
      */
-    protected function errorMissingObject($msg)
+    public function errorMissingObject(string $msg): void
     {
         $this->log($msg);
     }
 
-    protected function errorUnsupportedMimeType(string $name, string $msg)
+    public function errorUnsupportedMimeType(string $name, string $msg): void
     {
         parent::errorUnsupportedMimeType($name, $msg);
         if (! $this->isImportDocumentsWithUnsupportedMimeTypes()) {
@@ -115,42 +99,22 @@ class SwordImporter extends Importer
      *
      * @param DocumentInterface $doc
      * @return void
+     *
+     * TODO use FilesProcessor, if single document import
      */
     protected function processFiles($doc)
     {
         if ($this->isSingleDocImport()) {
-            $files = array_diff(scandir($this->getImportDir()), ['..', '.', 'opus.xml']);
-            foreach ($files as $file) {
-                if (! in_array($file, $this->ignoreFiles)) {
-                    $this->addSingleFile($doc, $file);
-                }
-            }
+            $filesProc = new FilesProcessor();
+            $filesProc->setImportPath($this->getImportDir());
+            $filesProc->setIgnoredFiles(['opus.xml']);
+            $filesProc->processDocument($doc);
         }
     }
 
-    /**
-     * @param DocumentInterface $doc
-     */
-    protected function postStore($doc): void
+    protected function postStore(DocumentInterface $doc): void
     {
         $this->statusDoc->addDoc($doc);
-    }
-
-    public function getIgnoredFiles(): array
-    {
-        return $this->ignoreFiles;
-    }
-
-    public function setIgnoredFiles(string|array|null $files): self
-    {
-        if ($files === null) {
-            $this->ignoreFiles = [];
-        } elseif (! is_array($files)) {
-            $this->ignoreFiles = [$files];
-        } else {
-            $this->ignoreFiles = $files;
-        }
-        return $this;
     }
 
     public function setImportDocumentsWithUnsupportedMimeTypes(bool $import): self
@@ -162,5 +126,13 @@ class SwordImporter extends Importer
     public function isImportDocumentsWithUnsupportedMimeTypes(): bool
     {
         return $this->importDocumentsWithUnsupportedMimeTypes;
+    }
+
+    protected function getParser(?string $format = null): ImportFormatInterface
+    {
+        $parser = parent::getParser();
+        $parser->setErrorHandler($this);
+        $parser->setUpdateExistingDocuments($this->isUpdateExistingDocuments());
+        return $parser;
     }
 }

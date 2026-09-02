@@ -41,6 +41,7 @@ use Opus\Import\Xml\MetadataImport;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
 use OpusTest\Import\TestAsset\TestCase;
+use Symfony\Component\Console\Output\NullOutput;
 
 use function array_pop;
 use function count;
@@ -64,12 +65,18 @@ class MetadataImportTest extends TestCase
     /** @var string */
     private $xmlDir;
 
+    /** @var MetadataImport */
+    private $importer;
+
     public function setUp(): void
     {
         parent::setUp();
 
         $this->documentImported = false;
         $this->xmlDir           = dirname(dirname(__FILE__)) . '/_files/xml/';
+
+        $this->importer = new MetadataImport();
+        $this->importer->setOutput(new NullOutput());
     }
 
     public function tearDown(): void
@@ -87,37 +94,31 @@ class MetadataImportTest extends TestCase
 
     public function testInvalidXmlExceptionWhenNotWellFormed()
     {
-        $importer = new MetadataImport('This ist no XML');
         $this->expectException(MetadataImportInvalidXmlException::class);
-        $importer->run();
+        $this->importer->import('This ist no XML');
     }
 
     public function testInvalidXmlExceptionWhenNotWellFormedWithFile()
     {
-        $importer = new MetadataImport($this->xmlDir . 'test_import_badformed.xml', true);
         $this->expectException(MetadataImportInvalidXmlException::class);
-        $importer->run();
+        $this->importer->import($this->xmlDir . 'test_import_badformed.xml', true);
     }
 
     public function testInvalidXmlException()
     {
         $this->filename = 'test_import_schemainvalid.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
         $this->expectException(MetadataImportInvalidXmlException::class);
-        $importer->run();
+        $this->importer->import($this->xml);
     }
 
     public function testNoMetadataImportException()
     {
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
         $e = null;
         try {
-            $importer->run();
+            $this->importer->import($this->xml);
         } catch (MetadataImportInvalidXmlException $ex) {
             $e = $ex;
         } catch (MetadataImportSkippedDocumentsException $ex) {
@@ -139,8 +140,7 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_document_attributes.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-        $importer->run();
+        $this->importer->import($this->xml);
 
         $finder = Repository::getInstance()->getDocumentFinder();
         $docId  = $finder->getIds()[0];
@@ -157,10 +157,8 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_invalid_collectionid.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
         $this->expectException(MetadataImportSkippedDocumentsException::class);
-        $importer->run();
+        $this->importer->import($this->xml);
     }
 
     /**
@@ -173,9 +171,8 @@ class MetadataImportTest extends TestCase
 
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
 
-        $importer->run();
+        $this->importer->import($this->xml);
 
         try {
             $importedDoc = Document::get(1);
@@ -189,8 +186,9 @@ class MetadataImportTest extends TestCase
         $this->filename = 'test_import_minimal_update1.xml';
         $this->loadInputFile();
 
-        $importer = new MetadataImport($this->xml);
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->import($this->xml);
 
         $updatedDoc = Document::get(1);
         $titleMain  = $updatedDoc->getTitleMain();
@@ -208,15 +206,15 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->import($this->xml);
 
         $this->filename = 'test_import_minimal_update1.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->import($this->xml);
         try {
             $importedDoc = Document::get(1);
             $titleMain   = $importedDoc->getTitleMain();
@@ -229,9 +227,10 @@ class MetadataImportTest extends TestCase
         $this->filename = 'test_import_minimal_update2.xml';
         $this->loadInputFile();
 
-        $importer = new MetadataImport($this->xml);
-        $importer->keepFieldsOnUpdate(['TitleAbstract']);
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->setFieldsToKeepOnUpdate(['TitleAbstract']);
+        $importer->import($this->xml);
 
         $updatedDoc = Document::get(1);
         $abstracts  = $updatedDoc->getTitleAbstract();
@@ -246,9 +245,9 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_minimal.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
-
-        $importer->run();
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+        $importer->import($this->xml);
         try {
             $importedDoc = Document::get(1);
             $titleMain   = $importedDoc->getTitleMain();
@@ -259,10 +258,12 @@ class MetadataImportTest extends TestCase
         }
         $this->filename = 'test_import_minimal_corrupted_update.xml';
         $this->loadInputFile();
-        $importer          = new MetadataImport($this->xml);
+        $importer = new MetadataImport();
+        $importer->setOutput(new NullOutput());
+
         $expectedException = false;
         try {
-            $importer->run();
+            $importer->import($this->xml);
         } catch (NotFoundException $e) {
             $this->fail("Document was deleted during update.");
         } catch (MetadataImportSkippedDocumentsException $e) {
@@ -299,9 +300,9 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_regression2570.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
 
-        $importer->run();
+        $this->importer->import($this->xml);
+
         $importedDoc = Document::get(1);
         $authors     = $importedDoc->getPersonAuthor();
 
@@ -332,9 +333,9 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_regression2570.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
 
-        $importer->run();
+        $this->importer->import($this->xml);
+
         $importedDoc = Document::get(1);
 
         $other = $importedDoc->getPersonOther();
@@ -351,9 +352,8 @@ class MetadataImportTest extends TestCase
     {
         $this->filename = 'test_import_regression2570.xml';
         $this->loadInputFile();
-        $importer = new MetadataImport($this->xml);
 
-        $importer->run();
+        $this->importer->import($this->xml);
 
         $importedDoc = Document::get(1);
         $this->assertEquals(1, $importedDoc->getField('BelongsToBibliography')->getValue()); // "true" in XML

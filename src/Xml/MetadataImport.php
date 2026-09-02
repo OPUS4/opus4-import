@@ -31,609 +31,183 @@
 
 namespace Opus\Import\Xml;
 
-use DOMDocument;
-use DOMElement;
-use DOMNamedNodeMap;
-use DOMNode;
-use DOMNodeList;
 use Exception;
-use Opus\Common\Collection;
-use Opus\Common\DnbInstitute;
-use Opus\Common\Document;
-use Opus\Common\EnrichmentKey;
-use Opus\Common\Licence;
-use Opus\Common\LoggingTrait;
+use Opus\Common\Console\Helper\ProgressBar;
 use Opus\Common\Model\NotFoundException;
-use Opus\Common\Person;
-use Opus\Common\Series;
-use Opus\Common\Subject;
+use Opus\Import\AbstractImporter;
+use Opus\Import\ImportFormatInterface;
+use Opus\Import\StoreDocument;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
-use function array_diff;
-use function substr;
-use function trim;
-use function ucfirst;
+use function sprintf;
 
-class MetadataImport
+/**
+ * Imports OPUS-XML on command line.
+ *
+ * TODO describe behaviour of console import
+ *
+ * TODO Do we need a separate reject log? NO remove
+ * TODO how to do reject log (independent of if it is really needed)?
+ * TODO support configurable DocumentProcessor chain
+ * TODO should this implement ImportErrorHandlerInterface?
+ */
+class MetadataImport extends AbstractImporter
 {
-    use LoggingTrait;
+    /** @var OutputInterface */
+    private $rejectOutput;
 
-    /** @var mixed|null */
-    private $logfile;
+    /** @var ProgressBar */
+    private $progressBar;
 
-    /** @var DOMDocument */
-    private $xml;
-
-    /** @var string */
-    private $xmlFile;
-
-    /** @var string */
-    private $xmlString;
-
-    /** @var array */
-    private $fieldsToKeepOnUpdate = [];
-
-    /** @var XmlDocument */
-    private $xmlDocument;
+    /** @var ?string[] */
+    private $fieldsToKeepOnUpdate;
 
     /**
-     * @param string     $xml
-     * @param bool       $isFile
-     * @param null|mixed $logger
-     * @param null|mixed $logfile
-     */
-    public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
-    {
-        if ($logger !== null) {
-            $this->setLogger($logger);
-        }
-
-        $this->logfile = $logfile;
-
-        if ($isFile) {
-            $this->xmlFile = $xml;
-        } else {
-            $this->xmlString = $xml;
-        }
-
-        $this->xmlDocument = new XmlDocument();
-    }
-
-    public function run()
-    {
-        $this->xml = $this->__getXML();
-
-        $this->__validateXML();
-
-        $numOfDocsImported = 0;
-        $numOfSkippedDocs  = 0;
-
-        foreach ($this->xml->getElementsByTagName('opusDocument') as $opusDocumentElement) {
-            // save oldId for later referencing of the record under consideration
-            $oldId = $opusDocumentElement->getAttribute('oldId');
-            $opusDocumentElement->removeAttribute('oldId');
-
-            $this->log("Start processing of record #" . $oldId . " ...");
-
-            /*
-             * @var Document
-             */
-            $doc = null;
-            if ($opusDocumentElement->hasAttribute('docId')) {
-                // perform metadata update on given document
-                $docId = $opusDocumentElement->getAttribute('docId');
-                try {
-                    $doc = Document::get($docId);
-                    $opusDocumentElement->removeAttribute('docId');
-                } catch (NotFoundException $e) {
-                    $this->log('Could not load document #' . $docId . ' from database: ' . $e->getMessage());
-                    $this->appendDocIdToRejectList($oldId);
-                    $numOfSkippedDocs++;
-                    continue;
-                }
-
-                $this->resetDocument($doc);
-            } else {
-                // create new document
-                $doc = Document::new();
-            }
-
-            try {
-                $this->processAttributes($opusDocumentElement->attributes, $doc);
-                $this->processElements($opusDocumentElement->childNodes, $doc);
-            } catch (Exception $e) {
-                $this->log('Error while processing document #' . $oldId . ': ' . $e->getMessage());
-                $this->appendDocIdToRejectList($oldId);
-                $numOfSkippedDocs++;
-                continue;
-            }
-
-            try {
-                $doc->store();
-            } catch (Exception $e) {
-                $this->log('Error while saving imported document #' . $oldId . ' to database: ' . $e->getMessage());
-                $this->appendDocIdToRejectList($oldId);
-                $numOfSkippedDocs++;
-                continue;
-            }
-
-            $numOfDocsImported++;
-            $this->log('... OK');
-        }
-
-        if ($numOfSkippedDocs === 0) {
-            $this->log("Import finished successfully. $numOfDocsImported documents were imported.");
-        } else {
-            $this->log("Import finished. $numOfDocsImported documents were imported. $numOfSkippedDocs documents were skipped.");
-            throw new MetadataImportSkippedDocumentsException("$numOfSkippedDocs documents were skipped during import.");
-        }
-    }
-
-    /**
-     * @param string $string
-     */
-    private function log($string)
-    {
-        if ($this->logger === null) {
-            return;
-        }
-        $this->logger->log($string);
-    }
-
-    /**
-     * @return DOMDocument
-     */
-    private function __getXML()
-    {
-        $this->log("Load XML ...");
-
-        try {
-            if ($this->xmlFile !== null) {
-                $xml = $this->xmlDocument->load($this->xmlFile);
-            } else {
-                $xml = $this->xmlDocument->loadXML($this->xmlString);
-            }
-
-            $this->log('... OK');
-            return $xml;
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: Cannot load XML document "
-                . ($this->xmlFile ? $this->xmlFile : "")
-                . ": make sure it is well-formed."
-                . $this->xmlDocument->getErrorsPrettyPrinted());
-            throw new MetadataImportInvalidXmlException('XML is not well-formed.');
-        }
-    }
-
-    private function __validateXML()
-    {
-        $this->log("Validate XML ...");
-
-        try {
-            $this->xmlDocument->validate();
-            $this->log('... OK');
-        } catch (MetadataImportInvalidXmlException $exception) {
-            $this->log("... ERROR: XML document is not valid: " . $exception->getMessage());
-            throw $exception;
-        }
-    }
-
-    /**
-     * @param int $docId
-     */
-    private function appendDocIdToRejectList($docId)
-    {
-        $this->log('... SKIPPED');
-        if ($this->logfile === null) {
-            return;
-        }
-        $this->logfile->log($docId);
-    }
-
-    /**
-     * Allows certain fields to be kept on update.
+     * @throws MetadataImportSkippedDocumentsException
      *
-     * @param array $fields DescriptionArray of fields to keep on update
+     * TODO review $parser as parameter
      */
-    public function keepFieldsOnUpdate($fields)
+    protected function process(ImportFormatInterface $parser): void
     {
-        $this->fieldsToKeepOnUpdate = $fields;
-    }
+        $output = $this->getOutput();
 
-    /**
-     * @param Document $doc
-     */
-    private function resetDocument($doc)
-    {
-        $fieldsToDelete = array_diff([
-            'TitleMain',
-            'TitleAbstract',
-            'TitleParent',
-            'TitleSub',
-            'TitleAdditional',
-            'Identifier',
-            'Note',
-            'Enrichment',
-            'Licence',
-            'Person',
-            'Series',
-            'Collection',
-            'Subject',
-            'ThesisPublisher',
-            'ThesisGrantor',
-            'PublishedDate',
-            'PublishedYear',
-            'CompletedDate',
-            'CompletedYear',
-            'ThesisDateAccepted',
-            'ThesisYearAccepted',
-            'ContributingCorporation',
-            'CreatingCorporation',
-            'Edition',
-            'Issue',
-            'Language',
-            'PageFirst',
-            'PageLast',
-            'PageNumber',
-            'ArticleNumber',
-            'PublisherName',
-            'PublisherPlace',
-            'Type',
-            'Volume',
-            'BelongsToBibliography',
-            'ServerState',
+        $processor = new StoreDocument();
+        $processor->setOutput($output);
 
-            // 'ServerDateCreated', TODO do not delete ServerDateCreated when updating document (no default in db)
-            'ServerDateModified',
-            'ServerDatePublished',
-            'ServerDateDeleted',
-        ], $this->fieldsToKeepOnUpdate);
+        // TODO setup progress bar and such
+        $importedCount = 0;
+        $skippedCount  = 0;
 
-        $doc->deleteFields($fieldsToDelete);
-    }
+        $this->importStarted($parser->getDocumentCount());
 
-    /**
-     * @param DOMNamedNodeMap $attributes
-     * @param Document        $doc
-     */
-    private function processAttributes($attributes, $doc)
-    {
-        foreach ($attributes as $attribute) {
-            $method = 'set' . ucfirst($attribute->name);
-            $value  = trim($attribute->value);
-            // TODO use filtervar for BOOLEAN here
-            if ($attribute->name === 'belongsToBibliography') {
-                if ($value === 'true') {
-                    $value = '1';
-                } elseif ($value === 'false') {
-                    $value = '0';
-                }
+        do {
+            $document = null;
+
+            // TODO how to get line no, how to get old ID or doc ID if not found (part of exception?)
+
+            try {
+                // $this->getOutput()->writeln("Start processing of record #{$oldId} (line {$lineNo})...");
+                $document = $parser->next();
+            } catch (NotFoundException $nfe) {
+                // $oldId = $nfe->getModelId();
+                $this->getOutput()->writeln(
+                    "<error>Error updating document: " . $nfe->getMessage() . "</error>"
+                );
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                $skippedCount++;
+                continue;
+            } catch (Exception $ex) {
+                $this->getOutput()->writeln(
+                    "<error>Error processing document: " . $ex->getMessage() . "</error>"
+                );
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                $skippedCount++;
+                continue;
             }
-            $doc->$method($value);
+
+            if (null === $document) {
+                // Import finished
+                break;
+            }
+
+            try {
+                $processor->processDocument($document);
+            } catch (Exception $ex) {
+                $output->writeln("<error>Error saving imported document #{$oldId}: " . $ex->getMessage() . "</error>");
+                $this->appendDocIdToRejectList($parser->getCurrentLineNo());
+                continue;
+            }
+
+            $importedCount++;
+            $docId = $document->getId();
+            $this->getOutput()->writeln("... Document {$docId} imported successfully"); // TODO mention oldId?
+            $this->importDocumentSuccess($docId);
+        } while ($document !== null);
+
+        $this->importFinished();
+
+        if ($skippedCount === 0) {
+            $output->writeln("Import finished successfully. {$importedCount} documents were imported.");
+        } else {
+            $output->writeln(sprintf(
+                "Import finished. %s documents were imported. %s documents were skipped.",
+                $importedCount,
+                $skippedCount,
+            ));
+            throw new MetadataImportSkippedDocumentsException("Documents ({$skippedCount}) skipped during import");
         }
     }
 
-    /**
-     * @param  DOMNodeList $elements
-     * @param Document    $doc
-     */
-    private function processElements($elements, $doc)
+    public function importStarted(int $docCount): void
     {
-        foreach ($elements as $node) {
-            if ($node instanceof DOMElement) {
-                switch ($node->tagName) {
-                    case 'titlesMain':
-                        $this->handleTitleMain($node, $doc);
-                        break;
-                    case 'titles':
-                        $this->handleTitles($node, $doc);
-                        break;
-                    case 'abstracts':
-                        $this->handleAbstracts($node, $doc);
-                        break;
-                    case 'persons':
-                        $this->handlePersons($node, $doc);
-                        break;
-                    case 'keywords':
-                        $this->handleKeywords($node, $doc);
-                        break;
-                    case 'dnbInstitutions':
-                        $this->handleDnbInstitutions($node, $doc);
-                        break;
-                    case 'identifiers':
-                        $this->handleIdentifiers($node, $doc);
-                        break;
-                    case 'notes':
-                        $this->handleNotes($node, $doc);
-                        break;
-                    case 'collections':
-                        $this->handleCollections($node, $doc);
-                        break;
-                    case 'series':
-                        $this->handleSeries($node, $doc);
-                        break;
-                    case 'enrichments':
-                        $this->handleEnrichments($node, $doc);
-                        break;
-                    case 'licences':
-                        $this->handleLicences($node, $doc);
-                        break;
-                    case 'dates':
-                        $this->handleDates($node, $doc);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
+        $this->progressBar = new ProgressBar($this->getOutput(), $docCount);
+        $this->progressBar->start();
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleTitleMain($node, $doc)
+    public function importFinished(): void
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $t = $doc->addTitleMain();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
-            }
-        }
+        $this->progressBar->finish();
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleTitles($node, $doc)
+    public function importDocumentSuccess(int $docId): void
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $method = 'addTitle' . ucfirst($childNode->getAttribute('type'));
-                $t      = $doc->$method();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
-            }
-        }
+        $this->progressBar->advance();
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleAbstracts($node, $doc)
+    public function importDocumentSkipped(int $lineNo): void
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $t = $doc->addTitleAbstract();
-                $t->setValue(trim($childNode->textContent));
-                $t->setLanguage(trim($childNode->getAttribute('language')));
-            }
-        }
+        $this->progressBar->advance();
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handlePersons($node, $doc)
+    protected function getParser(?string $format = null): ImportFormatInterface
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $p = Person::new();
-
-                // mandatory fields
-                $p->setFirstName(trim($childNode->getAttribute('firstName')));
-                $p->setLastName(trim($childNode->getAttribute('lastName')));
-
-                // optional fields
-                $optionalFields = ['academicTitle', 'email', 'placeOfBirth', 'dateOfBirth'];
-                foreach ($optionalFields as $optionalField) {
-                    if ($childNode->hasAttribute($optionalField)) {
-                        $method = 'set' . ucfirst($optionalField);
-                        $p->$method(trim($childNode->getAttribute($optionalField)));
-                    }
-                }
-
-                $method = 'addPerson' . ucfirst($childNode->getAttribute('role'));
-                $link   = $doc->$method($p);
-
-                if ($childNode->hasAttribute('allowEmailContact') && ($childNode->getAttribute('allowEmailContact') === 'true' || $childNode->getAttribute('allowEmailContact') === '1')) {
-                    $link->setAllowEmailContact(true);
-                }
-            }
-        }
+        $parser = parent::getParser($format);
+        $parser->setFieldsToKeepOnUpdate($this->getFieldsToKeepOnUpdate());
+        return $parser;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleKeywords($node, $doc)
+    public function getOutput(): OutputInterface
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $s = Subject::new();
-                $s->setLanguage(trim($childNode->getAttribute('language')));
-                $s->setType($childNode->getAttribute('type'));
-                $s->setValue(trim($childNode->textContent));
-                $doc->addSubject($s);
-            }
+        $output = $this->getOutput();
+
+        if ($output === null) {
+            $output = new ConsoleOutput();
+            $this->setOutput($output);
         }
+
+        return $output;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleDnbInstitutions($node, $doc)
+    public function setRejectOutput(?OutputInterface $output): self
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $instId   = trim($childNode->getAttribute('id'));
-                $instRole = $childNode->getAttribute('role');
-                // check if dnbInstitute with given id and role exists
-                try {
-                    $inst = DnbInstitute::get($instId);
-
-                    // check if dnbInstitute supports given role
-                    $method = 'getIs' . ucfirst($instRole);
-                    if ($inst->$method() === '1') {
-                        $method = 'addThesis' . ucfirst($instRole);
-                        $doc->$method($inst);
-                    } else {
-                        throw new Exception('given role ' . $instRole . ' is not allowed for dnbInstitution id ' . $instId);
-                    }
-                } catch (NotFoundException $e) {
-                    throw new Exception('dnbInstitution id ' . $instId . ' does not exist: ' . $e->getMessage());
-                }
-            }
-        }
+        $this->rejectOutput = $output;
+        return $this;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleIdentifiers($node, $doc)
+    public function getRejectOutput(): OutputInterface
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $i = $doc->addIdentifier();
-                $i->setValue(trim($childNode->textContent));
-                $i->setType($childNode->getAttribute('type'));
-            }
+        if ($this->rejectOutput === null) {
+            $this->rejectOutput = new NullOutput();
         }
+        return $this->rejectOutput;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleNotes($node, $doc)
+    public function setFieldsToKeepOnUpdate(?array $fieldsToKeepOnUpdate): self
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $n = $doc->addNote();
-                $n->setMessage(trim($childNode->textContent));
-                $n->setVisibility($childNode->getAttribute('visibility'));
-            }
-        }
+        $this->fieldsToKeepOnUpdate = $fieldsToKeepOnUpdate;
+        return $this;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleCollections($node, $doc)
+    public function getFieldsToKeepOnUpdate(): ?array
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $collectionId = trim($childNode->getAttribute('id'));
-                // check if collection with given id exists
-                try {
-                    $c = Collection::get($collectionId);
-                    $doc->addCollection($c);
-                } catch (NotFoundException $e) {
-                    throw new Exception('collection id ' . $collectionId . ' does not exist: ' . $e->getMessage());
-                }
-            }
-        }
+        return $this->fieldsToKeepOnUpdate;
     }
 
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleSeries($node, $doc)
+    protected function appendDocIdToRejectList(int $docId): void
     {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $seriesId = trim($childNode->getAttribute('id'));
-                // check if document set with given id exists
-                try {
-                    $s    = Series::get($seriesId);
-                    $link = $doc->addSeries($s);
-                    $link->setNumber(trim($childNode->getAttribute('number')));
-                } catch (NotFoundException $e) {
-                    throw new Exception('series id ' . $seriesId . ' does not exist: ' . $e->getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleEnrichments($node, $doc)
-    {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $key = trim($childNode->getAttribute('key'));
-                // check if enrichment key exists
-                try {
-                    EnrichmentKey::get($key);
-                } catch (NotFoundException $e) {
-                    throw new Exception('enrichment key ' . $key . ' does not exist: ' . $e->getMessage());
-                }
-
-                $e = $doc->addEnrichment();
-                $e->setKeyName($key);
-                $e->setValue(trim($childNode->textContent));
-            }
-        }
-    }
-
-    /**
-     * @param  DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleLicences($node, $doc)
-    {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $licenceId = trim($childNode->getAttribute('id'));
-                try {
-                    $l = Licence::get($licenceId);
-                    $doc->addLicence($l);
-                } catch (NotFoundException $e) {
-                    throw new Exception('licence id ' . $licenceId . ' does not exist: ' . $e->getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * @param DOMNode  $node
-     * @param Document $doc
-     */
-    private function handleDates($node, $doc)
-    {
-        foreach ($node->childNodes as $childNode) {
-            if ($childNode instanceof DOMElement) {
-                $method = '';
-                if ($childNode->hasAttribute('monthDay')) {
-                    $method = 'Date';
-                } else {
-                    $method = 'Year';
-                }
-
-                if ($childNode->getAttribute('type') === 'thesisAccepted') {
-                    $method = 'setThesis' . $method . 'Accepted';
-                } else {
-                    $method = 'set' . ucfirst($childNode->getAttribute('type')) . $method;
-                }
-
-                $date = trim($childNode->getAttribute('year'));
-                if ($childNode->hasAttribute('monthDay')) {
-                    // ignore first character of monthDay's attribute value (is always a hyphen)
-                    $date .= substr(trim($childNode->getAttribute('monthDay')), 1);
-                }
-
-                $doc->$method($date);
-            }
-        }
+        $this->getOutput()->writeln("Record #{$docId} SKIPPED");
+        $this->getRejectOutput()->writeln($docId);
     }
 }

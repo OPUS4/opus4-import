@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- This file is a copy of server/tests/import -->
+<import 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="opus-import.xsd">
+
+  <opusDocument language="eng" type="preprint" serverState="inprogress">
+    <titlesMain>
+      <titleMain language="eng">La Vie un Rose</titleMain>
+    </titlesMain>
+    <dates>
+      <date type="completed" monthDay="--12-01" year="2011"/>
+    </dates>
+  </opusDocument>
+
+  <opusDocument language="deu" type="preprint" serverState="inprogress">
+    <titlesMain>
+      <titleMain language="eng">Ein Titel in Deutsch</titleMain>
+    </titlesMain>
+    <dates>
+      <date type="completed" monthDay="--07-20" year="2026"/>
+    </dates>
+  </opusDocument>
+
+</import>

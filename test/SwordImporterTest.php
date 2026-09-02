@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * This file is part of OPUS. The software OPUS has been originally developed
  * at the University of Stuttgart with funding from the German Research Net,
  * the Federal Department of Higher Education and Research and the Ministry
@@ -25,71 +25,27 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2008, OPUS 4 development team
+ * @copyright   Copyright (c) 2026, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
-*/
-
-namespace Opus\Import\Worker;
-
-use Opus\Common\JobInterface;
-use Opus\Import\Xml\MetadataImport;
-use Opus\Job\AbstractWorker;
-use Opus\Job\InvalidJobException;
-use Symfony\Component\Console\Output\NullOutput;
-use Zend_Log;
-
-use function is_object;
-
-/**
- * Worker for importing metadata
  */
-class MetadataImportWorker extends AbstractWorker
+
+namespace OpusTest\Import;
+
+use Opus\Import\SwordImporter;
+use OpusTest\Import\TestAsset\TestCase;
+
+class SwordImporterTest extends TestCase
 {
-    const LABEL = 'opus-metadata-import';
-
-    /**
-     * Constructs worker.
-     *
-     * @param null|Zend_Log $logger
-     */
-    public function __construct($logger = null)
+    public function setUp(): void
     {
-        $this->setLogger($logger);
+        parent::setUp();
     }
 
-    /**
-     * Return message label that is used to trigger worker process.
-     *
-     * @return string Message label.
-     */
-    public function getActivationLabel()
+    public function testRun()
     {
-        return self::LABEL;
-    }
-
-    /**
-     * Perfom work.
-     *
-     * @param JobInterface $job Job description and attached data.
-     */
-    public function work($job)
-    {
-        if ($job->getLabel() !== $this->getActivationLabel()) {
-            throw new InvalidJobException($job->getLabel() . " is not a suitable job for this worker.");
-        }
-
-        $data = $job->getData();
-
-        if (! (is_object($data) && isset($data->xml) && $data->xml !== null)) {
-             throw new InvalidJobException("Incomplete or missing data.");
-        }
-
-        if (null !== $this->logger) {
-            $this->logger->debug("Importing Metadata:\n" . $data->xml);
-        }
-
-        $importer = new MetadataImport();
-        $importer->setOutput(new NullOutput());
-        $importer->import($data->xml);
+        $this->markTestIncomplete('Test not implemented yet');
+        $xml      = '';
+        $importer = new SwordImporter($xml, false);
+        $importer->run();
     }
 }

@@ -25,28 +25,16 @@
  * along with OPUS; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * @copyright   Copyright (c) 2025, OPUS 4 development team
+ * @copyright   Copyright (c) 2026, OPUS 4 development team
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Console;
+namespace Opus\Import;
 
-use Opus\Import\Console\ImportCommandProvider;
-use OpusTest\Import\TestAsset\TestCase;
-use Symfony\Component\Console\Command\Command;
+/**
+ * TODO is this class needed - will there be functions here later?
+ */
 
-class ImportCommandProviderTest extends TestCase
+abstract class AbstractImportFormat implements ImportFormatInterface
 {
-    public function testGetCommands()
-    {
-        $provider = new ImportCommandProvider();
-
-        $commands = $provider->getCommands();
-
-        $this->assertCount(4, $commands);
-
-        foreach ($commands as $command) {
-            $this->assertInstanceOf(Command::class, $command);
-        }
-    }
 }

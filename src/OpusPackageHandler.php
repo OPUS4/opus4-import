@@ -89,15 +89,17 @@ class OpusPackageHandler extends AbstractPackageHandler
      */
     private function processOpusXML($xml, $dirName)
     {
-        $importer = new SwordImporter($xml, false, $this->getLogger());
+        $importer = new SwordImporter();
+        $importer->setLogger($this->getLogger());
+        // TODO additional logFile for rejected documents? necessary?
         $importer->setImportDir($dirName);
 
         $importer->setAdditionalEnrichments($this->additionalEnrichments);
-        $importCollection = new ImportCollection();
 
+        $importCollection = new ImportCollection();
         $importer->setImportCollection($importCollection->getCollection());
 
-        $importer->run();
+        $importer->importXml($xml);
 
         // TODO ImportStatusDocument is SWORD specific - separate package import from SWORD
         return $importer->getStatusDoc();
