@@ -33,49 +33,79 @@ namespace Opus\Import;
 
 use DOMDocument;
 use Opus\Common\DocumentInterface;
+use Opus\Common\LoggingTrait;
+use Opus\Import\Xml\OpusXmlParser;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * Interface for components processing import formats.
- *
- * Import format components parse import files or strings and create
- * DocumentInterface objects that then can be processed further.
- *
- * TODO should setOutput und setLogger be part of the interface?
- * TODO standard exception for InvalidInput (e.g. InvalidXml)?
- */
-interface ImportFormatInterface
+abstract class AbstractImporter
 {
-    /**
-     * Import data from file.
-     */
-    public function parseFile(string $path): ImportFormatInterface;
+    use LoggingTrait;
+
+    private ?OutputInterface $output = null;
+
+    private bool $updateExistingDocuments = true;
 
     /**
-     * Import data provided as string.
+     * TODO support $format parameter
      */
-    public function parseXml(string|DOMDocument $data): ImportFormatInterface;
+    protected function getParser(?string $format = null): ImportFormatInterface
+    {
+        return new OpusXmlParser();
+    }
+
+    protected function postStore(DocumentInterface $doc): void
+    {
+    }
+
+    public function getOutput(): OutputInterface
+    {
+        if ($this->output === null) {
+            $this->output = new NullOutput();
+        }
+
+        return $this->output;
+    }
+
+    public function setOutput(?OutputInterface $output = null): self
+    {
+        $this->output = $output;
+        return $this;
+    }
 
     /**
-     * Returns the next DocumentInterface object.
+     * Imports documents from file.
      */
-    public function next(): ?DocumentInterface;
+    public function importFile(string $path): void
+    {
+        $parser = $this->getParser();
+        $parser->parseFile($path);
+        $this->process($parser);
+    }
 
     /**
-     * Returns number of available documents.
-     *
-     * TODO sometimes that number might not be available
+     * Imports documents from XML string.
      */
-    public function getDocumentCount(): int;
+    public function importXml(string|DOMDocument $xml): void
+    {
+        $parser = $this->getParser();
+        $parser->parseFile($xml);
+        $this->process($parser);
+    }
 
-    /**
-     * Returns line number of current document.
-     */
-    public function getCurrentLineNo(): int;
+    protected function process(ImportFormatInterface $parser): void
+    {
+        // TODO basic import code
+    }
 
-    /**
-     * Returns ID of current document.
-     *
-     * This is used when the import is meant to update existing documents.
-     */
-    public function getCurrentId(): int;
+    public function setUpdateExistingDocuments(bool $updateDocuments): self
+    {
+        $this->updateExistingDocuments = $updateDocuments;
+        return $this;
+    }
+
+    public function isUpdateExistingDocuments(): bool
+    {
+        return $this->updateExistingDocuments;
+    }
 }

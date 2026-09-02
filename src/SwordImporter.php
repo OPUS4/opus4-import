@@ -52,14 +52,12 @@ class SwordImporter extends Importer
     /** @var bool */
     private $importDocumentsWithUnsupportedMimeTypes = true;
 
-    public function __construct(string $xml, bool $isFile = false, ?Zend_Log $logger = null, ?string $logFile = null)
+    public function __construct()
     {
-        parent::__construct($xml, $isFile, $logger, $logFile);
-
         $this->statusDoc = new ImportStatusDocument();
 
         // update of existing documents is not supported in SWORD context
-        $this->setUpdateExistingDocuments(false); // TODO set on Parser
+        $this->setUpdateExistingDocuments(false);
     }
 
     /**
@@ -114,10 +112,7 @@ class SwordImporter extends Importer
         }
     }
 
-    /**
-     * @param DocumentInterface $doc
-     */
-    protected function postStore($doc): void
+    protected function postStore(DocumentInterface $doc): void
     {
         $this->statusDoc->addDoc($doc);
     }
@@ -133,11 +128,11 @@ class SwordImporter extends Importer
         return $this->importDocumentsWithUnsupportedMimeTypes;
     }
 
-    protected function getParser(): ImportFormatInterface
+    protected function getParser(?string $format = null): ImportFormatInterface
     {
         $parser = parent::getParser();
         $parser->setErrorHandler($this);
-        $parser->setUpdateExistingDocuments(false);
+        $parser->setUpdateExistingDocuments($this->isUpdateExistingDocuments());
         return $parser;
     }
 }

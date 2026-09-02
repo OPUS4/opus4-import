@@ -136,21 +136,14 @@ class OpusXmlParser extends AbstractImportFormat
     /**
      * @throws MetadataImportInvalidXmlException
      */
-    public function parse(string $data): ImportFormatInterface
+    public function parseXml(string|DOMDocument $xml): ImportFormatInterface
     {
         $doc = new XmlDocument();
-        $doc->loadXML($data);
-        $this->open($doc);
-        return $this;
-    }
-
-    /**
-     * @throws MetadataImportInvalidXmlException
-     */
-    public function parseDom(DOMDocument $data): ImportFormatInterface
-    {
-        $doc = new XmlDocument();
-        $doc->setDom($data);
+        if ($xml instanceof DOMDocument) {
+            $doc->setDom($xml);
+        } else {
+            $doc->loadXML($xml);
+        }
         $this->open($doc);
         return $this;
     }

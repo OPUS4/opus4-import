@@ -33,8 +33,8 @@ namespace Opus\Import\Xml;
 
 use Exception;
 use Opus\Common\Console\Helper\ProgressBar;
-use Opus\Common\LoggingTrait;
 use Opus\Common\Model\NotFoundException;
+use Opus\Import\AbstractImporter;
 use Opus\Import\ImportFormatInterface;
 use Opus\Import\StoreDocument;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -53,13 +53,8 @@ use function sprintf;
  * TODO support configurable DocumentProcessor chain
  * TODO should this implement ImportErrorHandlerInterface?
  */
-class MetadataImport
+class MetadataImport extends AbstractImporter
 {
-    use LoggingTrait;
-
-    /** @var OutputInterface */
-    private $output;
-
     /** @var OutputInterface */
     private $rejectOutput;
 
@@ -70,31 +65,11 @@ class MetadataImport
     private $fieldsToKeepOnUpdate;
 
     /**
-     * Imports documents from file.
-     */
-    public function importFile(string $path): void
-    {
-        $parser = $this->getParser();
-        $parser->parseFile($path);
-        $this->process($parser);
-    }
-
-    /**
-     * Imports documents from XML string.
-     */
-    public function import(string $data): void
-    {
-        $parser = $this->getParser();
-        $parser->parse($data);
-        $this->process($parser);
-    }
-
-    /**
      * @throws MetadataImportSkippedDocumentsException
      *
      * TODO review $parser as parameter
      */
-    protected function process(ImportFormatInterface $parser)
+    protected function process(ImportFormatInterface $parser): void
     {
         $output = $this->getOutput();
 
@@ -186,29 +161,23 @@ class MetadataImport
         $this->progressBar->advance();
     }
 
-    /**
-     * TODO support $format parameter
-     */
     protected function getParser(?string $format = null): ImportFormatInterface
     {
-        $parser = new OpusXmlParser();
+        $parser = parent::getParser($format);
         $parser->setFieldsToKeepOnUpdate($this->getFieldsToKeepOnUpdate());
         return $parser;
     }
 
-    public function setOutput(?OutputInterface $output): self
-    {
-        $this->output = $output;
-        return $this;
-    }
-
     public function getOutput(): OutputInterface
     {
-        if ($this->output === null) {
-            $this->output = new ConsoleOutput();
+        $output = $this->getOutput();
+
+        if ($output === null) {
+            $output = new ConsoleOutput();
+            $this->setOutput($output);
         }
 
-        return $this->output;
+        return $output;
     }
 
     public function setRejectOutput(?OutputInterface $output): self

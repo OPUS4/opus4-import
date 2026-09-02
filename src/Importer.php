@@ -41,9 +41,6 @@ use Opus\Common\Model\NotFoundException;
 use Opus\Common\Security\SecurityException;
 use Opus\Import\Xml\MetadataImportInvalidXmlException;
 use Opus\Import\Xml\MetadataImportSkippedDocumentsException;
-use Opus\Import\Xml\OpusXmlParser;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Zend_Log;
 
 use function count;
@@ -57,19 +54,10 @@ use const DIRECTORY_SEPARATOR;
  * TODO document loggers
  * TODO use OutputInterface?
  */
-class Importer implements ImportErrorHandlerInterface
+class Importer extends AbstractImporter implements ImportErrorHandlerInterface
 {
-    /** @var Zend_Log|null */
+    /** @var Zend_Log|null TODO this is an additional logger - necessary? */
     private $logfile;
-
-    /** @var Zend_Log|null */
-    private $logger;
-
-    /** @var string|DOMDocument */
-    private $input;
-
-    /** @var bool */
-    private $inputIsFile;
 
     /** @var string */
     private $importDir;
@@ -101,9 +89,6 @@ class Importer implements ImportErrorHandlerInterface
     /** @var bool */
     private $filesAdded = false;
 
-    /** @var OutputInterface */
-    private $output;
-
     /** @var int[] */
     private $importedDocumentIds;
 
@@ -112,24 +97,6 @@ class Importer implements ImportErrorHandlerInterface
 
     /** @var bool  */
     private $importAllFiles = false;
-
-    /**
-     * @param string|DOMDocument $xml
-     * @param bool               $isFile
-     * @param null|Zend_Log      $logger
-     * @param null|string        $logfile
-     *
-     * TODO trim down constructor
-     * TODO check if there are unit tests for invalid $xml
-     */
-    public function __construct($xml, $isFile = false, $logger = null, $logfile = null)
-    {
-        $this->logger  = $logger;
-        $this->logfile = $logfile;
-
-        $this->input       = $xml;
-        $this->inputIsFile = $isFile;
-    }
 
     /**
      * @param string $path
@@ -174,6 +141,8 @@ class Importer implements ImportErrorHandlerInterface
 
     /**
      * @return DocumentInterface
+     *
+     * TODO set default values in new Documents
      */
     protected function initDocument()
     {
@@ -190,19 +159,9 @@ class Importer implements ImportErrorHandlerInterface
      * @throws ModelException
      * @throws SecurityException
      */
-    public function run()
+    protected function process(ImportFormatInterface $parser): void
     {
         $this->importedDocumentIds = [];
-
-        $parser = $this->getParser();
-
-        if ($this->inputIsFile) {
-            $parser->parseFile($this->input);
-        } elseif ($this->input instanceof DOMDocument) {
-            $parser->parseDom($this->input);
-        } else {
-            $parser->parse($this->input);
-        }
 
         $numOfDocsImported = 0;
         $numOfSkippedDocs  = 0;
@@ -328,41 +287,15 @@ class Importer implements ImportErrorHandlerInterface
     }
 
     /**
-     * TODO convert into store function, that actually does the storing?
-     *
-     * @param DocumentInterface $doc
-     */
-    protected function postStore($doc): void
-    {
-    }
-
-    /**
-     * @param bool $enabled
-     * @return $this
-     */
-    public function setUpdateExistingDocuments($enabled)
-    {
-        $this->updateExistingDocuments = $enabled;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isUpdateExistingDocuments()
-    {
-        return $this->updateExistingDocuments;
-    }
-
-    /**
      * @param string $message
      */
     protected function log($message)
     {
-        if ($this->logger === null) {
-            return;
+        $logger = $this->getLogger();
+
+        if ($logger !== null) {
+            $logger->debug($message);
         }
-        $this->logger->debug($message);
     }
 
     /**
@@ -437,21 +370,6 @@ class Importer implements ImportErrorHandlerInterface
         return $this->filesAdded;
     }
 
-    public function getOutput(): OutputInterface
-    {
-        if ($this->output === null) {
-            $this->output = new NullOutput();
-        }
-
-        return $this->output;
-    }
-
-    public function setOutput(OutputInterface $output): self
-    {
-        $this->output = $output;
-        return $this;
-    }
-
     public function getDocumentIds(): int|array
     {
         if ($this->importedDocumentIds === null) {
@@ -487,9 +405,9 @@ class Importer implements ImportErrorHandlerInterface
         $this->log($msg);
     }
 
-    protected function getParser(): ImportFormatInterface
+    protected function getParser(?string $format = null): ImportFormatInterface
     {
-        $parser = new OpusXmlParser();
+        $parser = parent::getParser($format);
         $parser->setImportPath($this->getImportDir());
         $parser->setErrorHandler($this);
         $parser->setFilesProcessor(new FilesProcessor());
