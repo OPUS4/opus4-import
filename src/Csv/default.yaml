@@ -77,7 +77,8 @@ Note:
   columns:
     Visibility:
     Value:
-  
+
+# TODO remove '2' - currently collections are not setup for testing - fix!
 Collection2:
   multiValue: true
 

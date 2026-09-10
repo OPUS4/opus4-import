@@ -35,6 +35,7 @@ use Opus\Common\DocumentInterface;
 
 /**
  * TODO there probably should be an Interface as well
+ * TODO get field name like in CsvFieldProcessor
  */
 abstract class AbstractColumnProcessor implements ColumnProcessorInterface
 {

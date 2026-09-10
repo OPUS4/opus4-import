@@ -29,67 +29,60 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-use function count;
+use Opus\Import\Csv\CsvIdentifierProcessor;
+use OpusTest\Import\TestAsset\TestCase;
 
-/**
- * TODO there probably should be an Interface as well
- */
-abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
+class CsvIdentifierProcessorTest extends TestCase
 {
-    /** @var array */
-    private $columnOffset = [];
+    /** @var CsvIdentifierProcessor */
+    private $processor;
 
-    public function __construct(?array $columnConfig = null, ?string $shortcutOption = null)
+    public function setUp(): void
     {
-        if (null !== $columnConfig && isset($columnConfig['columns'])) {
-            $this->setColumns($columnConfig['columns']);
-        }
+        parent::setUp();
 
-        if (null !== $shortcutOption) {
-            $this->setShortcutOption($shortcutOption);
-        }
+        $this->processor = new CsvIdentifierProcessor();
     }
 
-    /**
-     * Can be overwritten to set a model field from the header.
-     *
-     * Example header or configuration entry:
-     *   Identifier-OldId
-     *
-     * 'OldId' would be the shortcut option and could be used to set
-     * the Type field of Identifier.
-     */
-    public function setShortcutOption(?string $shortcutOption): self
+    public function testProcessShortcutType()
     {
-        return $this;
     }
 
-    public function setColumns(?array $columns): self
+    public function testProcessMultiColumn()
     {
-        if (null === $columns) {
-            $this->columnOffset = [];
-            return $this;
-        }
-
-        $offset = 0;
-        foreach ($columns as $fieldName => $fieldConfig) {
-            // TODO check if field exists
-            $this->columnOffset[$fieldName] = $offset;
-            $offset++;
-        }
-        return $this;
     }
 
-    public function getFieldColumn(string $fieldName): int
+    public function testProcessMultiColumnReverse()
     {
-        return $this->getColumnNo() + $this->columnOffset[$fieldName];
     }
 
-    public function getColumnCount(): int
+    public function testProcessMultiValue()
     {
-        $columnCount = count($this->columnOffset);
-        return $columnCount > 0 ? $columnCount : 1;
+    }
+
+    public function testProcessMultiValueShortcutType()
+    {
+    }
+
+    public function testProcessEmptyValue()
+    {
+    }
+
+    public function testProcessBadShortcutType()
+    {
+    }
+
+    public function testProcessMultiColumnBadType()
+    {
+    }
+
+    public function testProcessMultiColumnEmptyValue()
+    {
+    }
+
+    public function testConstructUnknownColumn()
+    {
     }
 }

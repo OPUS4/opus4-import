@@ -29,67 +29,42 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-use function count;
+use Opus\Import\Csv\CsvTitlesProcessor;
+use OpusTest\Import\TestAsset\TestCase;
 
-/**
- * TODO there probably should be an Interface as well
- */
-abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
+class CsvTitlesProcessorTest extends TestCase
 {
-    /** @var array */
-    private $columnOffset = [];
+    /** @var CsvTitlesProcessor */
+    private $processor;
 
-    public function __construct(?array $columnConfig = null, ?string $shortcutOption = null)
+    public function setUp(): void
     {
-        if (null !== $columnConfig && isset($columnConfig['columns'])) {
-            $this->setColumns($columnConfig['columns']);
-        }
+        parent::setUp();
 
-        if (null !== $shortcutOption) {
-            $this->setShortcutOption($shortcutOption);
-        }
+        $this->processor = new CsvTitlesProcessor();
     }
 
-    /**
-     * Can be overwritten to set a model field from the header.
-     *
-     * Example header or configuration entry:
-     *   Identifier-OldId
-     *
-     * 'OldId' would be the shortcut option and could be used to set
-     * the Type field of Identifier.
-     */
-    public function setShortcutOption(?string $shortcutOption): self
+    public function testProcessTitleMain()
     {
-        return $this;
+        $this->processor->setColumns([
+            'Language',
+            'Value',
+        ]);
+        $this->processor->setFieldname('TitleMain');
     }
 
-    public function setColumns(?array $columns): self
+    public function testProcessTitleAbstract()
     {
-        if (null === $columns) {
-            $this->columnOffset = [];
-            return $this;
-        }
-
-        $offset = 0;
-        foreach ($columns as $fieldName => $fieldConfig) {
-            // TODO check if field exists
-            $this->columnOffset[$fieldName] = $offset;
-            $offset++;
-        }
-        return $this;
     }
 
-    public function getFieldColumn(string $fieldName): int
+    public function testProcessTitles()
     {
-        return $this->getColumnNo() + $this->columnOffset[$fieldName];
+        // TODO includes Type column
     }
 
-    public function getColumnCount(): int
+    public function testProcessMultipleValues()
     {
-        $columnCount = count($this->columnOffset);
-        return $columnCount > 0 ? $columnCount : 1;
     }
 }

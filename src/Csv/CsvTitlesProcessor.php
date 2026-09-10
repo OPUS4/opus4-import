@@ -36,19 +36,26 @@ use Opus\Common\Title;
 
 /**
  * Imports titles.
+ *
+ * TODO get Type as shortcut option
  */
-class CsvTitlesProcessor extends AbstractColumnProcessor
+class CsvTitlesProcessor extends AbstractMultiColumnProcessor
 {
-    public function init(?array $columnConfig): void
-    {
-        // TODO parse 'columns'
-    }
-
     public function process(array $row, DocumentInterface $document): void
     {
+        $type  = 'main';
+        $lang  = $row[$this->getFieldColumn('Language')];
+        $value = $row[$this->getFieldColumn('Value')];
+
+        $this->addTitle($document, $type, $lang, $value);
     }
 
-    protected function addTitle(Title $title, DocumentInterface $doc): void
+    protected function addTitle(DocumentInterface $doc, string $type, string $lang, string $value): void
     {
+        $title = Title::new();
+        $title->setType($type);
+        $title->setLang($lang);
+        $title->setValue($value);
+        $doc->addTitle($title);
     }
 }
