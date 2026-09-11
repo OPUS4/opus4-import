@@ -29,34 +29,40 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-use Opus\Common\Collection;
-use Opus\Common\DocumentInterface;
+use Opus\Import\Csv\CsvCollectionProcessor;
+use OpusTest\Import\TestAsset\TestCase;
 
-use function array_map;
-use function explode;
-
-/**
- * TODO handle missing collection gracefully
- * TODO support using ROLENAME + NUMBER
- * TODO support quick option ROLE + NUMBER VALUES
- */
-class CsvCollectionProcessor extends AbstractColumnProcessor
+class CsvCollectionProcessorTest extends TestCase
 {
-    public function process(array $row, DocumentInterface $doc): void
-    {
-        $columnValue = $row[$this->getColumnNo()];
-        $values      = array_map('trim', explode('||', $columnValue));
+    /** @var CsvCollectionProcessor */
+    private $processor;
 
-        foreach ($values as $value) {
-            $this->addCollection((int) $value, $doc);
-        }
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->processor = new CsvCollectionProcessor();
     }
 
-    protected function addCollection(int $value, DocumentInterface $doc): void
+    public function testProcessCollectionId()
     {
-        $coll = Collection::get($value);
-        $doc->addCollection($coll);
+    }
+
+    public function testProcessMultipleCollectionId()
+    {
+    }
+
+    public function testProcessRoleAndNumberString()
+    {
+    }
+
+    public function testProcessNamedCollection()
+    {
+    }
+
+    public function testProcessShortcutOptionRole()
+    {
     }
 }

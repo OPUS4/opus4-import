@@ -35,6 +35,9 @@ use Opus\Common\DocumentInterface;
 
 use function ucfirst;
 
+/**
+ * TODO merge with AbstractColumnProcessor
+ */
 class CsvFieldProcessor extends AbstractColumnProcessor
 {
     /** @var string Field name */

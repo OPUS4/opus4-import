@@ -36,6 +36,8 @@ use Opus\Common\DocumentInterface;
 /**
  * TODO there probably should be an Interface as well
  * TODO get field name like in CsvFieldProcessor
+ * TODO add multi value processing
+ * TODO make full default processor for simple fields?
  */
 abstract class AbstractColumnProcessor implements ColumnProcessorInterface
 {

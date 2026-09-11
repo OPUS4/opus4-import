@@ -78,9 +78,9 @@ Note:
     Visibility:
     Value:
 
-# TODO remove '2' - currently collections are not setup for testing - fix!
-Collection2:
-  multiValue: true
+# TODO currently collections are not setup for testing - fix!
+# Collection:
+#   multiValue: true
 
 # TODO
 Series:
