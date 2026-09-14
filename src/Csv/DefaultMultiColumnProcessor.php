@@ -32,11 +32,14 @@
 namespace Opus\Import\Csv;
 
 use function count;
+use function is_array;
+use function strtolower;
+use function ucfirst;
 
 /**
  * TODO there probably should be an Interface as well
  */
-abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
+class DefaultMultiColumnProcessor extends DefaultColumnProcessor
 {
     /** @var array */
     private $columnOffset = [];
@@ -56,9 +59,9 @@ abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
      * Can be overwritten to set a model field from the header.
      *
      * Example header or configuration entry:
-     *   Identifier-OldId
+     *   Identifier-Old
      *
-     * 'OldId' would be the shortcut option and could be used to set
+     * 'Old' would be the shortcut option and could be used to set
      * the Type field of Identifier.
      */
     public function setShortcutOption(?string $shortcutOption): self
@@ -66,6 +69,9 @@ abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
         return $this;
     }
 
+    /**
+     * TODO check if fields exist?
+     */
     public function setColumns(?array $columns): self
     {
         if (null === $columns) {
@@ -75,7 +81,10 @@ abstract class AbstractMultiColumnProcessor extends AbstractColumnProcessor
 
         $offset = 0;
         foreach ($columns as $fieldName => $fieldConfig) {
-            // TODO check if field exists
+            if (! is_array($fieldConfig)) {
+                $fieldName = $fieldConfig;
+            }
+            $fieldName                      = ucfirst(strtolower($fieldName)); // cass insensitive field names in config
             $this->columnOffset[$fieldName] = $offset;
             $offset++;
         }

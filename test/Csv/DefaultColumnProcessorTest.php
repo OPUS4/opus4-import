@@ -29,41 +29,10 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-use Opus\Common\DocumentInterface;
+use OpusTest\Import\TestAsset\TestCase;
 
-/**
- * TODO there probably should be an Interface as well
- * TODO get field name like in CsvFieldProcessor
- * TODO add multi value processing
- * TODO make full default processor for simple fields?
- */
-abstract class AbstractColumnProcessor implements ColumnProcessorInterface
+class DefaultColumnProcessorTest extends TestCase
 {
-    /** @var int */
-    private $columnNo;
-
-    public function setColumnNo(int $columnNo): self
-    {
-        $this->columnNo = $columnNo;
-        return $this;
-    }
-
-    public function getColumnNo(): int
-    {
-        return $this->columnNo;
-    }
-
-    /**
-     * Returns number of columns a processor uses.
-     *
-     * This is useful when the fields of an object, like a title, are spread across multiple columns.
-     */
-    public function getColumnCount(): int
-    {
-        return 1;
-    }
-
-    abstract public function process(array $row, DocumentInterface $document): void;
 }

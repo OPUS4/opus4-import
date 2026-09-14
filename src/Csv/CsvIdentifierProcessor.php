@@ -31,17 +31,22 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Identifier;
 
+use function array_map;
+use function count;
+use function explode;
 use function trim;
 
 /**
  * TODO support configuration from header
  * TODO support multi value
  * TODO error handling
+ * TODO no validation of type - add?
  */
-class CsvIdentifierProcessor extends AbstractMultiColumnProcessor
+class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 {
     /** @var ?string Identifier type */
     private $type;
@@ -63,7 +68,33 @@ class CsvIdentifierProcessor extends AbstractMultiColumnProcessor
             $value = $row[$this->getFieldColumn('Value')];
         }
 
-        $this->addIdentifier($doc, $value, $type);
+        if ($this->isMultiValueEnabled()) {
+            $separator = $this->getMultiValueSeparator();
+
+            if (null === $this->getType()) {
+                $types = array_map('trim', explode($separator, $type));
+            } else {
+                $types = null;
+            }
+            $values = array_map('trim', explode($separator, $value));
+
+            if ($types !== null && count($types) !== count($values)) {
+                // TODO use specific exception with more information
+                throw new Exception('multi value counts not matching');
+            }
+
+            $pos = 0;
+
+            foreach ($values as $value) {
+                if (null !== $types) {
+                    $type = $types[$pos];
+                }
+                $this->addIdentifier($doc, $value, $type);
+                $pos++;
+            }
+        } else {
+            $this->addIdentifier($doc, $value, $type);
+        }
     }
 
     public function setType(string $type): self
@@ -79,9 +110,14 @@ class CsvIdentifierProcessor extends AbstractMultiColumnProcessor
 
     protected function addIdentifier(DocumentInterface $document, string $value, string $type): void
     {
-        // TODO handle empty value
+        $value = trim($value);
+
+        if ('' === $value) {
+            return;
+        }
+
         $identifier = Identifier::new();
-        $identifier->setValue(trim($value));
+        $identifier->setValue($value);
         $identifier->setType(trim($type));
         $document->addIdentifier($identifier);
     }

@@ -54,12 +54,12 @@ class CsvConfigYaml implements CsvConfigInterface
     /** @var array */
     private $config;
 
-    /** @var CsvFieldProcessor[] */
+    /** @var ColumnProcessorInterface[] */
     private $processors;
 
     /** @var string[] TODO mapping would also be needed for CsvConfigHeader */
     private $mapping = [
-        'default'    => CsvFieldProcessor::class,
+        'default'    => DefaultColumnProcessor::class,
         'Collection' => CsvCollectionProcessor::class,
         'Identifier' => CsvIdentifierProcessor::class,
     ];

@@ -42,7 +42,7 @@ use function explode;
  * TODO support using ROLENAME + NUMBER
  * TODO support quick option ROLE + NUMBER VALUES
  */
-class CsvCollectionProcessor extends AbstractColumnProcessor
+class CsvCollectionProcessor extends DefaultColumnProcessor
 {
     public function process(array $row, DocumentInterface $doc): void
     {

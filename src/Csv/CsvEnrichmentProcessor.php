@@ -34,7 +34,7 @@ namespace Opus\Import\Csv;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Enrichment;
 
-class CsvEnrichmentProcessor extends AbstractMultiColumnProcessor
+class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
 {
     private ?string $keyName = null;
 

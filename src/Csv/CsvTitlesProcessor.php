@@ -39,7 +39,7 @@ use Opus\Common\Title;
  *
  * TODO get Type as shortcut option
  */
-class CsvTitlesProcessor extends AbstractMultiColumnProcessor
+class CsvTitlesProcessor extends DefaultMultiColumnProcessor
 {
     public function process(array $row, DocumentInterface $document): void
     {

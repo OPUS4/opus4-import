@@ -51,7 +51,7 @@ use const PHP_INT_MAX;
  */
 class CsvParser
 {
-    /** @var CsvConfig */
+    /** @var CsvConfigInterface */
     private $config;
 
     /** @var ?string  Path to fulltext files for documents. */
