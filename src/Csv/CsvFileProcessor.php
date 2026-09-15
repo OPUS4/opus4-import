@@ -29,42 +29,9 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Csv;
+namespace Opus\Import\Csv;
 
-use Opus\Import\Csv\CsvTitlesProcessor;
-use OpusTest\Import\TestAsset\TestCase;
-
-class CsvTitlesProcessorTest extends TestCase
+class CsvFileProcessor extends DefaultMultiColumnProcessor
 {
-    /** @var CsvTitlesProcessor */
-    private $processor;
 
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->processor = new CsvTitlesProcessor();
-    }
-
-    public function testProcessTitleMain()
-    {
-        $this->processor->setColumns([
-            'Language',
-            'Value',
-        ]);
-        $this->processor->setFieldname('TitleMain');
-    }
-
-    public function testProcessTitleAbstract()
-    {
-    }
-
-    public function testProcessTitles()
-    {
-        // TODO includes Type column
-    }
-
-    public function testProcessMultipleValues()
-    {
-    }
 }

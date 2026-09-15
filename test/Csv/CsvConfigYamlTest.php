@@ -31,15 +31,71 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Import\Csv\CsvCollectionProcessor;
 use Opus\Import\Csv\CsvConfigYaml;
+use Opus\Import\Csv\CsvDateProcessor;
+use Opus\Import\Csv\CsvEnrichmentProcessor;
+use Opus\Import\Csv\CsvFileProcessor;
+use Opus\Import\Csv\CsvIdentifierProcessor;
+use Opus\Import\Csv\CsvLicenceProcessor;
+use Opus\Import\Csv\CsvNoteProcessor;
+use Opus\Import\Csv\CsvPersonProcessor;
+use Opus\Import\Csv\CsvSeriesProcessor;
+use Opus\Import\Csv\CsvTitleProcessor;
+use Opus\Import\Csv\DefaultColumnProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
 class CsvConfigYamlTest extends TestCase
 {
+    /** @var CsvConfigYaml */
+    private $yamlConfig;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->yamlConfig = new CsvConfigYaml();
+        $this->yamlConfig->load();
+    }
+
     public function testLoad()
     {
-        $config = new CsvConfigYaml();
-        $config->load();
-        $config->getProcessors();
+        $processors = $this->yamlConfig->getProcessors();
+
+        $this->assertCount(24, $processors);
+        $this->assertInstanceOf(CsvIdentifierProcessor::class, $processors[0]);
+        $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[1]);
+        $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[2]);
+        $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[3]);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[4]);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[5]);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[6]);
+        $this->assertInstanceOf(CsvPersonProcessor::class, $processors[7]);
+        $this->assertInstanceOf(CsvDateProcessor::class, $processors[8]);
+        $this->assertInstanceOf(CsvIdentifierProcessor::class, $processors[9]);
+        $this->assertInstanceOf(CsvNoteProcessor::class, $processors[10]);
+        $this->assertInstanceOf(CsvCollectionProcessor::class, $processors[11]);
+        $this->assertInstanceOf(CsvSeriesProcessor::class, $processors[12]);
+        $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[13]);
+        $this->assertInstanceOf(CsvLicenceProcessor::class, $processors[14]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[15]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[16]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[17]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[18]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[19]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[20]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[21]);
+        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[22]);
+        $this->assertInstanceOf(CsvFileProcessor::class, $processors[23]);
+    }
+
+    public function testLoadIdentifierProcessor()
+    {
+        $processors = $this->yamlConfig->getProcessors();
+
+        $identifierProcessor = $processors[0];
+
+        $this->assertEquals('old', $identifierProcessor->getType());
+        $this->assertEquals(0, $identifierProcessor->getColumnNo());
     }
 }

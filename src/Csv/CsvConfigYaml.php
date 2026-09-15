@@ -61,11 +61,20 @@ class CsvConfigYaml implements CsvConfigInterface
     private $mapping = [
         'default'    => DefaultColumnProcessor::class,
         'Collection' => CsvCollectionProcessor::class,
+        'Date'       => CsvDateProcessor::class,
+        'Enrichment' => CsvEnrichmentProcessor::class,
         'Identifier' => CsvIdentifierProcessor::class,
+        'Licence'    => CsvLicenceProcessor::class,
+        'Note'       => CsvNoteProcessor::class,
+        'Person'     => CsvPersonProcessor::class,
+        'Series'     => CsvSeriesProcessor::class,
+        'Title'      => CsvTitleProcessor::class,
+        'File'       => CsvFileProcessor::class,
     ];
 
-    public function load()
+    public function load(?string $yamlFile = null)
     {
+        // TODO support $yamlFile parameter
         $this->config = yaml_parse_file(__DIR__ . '/default.yaml');
     }
 
@@ -98,7 +107,7 @@ class CsvConfigYaml implements CsvConfigInterface
                 $processor->setColumnNo($columnNo);
 
                 switch ($fieldProcessorClass) {
-                    case CsvFieldProcessor::class:
+                    case DefaultColumnProcessor::class:
                         $processor->setFieldName($fieldName);
                         break;
                     default:

@@ -29,56 +29,17 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Csv;
+namespace Opus\Import\Csv;
 
-use Opus\Common\Document;
-use Opus\Import\Csv\CsvParser;
-use OpusTest\Import\TestAsset\TestCase;
-
-class CsvParserTest extends TestCase
+/**
+ * TODO support "published"Year and "completed"year
+ * TODO support CompletedDate
+ * TDDO support CompletedYear
+ * TODO support PublishedDate
+ * TODO support PublishedYear
+ * TODO support can those fields be supported by DefaultColumnProcessor?
+ * TODO support shortcutOption
+ */
+class CsvDateProcessor extends DefaultColumnProcessor
 {
-    public function testParseFile()
-    {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
-
-        $documentCount = 0;
-
-        do {
-            $doc = $parser->next();
-            if ($doc !== null) {
-                $documentCount++;
-            }
-        } while ($doc !== null);
-
-        $this->assertEquals(12, $documentCount);
-    }
-
-    public function testGetLineCount()
-    {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
-        $this->assertEquals(13, $parser->getLineCount());
-    }
-
-    public function testParseFileWithoutHeader()
-    {
-        $this->markTestIncomplete('This test has not been implemented yet.');
-    }
-
-    public function testParseDocument()
-    {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
-
-        $doc = $parser->next();
-
-        $this->assertNotNull($doc);
-        $this->assertCount(2, $doc->getIdentifier());
-        // TODO test identifier values
-
-        $this->assertEquals('zho', $doc->getLanguage());
-        $this->assertEquals('Article', $doc->getType());
-        $this->assertEquals(Document::STATE_PUBLISHED, $doc->getServerState());
-    }
 }

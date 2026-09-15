@@ -31,31 +31,7 @@
 
 namespace Opus\Import\Csv;
 
-use Opus\Common\DocumentInterface;
-use Opus\Common\Title;
-
-/**
- * Imports titles.
- *
- * TODO get Type as shortcut option
- */
-class CsvTitlesProcessor extends DefaultMultiColumnProcessor
+class CsvPersonProcessor extends DefaultMultiColumnProcessor
 {
-    public function process(array $row, DocumentInterface $document): void
-    {
-        $type  = 'main';
-        $lang  = $row[$this->getFieldColumn('Language')];
-        $value = $row[$this->getFieldColumn('Value')];
 
-        $this->addTitle($document, $type, $lang, $value);
-    }
-
-    protected function addTitle(DocumentInterface $doc, string $type, string $lang, string $value): void
-    {
-        $title = Title::new();
-        $title->setType($type);
-        $title->setLang($lang);
-        $title->setValue($value);
-        $doc->addTitle($title);
-    }
 }

@@ -21,32 +21,30 @@
 # - required (default: false)
 # - ignore
 #
-# TODO create unit test for this format
-#
-
 
 # Specific identifier type in a single column
 Identifier-Old:
+
+# Simple Document fields
 Language:
 Type:
 ServerState:
 
-# TODO
-TitleMain:
+# Main titles
+Title-Main:
   columns:
     Language:
     Value:
 
-# TODO
-TitleAbstract:
+# Abstracts
+Title-Abstract:
   multiValue: true
   columns:
     Language:
     Value:
 
-# TODO Titles is no field - requires special handling
-Titles:
-  class: opus.import.csv.CsvTitlesProcessor
+# Process all title types
+Title:
   columns:
     Type:
     Language:
@@ -60,7 +58,7 @@ Person:
     FirstName:
     LastName:
 
-# TODO
+# Dates
 Date:
   columns:
     Type:
@@ -79,8 +77,8 @@ Note:
     Value:
 
 # TODO currently collections are not setup for testing - fix!
-# Collection:
-#   multiValue: true
+Collection:
+  multiValue: true
 
 # TODO
 Series:
@@ -91,7 +89,7 @@ Volume:
 Licence-Id:
 
 # TODO is currently ignored
-Enrichments:
+Enrichment:
   multiValue: true
 
 Enrichment-Availability:
@@ -102,5 +100,5 @@ Enrichment-CopyrightPrint:
 Enrichment-CopyrightEBook:
 Enrichment-Relevance:
 
-# TODO
-Filename:
+# TODO "Filename"
+File:

@@ -31,54 +31,40 @@
 
 namespace OpusTest\Import\Csv;
 
-use Opus\Common\Document;
-use Opus\Import\Csv\CsvParser;
+use Opus\Import\Csv\CsvTitleProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
-class CsvParserTest extends TestCase
+class CsvTitleProcessorTest extends TestCase
 {
-    public function testParseFile()
+    /** @var CsvTitleProcessor */
+    private $processor;
+
+    public function setUp(): void
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
+        parent::setUp();
 
-        $documentCount = 0;
-
-        do {
-            $doc = $parser->next();
-            if ($doc !== null) {
-                $documentCount++;
-            }
-        } while ($doc !== null);
-
-        $this->assertEquals(12, $documentCount);
+        $this->processor = new CsvTitleProcessor();
     }
 
-    public function testGetLineCount()
+    public function testProcessTitleMain()
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
-        $this->assertEquals(13, $parser->getLineCount());
+        $this->processor->setColumns([
+            'Language',
+            'Value',
+        ]);
+        $this->processor->setFieldname('TitleMain');
     }
 
-    public function testParseFileWithoutHeader()
+    public function testProcessTitleAbstract()
     {
-        $this->markTestIncomplete('This test has not been implemented yet.');
     }
 
-    public function testParseDocument()
+    public function testProcessTitles()
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
+        // TODO includes Type column
+    }
 
-        $doc = $parser->next();
-
-        $this->assertNotNull($doc);
-        $this->assertCount(2, $doc->getIdentifier());
-        // TODO test identifier values
-
-        $this->assertEquals('zho', $doc->getLanguage());
-        $this->assertEquals('Article', $doc->getType());
-        $this->assertEquals(Document::STATE_PUBLISHED, $doc->getServerState());
+    public function testProcessMultipleValues()
+    {
     }
 }
