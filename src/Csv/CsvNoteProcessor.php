@@ -31,7 +31,25 @@
 
 namespace Opus\Import\Csv;
 
+use Opus\Common\DocumentInterface;
+use Opus\Common\Note;
+
+use function ucfirst;
+
 class CsvNoteProcessor extends DefaultMultiColumnProcessor
 {
+    public function process(array $row, DocumentInterface $document): void
+    {
+        $columnFields = ['Visibility', 'Message'];
 
+        $note = Note::new();
+
+        foreach ($columnFields as $fieldName) {
+            $value  = $row[$this->getFieldColumn($fieldName)];
+            $method = 'set' . ucfirst($fieldName);
+            $note->$method($value);
+        }
+
+        $document->addNote($note);
+    }
 }

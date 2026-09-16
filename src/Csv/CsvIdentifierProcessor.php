@@ -38,13 +38,16 @@ use Opus\Common\Identifier;
 use function array_map;
 use function count;
 use function explode;
+use function strtolower;
 use function trim;
+use function ucfirst;
 
 /**
  * TODO support configuration from header
  * TODO support multi value
  * TODO error handling
  * TODO no validation of type - add?
+ * TODO addIdentifierOpac method corresponds to type 'opac-id' (Fromm uses 'Opac') - How to handle both?
  */
 class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 {
@@ -118,7 +121,7 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 
         $identifier = Identifier::new();
         $identifier->setValue($value);
-        $identifier->setType(trim($type));
-        $document->addIdentifier($identifier);
+        $method = 'addIdentifier' . ucfirst($type);
+        $document->$method($identifier);
     }
 }

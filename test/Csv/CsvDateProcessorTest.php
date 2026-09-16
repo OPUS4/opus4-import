@@ -29,8 +29,24 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-class CsvLicenceProcessor extends DefaultMultiColumnProcessor
+use Opus\Import\Csv\CsvDateProcessor;
+use OpusTest\Import\TestAsset\TestCase;
+
+class CsvDateProcessorTest extends TestCase
 {
+    /** @var CsvDateProcessor */
+    private $processor;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->processor = new CsvDateProcessor();
+    }
+
+    public function testProcessMultiColumn()
+    {
+        // TODO test Type | Value
+    }
 }

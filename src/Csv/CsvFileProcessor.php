@@ -33,5 +33,4 @@ namespace Opus\Import\Csv;
 
 class CsvFileProcessor extends DefaultMultiColumnProcessor
 {
-
 }

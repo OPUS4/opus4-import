@@ -31,7 +31,21 @@
 
 namespace Opus\Import\Csv;
 
+use Opus\Common\DocumentInterface;
+
+use function in_array;
+use function ucfirst;
+
 /**
+ * Process date and year values.
+ *
+ * Columns are not responding to actual fields for Document or a Data
+ * object.
+ *
+ * Easiest usage is a single column for a specific Date/Year field.
+ *
+ * // TODO separate class for Year fields?
+ *
  * TODO support "published"Year and "completed"year
  * TODO support CompletedDate
  * TDDO support CompletedYear
@@ -39,7 +53,18 @@ namespace Opus\Import\Csv;
  * TODO support PublishedYear
  * TODO support can those fields be supported by DefaultColumnProcessor?
  * TODO support shortcutOption
+ * TODO support embargoDate
  */
-class CsvDateProcessor extends DefaultColumnProcessor
+class CsvDateProcessor extends DefaultMultiColumnProcessor
 {
+    public function process(array $row, DocumentInterface $document): void
+    {
+        $type  = $row[$this->getFieldColumn('Type')];
+        $value = $row[$this->getFieldColumn('Value')];
+
+        if (in_array($type, ['published', 'completed'])) {
+            $method = 'set' . ucfirst($type) . 'Year'; // TODO could be 'Date'
+            $document->$method($value);
+        }
+    }
 }

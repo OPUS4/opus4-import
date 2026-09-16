@@ -75,10 +75,51 @@ class CsvParserTest extends TestCase
 
         $this->assertNotNull($doc);
         $this->assertCount(2, $doc->getIdentifier());
-        // TODO test identifier values
+        $this->assertCount(1, $doc->getIdentifierOld());
+        $this->assertEquals('oldId1', $doc->getIdentifierOld()[0]->getValue());
 
-        $this->assertEquals('zho', $doc->getLanguage());
+        $this->assertEquals('deu', $doc->getLanguage());
         $this->assertEquals('Article', $doc->getType());
         $this->assertEquals(Document::STATE_PUBLISHED, $doc->getServerState());
+
+        $titleMain = $doc->getTitleMain();
+        $this->assertCount(1, $titleMain);
+        $this->assertEquals('Deutscher Haupttitel', $titleMain[0]->getValue());
+        $this->assertEquals('deu', $titleMain[0]->getLanguage());
+
+        $titleAbstract = $doc->getTitleAbstract();
+        $this->assertCount(1, $titleAbstract);
+        $this->assertEquals('Zusammenfassung1', $titleAbstract[0]->getValue());
+        $this->assertEquals('deu', $titleAbstract[0]->getLanguage());
+
+        $titleParent = $doc->getTitleParent();
+        $this->assertCount(1, $titleParent);
+        $this->assertEquals('Collection of German titles used for testing', $titleParent[0]->getValue());
+        $this->assertEquals('eng', $titleParent[0]->getLanguage());
+
+        $author = $doc->getPerson();
+        $this->assertCount(1, $author);
+        $this->assertEquals('Michael', $author[0]->getFirstName());
+        $this->assertEquals('Mustermann', $author[0]->getLastName());
+
+        $this->assertEquals(1933, $doc->getPublishedYear());
+
+        $this->assertCount(1, $doc->getIdentifierOpac());
+        $this->assertEquals('opacId1', $doc->getIdentifierOpac()[0]->getValue());
+
+        $this->assertCount(1, $doc->getNote());
+        $this->assertEquals('public', $doc->getNote()[0]->getVisibility());
+        $this->assertEquals('note1', $doc->getNote()[0]->getMessage());
+
+        // TODO check collections
+        // TODO check series
+
+        $this->assertEquals('vol1', $doc->getVolume());
+
+        // TODO check licence
+
+        $enrichment = $doc->getEnrichmentValue('availability');
+
+        // TODO check File
     }
 }

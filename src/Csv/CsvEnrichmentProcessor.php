@@ -34,6 +34,20 @@ namespace Opus\Import\Csv;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Enrichment;
 
+/**
+ * TODO support simple values
+ * TODO support multiple values
+ * TODO support legacy values "{availability: PDF-file / PDF-Datei}"
+ * TODO option for legacy value processing
+ *
+ * Single column usage:
+ *   Enrichment-keyName
+ *   Multiple values using ||
+ *
+ * Single column
+ *   {KEYNAME: VALUE}
+ *   Multiple values using ||
+ */
 class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
 {
     private ?string $keyName = null;
@@ -55,7 +69,12 @@ class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
             $value   = $row[$this->getFieldColumn('Value')];
         }
 
-        $this->addEnrichment($document, $keyName, $value);
+        // TODO check if legacy value
+
+        if (null !== $keyName && null !== $value) {
+            $this->addEnrichment($document, $keyName, $value);
+        }
+        // else { TODO something is wrong -> log OR throw exception
     }
 
     /**

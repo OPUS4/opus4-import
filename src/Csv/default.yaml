@@ -10,6 +10,7 @@
 # TODO support debugging (report ignored columns)
 # TODO support converting header to config and back (for auto config debugging)
 # TODO extend CvsCommand for new features like config-file, auto-mode and such
+# TODO support global options/defaults
 #
 # default requires 33 columns
 #
@@ -50,11 +51,10 @@ Title:
     Language:
     Value:
 
-# TODO
 Person:
   multiValue: true
   columns:
-    Type:
+    Role:
     FirstName:
     LastName:
 
@@ -74,7 +74,7 @@ Identifier:
 Note:
   columns:
     Visibility:
-    Value:
+    Message:
 
 # TODO currently collections are not setup for testing - fix!
 Collection:
@@ -92,7 +92,7 @@ Licence-Id:
 Enrichment:
   multiValue: true
 
-Enrichment-Availability:
+Enrichment-availability:
 Enrichment-Format:
 Enrichment-KindOfPublication:
 Enrichment-IdNo:

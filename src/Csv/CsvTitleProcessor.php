@@ -34,6 +34,9 @@ namespace Opus\Import\Csv;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Title;
 
+use function strtolower;
+use function ucfirst;
+
 /**
  * Imports titles.
  *
@@ -41,11 +44,14 @@ use Opus\Common\Title;
  */
 class CsvTitleProcessor extends DefaultMultiColumnProcessor
 {
+    private ?string $type = null;
+
     public function process(array $row, DocumentInterface $document): void
     {
-        $type  = 'main';
-        $lang  = $row[$this->getFieldColumn('Language')];
-        $value = $row[$this->getFieldColumn('Value')];
+        $type   = $this->getType();
+        $type ??= $row[$this->getFieldColumn('Type')];
+        $lang   = $row[$this->getFieldColumn('Language')];
+        $value  = $row[$this->getFieldColumn('Value')];
 
         $this->addTitle($document, $type, $lang, $value);
     }
@@ -57,5 +63,22 @@ class CsvTitleProcessor extends DefaultMultiColumnProcessor
         $title->setValue($value);
         $method = 'addTitle' . ucfirst($type);
         $doc->$method($title);
+    }
+
+    public function setShortcutOption(?string $shortcutOption): self
+    {
+        $this->setType($shortcutOption);
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(?string $type): self
+    {
+        $this->type = strtolower($type);
+        return $this;
     }
 }

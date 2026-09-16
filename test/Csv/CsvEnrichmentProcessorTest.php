@@ -29,8 +29,43 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-class CsvLicenceProcessor extends DefaultMultiColumnProcessor
+use Opus\Import\Csv\CsvEnrichmentProcessor;
+use OpusTest\Import\TestAsset\TestCase;
+
+use function preg_match;
+use function var_dump;
+
+class CsvEnrichmentProcessorTest extends TestCase
 {
+    /** @var CsvEnrichmentProcessor */
+    private $processor;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->processor = new CsvEnrichmentProcessor();
+    }
+
+    public function testSingleColumn()
+    {
+    }
+
+    public function testProcessSingleColumnLegacyValues()
+    {
+        $value = '{availability: PDF-file / PDF-Datei}';
+
+        preg_match('/^{([A-Za-z]+): (.+)}$/', $value, $matches);
+
+        var_dump($matches);
+    }
+
+    public function testProcessSingleColumnShortcutOptionKeyName()
+    {
+    }
+
+    public function testProcessMultipleValues()
+    {
+    }
 }

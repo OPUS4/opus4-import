@@ -118,9 +118,13 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
     {
         $value = $row[$this->getColumnNo()];
 
-        $method = 'set' . ucfirst($this->getFieldName());
+        $fieldName = $this->getFieldName();
 
-        $document->$method($value);
+        if (null !== $fieldName) {
+            $method = 'set' . ucfirst($fieldName);
+            $document->$method($value);
+        }
+        // TODO no $fieldName is a configuation or coding error
     }
 
     /**

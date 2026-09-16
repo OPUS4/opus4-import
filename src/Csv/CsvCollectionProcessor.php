@@ -33,6 +33,7 @@ namespace Opus\Import\Csv;
 
 use Opus\Common\Collection;
 use Opus\Common\DocumentInterface;
+use Opus\Common\Model\NotFoundException;
 
 use function array_map;
 use function explode;
@@ -44,19 +45,23 @@ use function explode;
  */
 class CsvCollectionProcessor extends DefaultColumnProcessor
 {
-    public function process(array $row, DocumentInterface $doc): void
+    public function process(array $row, DocumentInterface $document): void
     {
         $columnValue = $row[$this->getColumnNo()];
         $values      = array_map('trim', explode('||', $columnValue));
 
         foreach ($values as $value) {
-            $this->addCollection((int) $value, $doc);
+            $this->addCollection((int) $value, $document);
         }
     }
 
     protected function addCollection(int $value, DocumentInterface $doc): void
     {
-        $coll = Collection::get($value);
-        $doc->addCollection($coll);
+        try {
+            $coll = Collection::get($value);
+            $doc->addCollection($coll);
+        } catch (NotFoundException $nfe) {
+            // TODO do some logging or throw exception
+        }
     }
 }

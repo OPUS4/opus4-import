@@ -62,6 +62,7 @@ class CsvConfigYaml implements CsvConfigInterface
         'default'    => DefaultColumnProcessor::class,
         'Collection' => CsvCollectionProcessor::class,
         'Date'       => CsvDateProcessor::class,
+        'Year'       => CsvYearProcessor::class,
         'Enrichment' => CsvEnrichmentProcessor::class,
         'Identifier' => CsvIdentifierProcessor::class,
         'Licence'    => CsvLicenceProcessor::class,

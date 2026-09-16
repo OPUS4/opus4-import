@@ -33,7 +33,6 @@ namespace Opus\Import\Csv;
 
 use function count;
 use function is_array;
-use function strtolower;
 use function ucfirst;
 
 /**
@@ -81,10 +80,10 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
 
         $offset = 0;
         foreach ($columns as $fieldName => $fieldConfig) {
-            if (! is_array($fieldConfig)) {
+            if (null !== $fieldConfig && ! is_array($fieldConfig)) {
                 $fieldName = $fieldConfig;
             }
-            $fieldName                      = ucfirst(strtolower($fieldName)); // cass insensitive field names in config
+            $fieldName                      = ucfirst($fieldName); // cass insensitive field names in config
             $this->columnOffset[$fieldName] = $offset;
             $offset++;
         }

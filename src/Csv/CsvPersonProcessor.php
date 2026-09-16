@@ -31,7 +31,24 @@
 
 namespace Opus\Import\Csv;
 
+use Opus\Common\DocumentInterface;
+use Opus\Common\Person;
+
+use function ucfirst;
+
 class CsvPersonProcessor extends DefaultMultiColumnProcessor
 {
+    public function process(array $row, DocumentInterface $document): void
+    {
+        $columnFields = ['Role', 'FirstName', 'LastName'];
 
+        $person     = Person::new();
+        $personLink = $document->addPerson($person);
+
+        foreach ($columnFields as $fieldName) {
+            $value  = $row[$this->getFieldColumn($fieldName)];
+            $method = 'set' . ucfirst($fieldName);
+            $personLink->$method($value);
+        }
+    }
 }
