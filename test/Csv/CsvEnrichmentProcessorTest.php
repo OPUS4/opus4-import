@@ -31,11 +31,9 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Document;
 use Opus\Import\Csv\CsvEnrichmentProcessor;
 use OpusTest\Import\TestAsset\TestCase;
-
-use function preg_match;
-use function var_dump;
 
 class CsvEnrichmentProcessorTest extends TestCase
 {
@@ -50,22 +48,101 @@ class CsvEnrichmentProcessorTest extends TestCase
 
     public function testSingleColumn()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setKeyName('availability');
+
+        $doc = Document::new();
+        $row = ['PDF-file / PDF-Datei'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('availability', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('PDF-file / PDF-Datei', $doc->getEnrichment()[0]->getValue());
+    }
+
+    public function testProcessSingleColumnMultipleValues()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setKeyName('availability');
+
+        $doc = Document::new();
+        $row = ['value1 || value2'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(2, $doc->getEnrichment());
+        $this->assertEquals('availability', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('value1', $doc->getEnrichment()[0]->getValue());
+        $this->assertEquals('availability', $doc->getEnrichment()[1]->getKeyName());
+        $this->assertEquals('value2', $doc->getEnrichment()[1]->getValue());
     }
 
     public function testProcessSingleColumnLegacyValues()
     {
-        $value = '{availability: PDF-file / PDF-Datei}';
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
 
-        preg_match('/^{([A-Za-z]+): (.+)}$/', $value, $matches);
+        $doc = Document::new();
+        $row = ['{availability: PDF-file / PDF-Datei}'];
 
-        var_dump($matches);
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('availability', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('PDF-file / PDF-Datei', $doc->getEnrichment()[0]->getValue());
     }
 
-    public function testProcessSingleColumnShortcutOptionKeyName()
+    public function testProcessMultiColumn()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setColumns(['KeyName', 'Value']);
+
+        $doc = Document::new();
+        $row = ['availability', 'PDF-file / PDF-Datei'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('availability', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('PDF-file / PDF-Datei', $doc->getEnrichment()[0]->getValue());
     }
 
-    public function testProcessMultipleValues()
+    public function testProcessMultiColumnMultipleValues()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setColumns(['KeyName', 'Value']);
+        $processor->setMultiValueEnabled(true);
+
+        $doc = Document::new();
+        $row = ['key1 || key2', 'value1 || value2'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(2, $doc->getEnrichment());
+        $this->assertEquals('key1', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('value1', $doc->getEnrichment()[0]->getValue());
+        $this->assertEquals('key2', $doc->getEnrichment()[1]->getKeyName());
+        $this->assertEquals('value2', $doc->getEnrichment()[1]->getValue());
+    }
+
+    public function testProcessShortcutOptionAndLegacyValues()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setKeyName('key1');
+
+        $doc = Document::new();
+        $row = ['{availability: PDF-file / PDF-Datei}'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getEnrichment());
+        $this->assertEquals('key1', $doc->getEnrichment()[0]->getKeyName());
+        $this->assertEquals('{availability: PDF-file / PDF-Datei}', $doc->getEnrichment()[0]->getValue());
     }
 }

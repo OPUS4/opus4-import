@@ -65,11 +65,15 @@ class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
         if (null !== $keyName) {
             $value = $row[$this->getColumnNo()];
         } else {
-            $keyName = $row[$this->getFieldColumn('KeyName')];
-            $value   = $row[$this->getFieldColumn('Value')];
+            $value = $row[$this->getFieldColumn('Value')];
+            if ($this->getColumnCount() > 1) {
+                $keyName = $row[$this->getFieldColumn('KeyName')];
+            } else {
+                preg_match('/^{([A-Za-z]+): (.+)}$/', $value, $matches);
+                $keyName = $matches[1];
+                $value   = $matches[2];
+            }
         }
-
-        // TODO check if legacy value
 
         if (null !== $keyName && null !== $value) {
             $this->addEnrichment($document, $keyName, $value);
