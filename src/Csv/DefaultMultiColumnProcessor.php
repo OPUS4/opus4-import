@@ -31,6 +31,8 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
+
 use function count;
 use function is_array;
 use function ucfirst;
@@ -45,6 +47,8 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
 
     public function __construct(?array $columnConfig = null, ?string $shortcutOption = null)
     {
+        parent::__construct();
+
         if (null !== $columnConfig && isset($columnConfig['columns'])) {
             $this->setColumns($columnConfig['columns']);
         }
@@ -83,7 +87,12 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
             if (null !== $fieldConfig && ! is_array($fieldConfig)) {
                 $fieldName = $fieldConfig;
             }
-            $fieldName                      = ucfirst($fieldName); // cass insensitive field names in config
+            $fieldName = ucfirst($fieldName); // cass insensitive field names in config
+
+            if (! $this->fieldExists($fieldName)) {
+                throw new Exception('field ' . $fieldName . ' does not exist');
+            }
+
             $this->columnOffset[$fieldName] = $offset;
             $offset++;
         }

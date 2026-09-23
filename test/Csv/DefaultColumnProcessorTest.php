@@ -31,8 +31,66 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Document;
+use Opus\Import\Csv\DefaultColumnProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
 class DefaultColumnProcessorTest extends TestCase
 {
+    /** @var DefaultColumnProcessor */
+    private $processor;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->processor = new DefaultColumnProcessor();
+    }
+
+    public function testSetColumnNo()
+    {
+        $this->processor->setColumnNo(10);
+        $this->assertEquals(10, $this->processor->getColumnNo());
+    }
+
+    public function testSetMultiValueSeparator()
+    {
+    }
+
+    public function testSetModelType()
+    {
+    }
+
+    public function testFieldExists()
+    {
+        // TODO protected
+    }
+
+    public function testGetModelFields()
+    {
+        // TODO protected
+    }
+
+    public function testSetFieldName()
+    {
+    }
+
+    public function testProcess()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setFieldName('volume');
+
+        $doc = Document::new();
+        $row = ['vol1'];
+        $processor->process($row, $doc);
+
+        $this->assertEquals('vol1', $doc->getVolume());
+    }
+
+    public function testSetFieldNameUnknown()
+    {
+        $processor = $this->processor;
+        $this->expectExceptionMessage('unknown field');
+        $processor->setFieldName('UnknownField');
+    }
 }

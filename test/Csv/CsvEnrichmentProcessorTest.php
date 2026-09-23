@@ -67,6 +67,7 @@ class CsvEnrichmentProcessorTest extends TestCase
         $processor = $this->processor;
         $processor->setColumnNo(0);
         $processor->setKeyName('availability');
+        $processor->setMultiValueEnabled(true);
 
         $doc = Document::new();
         $row = ['value1 || value2'];

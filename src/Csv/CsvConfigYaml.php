@@ -106,6 +106,7 @@ class CsvConfigYaml implements CsvConfigInterface
             if ($fieldProcessorClass !== null) {
                 $processor = new $fieldProcessorClass($columnConfig, $shortcutOption);
                 $processor->setColumnNo($columnNo);
+                // $processor->setModelType($fieldName); TODO
 
                 switch ($fieldProcessorClass) {
                     case DefaultColumnProcessor::class:

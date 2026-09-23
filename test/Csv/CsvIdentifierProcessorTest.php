@@ -84,10 +84,8 @@ class CsvIdentifierProcessorTest extends TestCase
         $doc = Document::new();
         $row = ['1234'];
 
+        $this->expectExceptionMessage('unknown identifier type'); // TODO unknown type message
         $processor->process($row, $doc);
-
-        $this->expectExceptionMessage('Data truncated');
-        $doc->store();
     }
 
     public function testProcessMultiColumn()
@@ -126,7 +124,7 @@ class CsvIdentifierProcessorTest extends TestCase
     {
         $processor = $this->getProcessor();
         $processor->setColumnNo(0);
-        $processor->setColumns(['vAlue', 'tYpe']);
+        $processor->setColumns(['Value', 'type']);
 
         $doc = Document::new();
         $row = ['1234', 'old'];
@@ -210,10 +208,8 @@ class CsvIdentifierProcessorTest extends TestCase
         $doc = Document::new();
         $row = ['old2', '1234'];
 
+        $this->expectExceptionMessage('unknown identifier type');
         $processor->process($row, $doc);
-
-        $this->expectExceptionMessage('Data truncated');
-        $doc->store();
     }
 
     public function testProcessEmptyValue()
@@ -262,7 +258,7 @@ class CsvIdentifierProcessorTest extends TestCase
 
     public function testConstructUnknownField()
     {
-        // $this->markTestSkipped('Multi column code not model aware yet');
+        $this->expectExceptionMessage('field Language does not exist');
         $processor = new CsvIdentifierProcessor(['columns' => ['Type', 'Value', 'Language']]);
         $processor->setColumnNo(2);
     }

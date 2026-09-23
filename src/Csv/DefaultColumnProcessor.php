@@ -33,7 +33,6 @@ namespace Opus\Import\Csv;
 
 use Opus\Common\DocumentInterface;
 use Opus\Common\Repository;
-use Opus\ModelFactory;
 
 use function in_array;
 use function ucfirst;
@@ -61,6 +60,15 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
 
     /** Field name */
     private ?string $fieldName = null;
+
+    public function __construct()
+    {
+        $this->init();
+    }
+
+    protected function init(): void
+    {
+    }
 
     public function setColumnNo(int $columnNo): self
     {
@@ -105,15 +113,6 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
         return $this->multiValueSeparator;
     }
 
-    public function setModel(string $modelName): self
-    {
-        $model = ModelFactory::get($modelName);
-        if (null !== $model) {
-            $this->modelDescriptor = $model->getModelDescriptor();
-        }
-        return $this;
-    }
-
     public function process(array $row, DocumentInterface $document): void
     {
         $value = $row[$this->getColumnNo()];
@@ -150,6 +149,9 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
     public function getModelFields(): array
     {
         // TODO deal with modelType === null OR unknown
+        if (null === $this->modelType) {
+            return [];
+        }
 
         if (null === $this->modelFields) {
             $modelFactory      = Repository::getInstance()->getModelFactory();

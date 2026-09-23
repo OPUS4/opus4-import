@@ -46,6 +46,11 @@ class CsvTitleProcessor extends DefaultMultiColumnProcessor
 {
     private ?string $type = null;
 
+    protected function init(): void
+    {
+        $this->setModelType(Title::getModelType());
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
         $type   = $this->getType();

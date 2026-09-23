@@ -31,6 +31,7 @@
 
 namespace Opus\Import\Csv;
 
+use Opus\Common\Date;
 use Opus\Common\DocumentInterface;
 
 use function in_array;
@@ -57,6 +58,11 @@ use function ucfirst;
  */
 class CsvDateProcessor extends DefaultMultiColumnProcessor
 {
+    protected function init(): void
+    {
+        $this->setModelType(Date::getModelType());
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
         $type  = $row[$this->getFieldColumn('Type')];
@@ -66,5 +72,10 @@ class CsvDateProcessor extends DefaultMultiColumnProcessor
             $method = 'set' . ucfirst($type) . 'Year'; // TODO could be 'Date'
             $document->$method($value);
         }
+    }
+
+    public function getModelFields(): array
+    {
+        return ['Type', 'Value'];
     }
 }

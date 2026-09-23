@@ -45,6 +45,11 @@ use function explode;
  */
 class CsvCollectionProcessor extends DefaultColumnProcessor
 {
+    public function init(): void
+    {
+        $this->setModelType(Collection::getModelType());
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
         $columnValue = $row[$this->getColumnNo()];

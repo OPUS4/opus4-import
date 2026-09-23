@@ -34,10 +34,16 @@ namespace Opus\Import\Csv;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Person;
 
+use function array_merge;
 use function ucfirst;
 
 class CsvPersonProcessor extends DefaultMultiColumnProcessor
 {
+    protected function init(): void
+    {
+        $this->setModelType(Person::getModelType()); // TODO PersonLink is actually used and adds fields
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
         $columnFields = ['Role', 'FirstName', 'LastName'];
@@ -50,5 +56,11 @@ class CsvPersonProcessor extends DefaultMultiColumnProcessor
             $method = 'set' . ucfirst($fieldName);
             $personLink->$method($value);
         }
+    }
+
+    public function getModelFields(): array
+    {
+        $modelFields = parent::getModelFields();
+        return array_merge($modelFields, ['Role']); // TODO add alld PersonLink fields (find better solution)
     }
 }

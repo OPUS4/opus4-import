@@ -40,7 +40,6 @@ use function count;
 use function explode;
 use function strtolower;
 use function trim;
-use function ucfirst;
 
 /**
  * TODO support configuration from header
@@ -53,6 +52,11 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 {
     /** @var ?string Identifier type */
     private $type;
+
+    protected function init(): void
+    {
+        $this->setModelType(Identifier::getModelType());
+    }
 
     public function setShortcutOption(?string $shortcutOption): self
     {
@@ -111,6 +115,9 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
         return $this->type;
     }
 
+    /**
+     * TODO "external" type addIdentifier"Opac" is not identical to internal type "opac-id" - map
+     */
     protected function addIdentifier(DocumentInterface $document, string $value, string $type): void
     {
         $value = trim($value);
@@ -119,9 +126,17 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
             return;
         }
 
+        $type = Identifier::getTypeForFieldname('Identifier' . ucfirst($type));
+
+        if (null === $type) {
+            throw new Exception('unknown identifier type');
+            // TODO sometimes problems should be logged, but the processing should continue
+        }
+
         $identifier = Identifier::new();
+        $identifier->setType($type);
         $identifier->setValue($value);
-        $method = 'addIdentifier' . ucfirst($type);
+        $method = 'addIdentifier'; // . ucfirst($type);
         $document->$method($identifier);
     }
 }

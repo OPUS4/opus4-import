@@ -38,6 +38,11 @@ use function ucfirst;
 
 class CsvNoteProcessor extends DefaultMultiColumnProcessor
 {
+    protected function init(): void
+    {
+        $this->setModelType(Note::getModelType());
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
         $columnFields = ['Visibility', 'Message'];

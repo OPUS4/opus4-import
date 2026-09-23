@@ -31,8 +31,14 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Enrichment;
+
+use function array_map;
+use function count;
+use function explode;
+use function preg_match;
 
 /**
  * TODO support simple values
@@ -51,6 +57,11 @@ use Opus\Common\Enrichment;
 class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
 {
     private ?string $keyName = null;
+
+    protected function init(): void
+    {
+        $this->setModelType(Enrichment::getModelType());
+    }
 
     public function setShortcutOption(?string $shortcutOption): self
     {
@@ -75,10 +86,38 @@ class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
             }
         }
 
-        if (null !== $keyName && null !== $value) {
+        if (null === $keyName || null === $value) {
+            // TODO something is wrong -> log OR throw exception
+            return;
+        }
+
+        if ($this->isMultiValueEnabled()) {
+            $separator = $this->getMultiValueSeparator();
+
+            if (null === $this->getKeyName()) {
+                $keyNames = array_map('trim', explode($separator, $keyName));
+            } else {
+                $keyNames = null;
+            }
+            $values = array_map('trim', explode($separator, $value));
+
+            if ($keyNames !== null && count($keyNames) !== count($values)) {
+                // TODO use specific exception with more information
+                throw new Exception('multi value counts not matching');
+            }
+
+            $pos = 0;
+
+            foreach ($values as $value) {
+                if (null !== $keyNames) {
+                    $keyName = $keyNames[$pos];
+                }
+                $this->addEnrichment($document, $keyName, $value);
+                $pos++;
+            }
+        } else {
             $this->addEnrichment($document, $keyName, $value);
         }
-        // else { TODO something is wrong -> log OR throw exception
     }
 
     /**
