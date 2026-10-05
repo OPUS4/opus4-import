@@ -75,17 +75,35 @@ class CsvIdentifierProcessorTest extends TestCase
         $this->assertEquals('4321', $doc->getIdentifierOld()[0]->getValue());
     }
 
-    public function testProcessShortcutTypeInvalid()
+    public function testProcessShortcutTypeCamelCase()
     {
         $processor = $this->getProcessor();
-        $processor->setShortcutOption('old2');
+        $processor->setShortcutOption('UnionCat');
         $processor->setColumnNo(0);
 
         $doc = Document::new();
-        $row = ['1234'];
+        $row = ['uc1234'];
 
-        $this->expectExceptionMessage('unknown identifier type'); // TODO unknown type message
         $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getIdentifierUnionCat());
+        $this->assertEquals('uc1234', $doc->getIdentifierUnionCat()[0]->getValue());
+    }
+
+    public function testShortcutTypeInvalid()
+    {
+        $processor = $this->getProcessor();
+        $this->expectExceptionMessage('unknown identifier type'); // TODO unknown type message
+        $processor->setShortcutOption('old2');
+    }
+
+    public function testShortcutTypeCaseSensitive()
+    {
+        $processor = $this->getProcessor();
+        $processor->setShortcutOption('UnionCat');
+
+        $this->expectExceptionMessage('unknown identifier type');
+        $processor->setShortcutOption('unioncat');
     }
 
     public function testProcessMultiColumn()

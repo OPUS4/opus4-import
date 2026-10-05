@@ -39,7 +39,7 @@ use function ucfirst;
 
 class CsvPersonProcessor extends DefaultMultiColumnProcessor
 {
-    protected function init(): void
+    protected function init(?array $columnConfig = null): void
     {
         $this->setModelType(Person::getModelType()); // TODO PersonLink is actually used and adds fields
     }

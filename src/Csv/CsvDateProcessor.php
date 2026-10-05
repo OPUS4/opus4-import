@@ -58,7 +58,7 @@ use function ucfirst;
  */
 class CsvDateProcessor extends DefaultMultiColumnProcessor
 {
-    protected function init(): void
+    protected function init(?array $columnConfig = null): void
     {
         $this->setModelType(Date::getModelType());
     }

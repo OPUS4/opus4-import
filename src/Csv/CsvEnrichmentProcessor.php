@@ -58,7 +58,7 @@ class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
 {
     private ?string $keyName = null;
 
-    protected function init(): void
+    protected function init(?array $columnConfig = null): void
     {
         $this->setModelType(Enrichment::getModelType());
     }

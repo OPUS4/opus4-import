@@ -44,10 +44,14 @@ use const PHP_INT_MAX;
 /**
  * Configurable parser for OPUS 4 CSV files.
  *
+ * Exceptions importing a row, a document should not stop the entire import
+ * process.
+ *
  * TODO should implement ImportFormatInterface (new with issue #36)
  * TODO support auto configuration based on column headers
  * TODO ignoring first line as header should be optional (configurable)
  * TODO support single and multi column identifier
+ * TODO support dryrun, parsing CSV file without saving documents
  */
 class CsvParser
 {

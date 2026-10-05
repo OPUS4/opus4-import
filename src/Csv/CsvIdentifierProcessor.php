@@ -38,22 +38,20 @@ use Opus\Common\Identifier;
 use function array_map;
 use function count;
 use function explode;
-use function strtolower;
 use function trim;
+use function ucfirst;
 
 /**
- * TODO support configuration from header
- * TODO support multi value
- * TODO error handling
- * TODO no validation of type - add?
- * TODO addIdentifierOpac method corresponds to type 'opac-id' (Fromm uses 'Opac') - How to handle both?
+ * Processes identifier values in one or two columns.
+ *
+ * Datenbank interne Werte, wie `opac-id`, werden momentan nicht als Typ unterstützt.
  */
 class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 {
     /** @var ?string Identifier type */
     private $type;
 
-    protected function init(): void
+    protected function init(?array $columnConfig = null): void
     {
         $this->setModelType(Identifier::getModelType());
     }
@@ -106,7 +104,8 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 
     public function setType(string $type): self
     {
-        $this->type = strtolower($type);
+        $this->getIdentifierType($type);
+        $this->type = $type;
         return $this;
     }
 
@@ -115,9 +114,6 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
         return $this->type;
     }
 
-    /**
-     * TODO "external" type addIdentifier"Opac" is not identical to internal type "opac-id" - map
-     */
     protected function addIdentifier(DocumentInterface $document, string $value, string $type): void
     {
         $value = trim($value);
@@ -126,6 +122,17 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
             return;
         }
 
+        $type = $this->getIdentifierType($type);
+
+        $identifier = Identifier::new();
+        $identifier->setType($type);
+        $identifier->setValue($value);
+        $method = 'addIdentifier';
+        $document->$method($identifier);
+    }
+
+    protected function getIdentifierType(string $type): string
+    {
         $type = Identifier::getTypeForFieldname('Identifier' . ucfirst($type));
 
         if (null === $type) {
@@ -133,10 +140,6 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
             // TODO sometimes problems should be logged, but the processing should continue
         }
 
-        $identifier = Identifier::new();
-        $identifier->setType($type);
-        $identifier->setValue($value);
-        $method = 'addIdentifier'; // . ucfirst($type);
-        $document->$method($identifier);
+        return $type;
     }
 }

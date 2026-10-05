@@ -31,23 +31,44 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\Collection;
+use Opus\Common\CollectionRole;
+use Opus\Common\CollectionRoleInterface;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Model\NotFoundException;
 
 use function array_map;
+use function count;
 use function explode;
+use function is_numeric;
 
 /**
- * TODO handle missing collection gracefully
- * TODO support using ROLENAME + NUMBER
+ * TODO handle missing collection gracefully (exception optional)
+ * TODO support using ROLENAME:NUMBER
  * TODO support quick option ROLE + NUMBER VALUES
+ * TODO avoid multiple instantiations of Collection objects
  */
 class CsvCollectionProcessor extends DefaultColumnProcessor
 {
-    public function init(): void
+    /** @var ?CollectionRoleInterface Fixed collection role */
+    private $role;
+
+    public function init(?array $columnConfig = null): void
     {
         $this->setModelType(Collection::getModelType());
+    }
+
+    /**
+     * Shortcut option could be role name or oainame.
+     */
+    public function setShortcutOption(?string $shortcutOption): self
+    {
+        if (null !== $shortcutOption) {
+            $role = CollectionRole::fetchByName($shortcutOption);
+            $this->setRole($role);
+        }
+        return $this;
     }
 
     public function process(array $row, DocumentInterface $document): void
@@ -56,17 +77,49 @@ class CsvCollectionProcessor extends DefaultColumnProcessor
         $values      = array_map('trim', explode('||', $columnValue));
 
         foreach ($values as $value) {
-            $this->addCollection((int) $value, $document);
+            if (is_numeric($value)) {
+                // Collection ID
+                $this->addCollection((int) $value, $document);
+            } else {
+                // TODO error handling (unknown role, col)
+                $role = $this->getRole();
+                if (null === $role) {
+                    [$roleName, $colName] = array_map('trim', explode(':', $value));
+                    $role                 = CollectionRole::fetchByName($roleName);
+                    $collections          = Collection::fetchCollectionsByRoleName($role->getId(), $colName);
+                    if (count($collections) > 0) {
+                        $this->addCollection($collections[0]->getId(), $document);
+                    }
+                    // TODO parse ROLEOAINAME:COLNAME|COLOAINAME
+                } else {
+                    // TODO parse COLOAINAME
+                    $collections = Collection::fetchCollectionsByRoleName($role->getId(), $value);
+                    if (count($collections) > 0) {
+                        $this->addCollection($collections[0]->getId(), $document);
+                    }
+                }
+            }
         }
     }
 
-    protected function addCollection(int $value, DocumentInterface $doc): void
+    protected function addCollection(int $colId, DocumentInterface $doc): void
     {
         try {
-            $coll = Collection::get($value);
+            $coll = Collection::get($colId);
             $doc->addCollection($coll);
         } catch (NotFoundException $nfe) {
-            // TODO do some logging or throw exception
+            throw new Exception('collection id ' . $colId . ' does not exist');
         }
+    }
+
+    public function setRole(?CollectionRoleInterface $role): self
+    {
+        $this->role = $role;
+        return $this;
+    }
+
+    public function getRole(): ?CollectionRoleInterface
+    {
+        return $this->role;
     }
 }

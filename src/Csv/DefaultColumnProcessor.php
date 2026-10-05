@@ -61,13 +61,27 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
     /** Field name */
     private ?string $fieldName = null;
 
-    public function __construct()
+    public function __construct(?array $columnConfig = null)
     {
-        $this->init();
+        $this->init($columnConfig);
     }
 
-    protected function init(): void
+    protected function init(?array $columnConfig = null): void
     {
+    }
+
+    /**
+     * Can be overwritten to set a model field from the header.
+     *
+     * Example header or configuration entry:
+     *   Identifier-Old
+     *
+     * 'Old' would be the shortcut option and could be used to set
+     * the Type field of Identifier.
+     */
+    public function setShortcutOption(?string $shortcutOption): self
+    {
+        return $this;
     }
 
     public function setColumnNo(int $columnNo): self

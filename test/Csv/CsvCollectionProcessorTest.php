@@ -31,6 +31,11 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Collection;
+use Opus\Common\CollectionInterface;
+use Opus\Common\CollectionRole;
+use Opus\Common\CollectionRoleInterface;
+use Opus\Common\Document;
 use Opus\Import\Csv\CsvCollectionProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -39,30 +44,116 @@ class CsvCollectionProcessorTest extends TestCase
     /** @var CsvCollectionProcessor */
     private $processor;
 
+    /** @var CollectionRoleInterface */
+    private $colRole;
+
+    /** @var CollectionInterface */
+    private $col;
+
     public function setUp(): void
     {
         parent::setUp();
 
+        $this->clearDatabase();
+
         $this->processor = new CsvCollectionProcessor();
+
+        $role = CollectionRole::new();
+        $role->setName('role');
+        $role->setOaiName('roleoainame');
+        $root          = $role->addRootCollection();
+        $this->colRole = $role;
+
+        $col = Collection::new();
+        $col->setName('col1');
+        $col->setNumber('col1number');
+        $root->addLastChild($col);
+        $role->store();
+        $this->col = $col;
     }
 
     public function testProcessCollectionId()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [$this->col->getId()];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
     }
 
     public function testProcessMultipleCollectionId()
     {
+        $root = $this->colRole->getRootCollection();
+        $col2 = Collection::new();
+        $col2->setName('col2');
+        $col2->setNumber('col2number');
+        $root->addLastChild($col2);
+        $this->colRole->store();
+
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [$this->col->getId() . ' || ' . $col2->getId()];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(2, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
+        $this->assertEquals($col2->getId(), $doc->getCollection()[1]->getId());
     }
 
-    public function testProcessRoleAndNumberString()
+    public function testProcessUnknownCollectionId()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [9999];
+
+        $this->expectExceptionMessage('does not exist');
+        $processor->process($row, $doc);
     }
 
-    public function testProcessNamedCollection()
+    public function testProcessRoleAndNameString()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = ['role:col1'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
     }
 
     public function testProcessShortcutOptionRole()
+    {
+        $processor = $this->processor;
+        $processor->setShortcutOption('role');
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = ['col1'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
+    }
+
+    public function testConfigShortcutOptionRoleOaiName()
+    {
+    }
+
+    public function testConfigColValue()
     {
     }
 }

@@ -31,68 +31,61 @@
 
 namespace Opus\Import\Csv;
 
-use Exception;
-
-use function count;
-use function is_array;
-use function ucfirst;
+use Opus\Common\Subject;
 
 /**
- * TODO there probably should be an Interface as well
+ * Processing subject data in CSV columns.
+ *
+ * Supported variants:
+ * - Type defined in config/header
+ * - Comma separated list for multiple subjects
+ * - Type defined in separate column?
+ * - Support external key
+ * - Support language, GND subjects always German
+ * - Types are gnd, psyndex, uncontrolled
+ *
+ * | Subject-Gnd |
+ * | SUBJECT:EXTERNAL_KEY|
+ *
+ * | Subject-Uncontrolled |
+ * | SUBJECT |
+ * | LANGUAGE:SUBJECT |
+ * | :SUBJECT:EXTERNAL_KEY |
+ * | LANGUAGE:SUBJECT:EXTERNAL_KEY |
+ *
+ * TODO support escaping colon in subjects or external keys
+ * TODO How to distinguish between LANGUAGE and SUBJECT?
+ * TODO handle language for GND subjects
+ * TODO support "tag" as alias for "uncontrolled"?
+ * TODO support "keyword" as alias for "subject"?
  */
-class DefaultMultiColumnProcessor extends DefaultColumnProcessor
+class CsvSubjectProcessor extends DefaultMultiColumnProcessor
 {
-    /** @var array */
-    private $columnOffset = [];
+    /** @var string Type of subject */
+    private string $type = 'uncontrolled';
 
-    public function __construct(?array $columnConfig = null, ?string $shortcutOption = null)
+    protected function init(?array $columnConfig = null): void
     {
-        parent::__construct();
-
-        if (null !== $columnConfig && isset($columnConfig['columns'])) {
-            $this->setColumns($columnConfig['columns']);
-        }
-
-        if (null !== $shortcutOption) {
-            $this->setShortcutOption($shortcutOption);
-        }
+        $this->setModelType(Subject::getModelType());
     }
 
-    /**
-     * TODO check if fields exist?
-     */
-    public function setColumns(?array $columns): self
+    public function setShortcutOption(?string $shortcutOption): self
     {
-        if (null === $columns) {
-            $this->columnOffset = [];
-            return $this;
-        }
-
-        $offset = 0;
-        foreach ($columns as $fieldName => $fieldConfig) {
-            if (null !== $fieldConfig && ! is_array($fieldConfig)) {
-                $fieldName = $fieldConfig;
-            }
-            $fieldName = ucfirst($fieldName); // cass insensitive field names in config
-
-            if (! $this->fieldExists($fieldName)) {
-                throw new Exception('field ' . $fieldName . ' does not exist');
-            }
-
-            $this->columnOffset[$fieldName] = $offset;
-            $offset++;
-        }
+        $this->setType($shortcutOption);
         return $this;
     }
 
-    public function getFieldColumn(string $fieldName): int
+    /**
+     * TODO check if $type is valid
+     */
+    public function setType(string $type): self
     {
-        return $this->getColumnNo() + $this->columnOffset[$fieldName];
+        $this->type = $type;
+        return $this;
     }
 
-    public function getColumnCount(): int
+    public function getType(): string
     {
-        $columnCount = count($this->columnOffset);
-        return $columnCount > 0 ? $columnCount : 1;
+        return $this->type;
     }
 }

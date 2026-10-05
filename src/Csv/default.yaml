@@ -11,6 +11,7 @@
 # TODO support converting header to config and back (for auto config debugging)
 # TODO extend CvsCommand for new features like config-file, auto-mode and such
 # TODO support global options/defaults
+# TODO support IdentifierOld like a simple field ?
 #
 # default requires 33 columns
 #
@@ -77,7 +78,12 @@ Note:
     Message:
 
 # TODO currently collections are not setup for testing - fix!
+# TODO multiValue true should be default for Collection
 Collection:
+#  role:
+#    name:
+#    oaiName:
+#  colValues: name || oaiName
   multiValue: true
 
 # TODO
