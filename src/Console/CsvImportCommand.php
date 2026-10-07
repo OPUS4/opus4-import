@@ -54,6 +54,7 @@ class CsvImportCommand extends Command
 {
     const OPTION_NO_HEADER     = 'no-header';
     const OPTION_FULLTEXT_PATH = 'fulltext-path';
+    const OPTION_LEGACY        = 'legacy';
     const ARGUMENT_FILE        = 'file';
 
     /**
@@ -83,6 +84,12 @@ EOT;
                 InputOption::VALUE_OPTIONAL,
                 'Location of fulltext files'
             )
+            ->addOption(
+                self::OPTION_LEGACY,
+                null,
+                InputOption::VALUE_NONE,
+                'Use old CsvImporter implementation (deprecated)'
+            )
             ->addArgument(
                 self::ARGUMENT_FILE,
                 InputArgument::REQUIRED,
@@ -98,23 +105,27 @@ EOT;
         $csvFilePath = $input->getArgument(self::ARGUMENT_FILE);
 
         if (! file_exists($csvFilePath)) {
-            $output->writeln(sprintf('<error>File %s does not exists.</error>', $csvFilePath));
+            $output->writeln(sprintf('<error>File %s does not exist.</error>', $csvFilePath));
             return Command::FAILURE;
         }
 
-        $importer = new CsvImporter();
-        $importer->setOutput($output);
-        $importer->setIgnoreHeader(! $input->getOption(self::OPTION_NO_HEADER));
+        if ($input->getOption(self::OPTION_LEGACY)) {
+            $importer = new CsvImporter();
+            $importer->setOutput($output);
+            $importer->setIgnoreHeader(!$input->getOption(self::OPTION_NO_HEADER));
 
-        $fulltextPath = $input->getOption(self::OPTION_FULLTEXT_PATH);
+            $fulltextPath = $input->getOption(self::OPTION_FULLTEXT_PATH);
 
-        if ($fulltextPath !== null) {
-            if (! is_readable($fulltextPath)) {
-                $output->writeln('<error>Path ' . $fulltextPath . ' is not readable -- check path or permissions.</error>');
-            } else {
-                $importer->setFulltextPath($fulltextPath);
-                $importer->setGuestRole(UserRole::fetchByName('guest'));
+            if ($fulltextPath !== null) {
+                if (!is_readable($fulltextPath)) {
+                    $output->writeln('<error>Path ' . $fulltextPath . ' is not readable -- check path or permissions.</error>');
+                } else {
+                    $importer->setFulltextPath($fulltextPath);
+                    $importer->setGuestRole(UserRole::fetchByName('guest'));
+                }
             }
+        } else {
+            // TODO use new implementation, generic Importer with CsvParser
         }
 
         $importer->import($csvFilePath);

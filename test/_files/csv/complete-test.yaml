@@ -1,0 +1,31 @@
+# CSV import test configuration covering all variants and options
+#
+# Using a Yaml sequence, `-`, guarantees the order and allows using the object names like `Identifier` more than once.
+#
+
+columns:
+  # Basic document fields
+
+  # Dates
+
+  # Titles
+
+  # Persons
+
+  # Identifier
+  - Identifier-Old:
+  - Identifier-Isbn:
+      # TODO support IdentifierIsbn (field name in current data model)
+  - Identifier:
+      columns:
+        Type:
+        Value:
+  - Identifier:
+      multiValue: false
+
+  # Collection
+  # Series
+  # Enrichment
+  # Note
+  # DnbInstitute
+  # File

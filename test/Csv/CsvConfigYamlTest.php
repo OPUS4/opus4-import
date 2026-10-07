@@ -98,4 +98,14 @@ class CsvConfigYamlTest extends TestCase
         $this->assertEquals('old', $identifierProcessor->getType());
         $this->assertEquals(0, $identifierProcessor->getColumnNo());
     }
+
+    public function testUsingYamlSequence()
+    {
+        $config = new CsvConfigYaml();
+        $config->load(APPLICATION_PATH . '/test/_files/csv/complete-test.yaml');
+
+        $processors = $config->getProcessors();
+
+        $this->assertCount(4, $processors);
+    }
 }

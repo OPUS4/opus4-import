@@ -73,10 +73,16 @@ class CsvConfigYaml implements CsvConfigInterface
         'File'       => CsvFileProcessor::class,
     ];
 
-    public function load(?string $yamlFile = null)
+    /**
+     * TODO get default path from config?
+     * TODO error handling
+     */
+    public function load(?string $yamlFile = null): void
     {
-        // TODO support $yamlFile parameter
-        $this->config = yaml_parse_file(__DIR__ . '/default.yaml');
+        if (null === $yamlFile) {
+            $yamlFile = __DIR__ . '/default.yaml';
+        }
+        $this->config = yaml_parse_file($yamlFile);
     }
 
     public function getProcessors(): array
@@ -85,8 +91,14 @@ class CsvConfigYaml implements CsvConfigInterface
 
         $processors = [];
 
-        foreach ($this->config as $columnName => $columnConfig) {
+        foreach ($this->config['columns'] as $columnName => $columnConfig) {
             $columnInc = 1;
+
+            // Using a Yaml sequence to allow repeating object names like 'Identifier' for multiple columns
+            if (is_int($columnName)) {
+                $columnName = array_key_first($columnConfig);
+                $columnConfig = $columnConfig[$columnName];
+            }
 
             [$fieldName, $shortcutOption] = explode('-', $columnName, 2);
 

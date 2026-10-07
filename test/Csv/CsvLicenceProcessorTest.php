@@ -29,15 +29,31 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace Opus\Import\Csv;
+namespace OpusTest\Import\Csv;
 
-/**
- * TODO support default licence (column is yes/no)
- * TODO support licence based on ID
- * TODO support licence based on Name
- * TODO legacy implementation supports looking at different column (Enrichment 'format' to determine licence)
- *      This should be done using import rules after the parsing the CSV.
- */
-class CsvLicenceProcessor extends DefaultMultiColumnProcessor
+use OpusTest\Import\TestAsset\TestCase;
+
+class CsvLicenceProcessorTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+    }
+
+    public function testProcessLicenceId()
+    {
+
+    }
+
+    public function testProcessMultipleLicences()
+    {
+    }
+
+    public function testProcessLicenceName()
+    {
+    }
+
+    public function testProcessMappedLicences()
+    {
+    }
 }

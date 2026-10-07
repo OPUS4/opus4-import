@@ -12,6 +12,11 @@
 # TODO extend CvsCommand for new features like config-file, auto-mode and such
 # TODO support global options/defaults
 # TODO support IdentifierOld like a simple field ?
+# TODO support adding number to Object key like 'Identifier2'
+#
+# TODO Special legacy behaviour
+# TODO Fromm licence handling (dependence on format-Enrichment)
+# TODO Fromm file handling (dependence on format-Enrichment)
 #
 # default requires 33 columns
 #
@@ -24,87 +29,88 @@
 # - ignore
 #
 
-# Specific identifier type in a single column
-Identifier-Old:
+columns:
+  # Specific identifier type in a single column
+  - Identifier-Old:
 
-# Simple Document fields
-Language:
-Type:
-ServerState:
+  # Simple Document fields
+  - Language:
+  - Type:
+  - ServerState:
 
-# Main titles
-Title-Main:
-  columns:
-    Language:
-    Value:
+    # Main titles
+  - Title-Main:
+      columns:
+        Language:
+        Value:
 
-# Abstracts
-Title-Abstract:
-  multiValue: true
-  columns:
-    Language:
-    Value:
+  # Abstracts
+  - Title-Abstract:
+      multiValue: true
+      columns:
+        Language:
+        Value:
 
-# Process all title types
-Title:
-  columns:
-    Type:
-    Language:
-    Value:
+  # Process all title types
+  - Title:
+      columns:
+        Type:
+        Language:
+        Value:
 
-Person:
-  multiValue: true
-  columns:
-    Role:
-    FirstName:
-    LastName:
+  - Person:
+      multiValue: true
+      columns:
+        Role:
+        FirstName:
+        LastName:
 
-# Dates
-Date:
-  columns:
-    Type:
-    Value:
+    # Dates
+  - Date:
+      columns:
+        Type:
+        Value:
 
-Identifier:
-  multiValue: true # TODO add support
-  columns:
-    Type:
-    Value:
+  - Identifier:
+      multiValue: true # TODO add support
+      columns:
+        Type:
+        Value:
 
-# TODO
-Note:
-  columns:
-    Visibility:
-    Message:
+  # TODO
+  - Note:
+      columns:
+        Visibility:
+        Message:
 
-# TODO currently collections are not setup for testing - fix!
-# TODO multiValue true should be default for Collection
-Collection:
-#  role:
-#    name:
-#    oaiName:
-#  colValues: name || oaiName
-  multiValue: true
+  # TODO currently collections are not setup for testing - fix!
+  # TODO multiValue true should be default for Collection
+  - Collection:
+  #   role:
+  #     name:
+  #     oaiName:
+  #   colValues: name || oaiName
+      multiValue: true
 
-# TODO
-Series:
-  multiValue: true
-  
-Volume:
+  # TODO
+  - Series:
+      multiValue: true
 
-Licence-Id:
+  - Volume:
 
-# TODO is currently ignored
-Enrichment:
-  multiValue: true
+  - Licence-Id:
 
-Enrichment-availability:
-Enrichment-Format:
-Enrichment-KindOfPublication:
-Enrichment-IdNo:
-Enrichment-CopyrightPrint:
-Enrichment-CopyrightEBook:
-Enrichment-Relevance:
+  # TODO is currently ignored
+  - Enrichment:
+      multiValue: true
 
-# TODO "Filename"
-File:
+  - Enrichment-availability:
+  - Enrichment-Format:
+  - Enrichment-KindOfPublication:
+  - Enrichment-IdNo:
+  - Enrichment-CopyrightPrint:
+  - Enrichment-CopyrightEBook:
+  - Enrichment-Relevance:
+
+  # TODO "Filename"
+  - File:
