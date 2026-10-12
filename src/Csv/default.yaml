@@ -89,7 +89,8 @@ columns:
   #   role:
   #     name:
   #     oaiName:
-  #   colValues: name || oaiName
+  #   roleField: name | oainame
+  #   colField: name | number | oaisubset
       multiValue: true
 
   # TODO

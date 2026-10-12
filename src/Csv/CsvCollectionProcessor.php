@@ -45,18 +45,33 @@ use function is_numeric;
 
 /**
  * TODO handle missing collection gracefully (exception optional)
- * TODO support using ROLENAME:NUMBER
- * TODO support quick option ROLE + NUMBER VALUES
  * TODO avoid multiple instantiations of Collection objects
+ * TODO use boolean option for using Number, OaiSubset as collection ID
  */
 class CsvCollectionProcessor extends DefaultColumnProcessor
 {
+    const OPTION_ROLE_FIELD = 'roleField';
+
+    const OPTION_COL_FIELD = 'colField';
+
+    private $roleField = 'Name';
+
+    private $colField = 'Name';
+
     /** @var ?CollectionRoleInterface Fixed collection role */
     private $role;
 
     public function init(?array $columnConfig = null): void
     {
         $this->setModelType(Collection::getModelType());
+
+        if (isset($columnConfig[self::OPTION_ROLE_FIELD])) {
+            $this->roleField = $columnConfig[self::OPTION_ROLE_FIELD]; // TODO validate
+        }
+
+        if (isset($columnConfig[self::OPTION_COL_FIELD])) {
+            $this->colField = $columnConfig[self::OPTION_COL_FIELD]; // TODO validate
+        }
     }
 
     /**
@@ -65,7 +80,11 @@ class CsvCollectionProcessor extends DefaultColumnProcessor
     public function setShortcutOption(?string $shortcutOption): self
     {
         if (null !== $shortcutOption) {
-            $role = CollectionRole::fetchByName($shortcutOption);
+            if ($this->roleField === 'Name') {
+                $role = CollectionRole::fetchByName($shortcutOption);
+            } else {
+                $role = CollectionRole::fetchByOaiName($shortcutOption);
+            }
             $this->setRole($role);
         }
         return $this;
@@ -85,15 +104,28 @@ class CsvCollectionProcessor extends DefaultColumnProcessor
                 $role = $this->getRole();
                 if (null === $role) {
                     [$roleName, $colName] = array_map('trim', explode(':', $value));
-                    $role                 = CollectionRole::fetchByName($roleName);
-                    $collections          = Collection::fetchCollectionsByRoleName($role->getId(), $colName);
+                    if ($this->roleField === 'Name') {
+                        $role = CollectionRole::fetchByName($roleName);
+                    } else {
+                        $role = CollectionRole::fetchByOaiName($roleName);
+                    }
+                    if ($this->colField === 'Name') {
+                        $collections = Collection::fetchCollectionsByRoleName($role->getId(), $colName);
+                    } else {
+                        $collections = Collection::fetchCollectionsByRoleNumber($role->getId(), $colName);
+                    }
                     if (count($collections) > 0) {
                         $this->addCollection($collections[0]->getId(), $document);
                     }
                     // TODO parse ROLEOAINAME:COLNAME|COLOAINAME
                 } else {
                     // TODO parse COLOAINAME
-                    $collections = Collection::fetchCollectionsByRoleName($role->getId(), $value);
+                    if ($this->colField === 'Name') {
+                        $collections = Collection::fetchCollectionsByRoleName($role->getId(), $value);
+                    } else {
+                        $collections = Collection::fetchCollectionsByRoleNumber($role->getId(), $value);
+                    }
+
                     if (count($collections) > 0) {
                         $this->addCollection($collections[0]->getId(), $document);
                     }

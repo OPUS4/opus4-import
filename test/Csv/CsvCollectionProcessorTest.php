@@ -151,9 +151,31 @@ class CsvCollectionProcessorTest extends TestCase
 
     public function testConfigShortcutOptionRoleOaiName()
     {
+        $processor = new CsvCollectionProcessor(['roleField' => 'oainame']);
+        $processor->setShortcutOption('roleoainame');
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = ['col1'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
     }
 
     public function testConfigColValue()
     {
+        $processor = new CsvCollectionProcessor(['colField' => 'number']);
+        $processor->setShortcutOption('role');
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = ['col1number'];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getCollection());
+        $this->assertEquals($this->col->getId(), $doc->getCollection()[0]->getId());
     }
 }
