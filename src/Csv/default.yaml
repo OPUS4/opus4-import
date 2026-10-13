@@ -72,7 +72,7 @@ columns:
         Value:
 
   - Identifier:
-      multiValue: true # TODO add support
+      multiValue: true
       columns:
         Type:
         Value:

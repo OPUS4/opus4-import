@@ -31,11 +31,15 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Repository;
 
+use function filter_var;
 use function in_array;
 use function ucfirst;
+
+use const FILTER_VALIDATE_BOOLEAN;
 
 /**
  * TODO there probably should be an Interface as well
@@ -68,6 +72,9 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
 
     protected function init(?array $columnConfig = null): void
     {
+        if (isset($columnConfig['multiValue'])) {
+            $this->setMultiValueEnabled(filter_var($columnConfig['multiValue'], FILTER_VALIDATE_BOOLEAN));
+        }
     }
 
     /**
@@ -178,6 +185,10 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
 
     public function setFieldName(?string $name): self
     {
+        $name = ucfirst($name);
+        if (! $this->fieldExists($name)) {
+            throw new Exception('unknown field');
+        }
         $this->fieldName = $name;
         return $this;
     }

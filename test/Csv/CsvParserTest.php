@@ -31,12 +31,34 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Collection;
+use Opus\Common\CollectionRole;
 use Opus\Common\Document;
 use Opus\Import\Csv\CsvParser;
 use OpusTest\Import\TestAsset\TestCase;
 
 class CsvParserTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $role = CollectionRole::new();
+        $role->setName('role');
+        $role->setOaiName('roleoainame');
+        $root = $role->addRootCollection();
+
+        $colCount = 5;
+
+        for ($i = 0; $i < $colCount; $i++) {
+            $col = Collection::new();
+            $col->setName("col$i");
+            $col->setNumber("col{$i}number");
+            $root->addLastChild($col);
+            $role->store();
+        }
+    }
+
     public function testParseFile()
     {
         $parser = new CsvParser();

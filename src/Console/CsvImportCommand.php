@@ -33,6 +33,7 @@ namespace Opus\Import\Console;
 
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\UserRole;
+use Opus\Import\Csv\CsvParser;
 use Opus\Import\CsvImporter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -47,14 +48,20 @@ use function sprintf;
 /**
  * Imports CSV as OPUS 4 documents.
  *
- * TODO argument CSV file
- * TODO
+ * Use to import CSV with legacy implementation (Opus\Import\CsvImporter).
+ * Use with default configuration or provided Yaml file.
+ *
+ *
+ * TODO generate empty CSV file based on configuration (inkl. auto conform header)
+ * TODO generate description based on configuration
+ * TODO support and document auto (header) modus
  */
 class CsvImportCommand extends Command
 {
     const OPTION_NO_HEADER     = 'no-header';
     const OPTION_FULLTEXT_PATH = 'fulltext-path';
     const OPTION_LEGACY        = 'legacy';
+    const OPTION_CONFIG        = 'config';
     const ARGUMENT_FILE        = 'file';
 
     /**
@@ -65,8 +72,12 @@ class CsvImportCommand extends Command
         parent::configure();
 
         $help = <<<EOT
-The <fg=green>import:csv</> command can be used to import documents
-from CSV files. 
+The <info>import:csv</info> command can be used to import documents
+from CSV files.
+
+Use <info>--legacy</info> option to import CSV files using the old default implementation (<comment>Opus\Import\CsvImporter</comment>).
+
+Provide your own custom CSV configuration using <info>--config</info> option.  
 EOT;
 
         $this->setName('import:csv')
@@ -90,6 +101,12 @@ EOT;
                 InputOption::VALUE_NONE,
                 'Use old CsvImporter implementation (deprecated)'
             )
+            ->addOption(
+                self::OPTION_CONFIG,
+                'c',
+                InputOption::VALUE_REQUIRED,
+                'Path to Yaml config file'
+            )
             ->addArgument(
                 self::ARGUMENT_FILE,
                 InputArgument::REQUIRED,
@@ -112,20 +129,24 @@ EOT;
         if ($input->getOption(self::OPTION_LEGACY)) {
             $importer = new CsvImporter();
             $importer->setOutput($output);
-            $importer->setIgnoreHeader(!$input->getOption(self::OPTION_NO_HEADER));
+            $importer->setIgnoreHeader(! $input->getOption(self::OPTION_NO_HEADER));
 
             $fulltextPath = $input->getOption(self::OPTION_FULLTEXT_PATH);
 
             if ($fulltextPath !== null) {
-                if (!is_readable($fulltextPath)) {
-                    $output->writeln('<error>Path ' . $fulltextPath . ' is not readable -- check path or permissions.</error>');
+                if (! is_readable($fulltextPath)) {
+                    $output->writeln(
+                        "<error>Path {$fulltextPath} is not readable -- check path or permissions.</error>"
+                    );
                 } else {
                     $importer->setFulltextPath($fulltextPath);
                     $importer->setGuestRole(UserRole::fetchByName('guest'));
                 }
             }
         } else {
-            // TODO use new implementation, generic Importer with CsvParser
+            // TODO use new implementation, generic Importer with CsvParser (requires merging with branch)
+            $parser = new CsvParser();
+            // TODO set CSV configuration
         }
 
         $importer->import($csvFilePath);

@@ -42,6 +42,7 @@ use function array_map;
 use function count;
 use function explode;
 use function is_numeric;
+use function trim;
 
 /**
  * TODO handle missing collection gracefully (exception optional)
@@ -54,8 +55,10 @@ class CsvCollectionProcessor extends DefaultColumnProcessor
 
     const OPTION_COL_FIELD = 'colField';
 
+    /** @var string Name of field used for identifying CollectionRole */
     private $roleField = 'Name';
 
+    /** @var string Nane of field used for identifying Collection */
     private $colField = 'Name';
 
     /** @var ?CollectionRoleInterface Fixed collection role */
@@ -96,6 +99,10 @@ class CsvCollectionProcessor extends DefaultColumnProcessor
         $values      = array_map('trim', explode('||', $columnValue));
 
         foreach ($values as $value) {
+            if (null === $value || trim($value) === '') {
+                continue;
+            }
+
             if (is_numeric($value)) {
                 // Collection ID
                 $this->addCollection((int) $value, $document);

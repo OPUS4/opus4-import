@@ -53,6 +53,7 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 
     protected function init(?array $columnConfig = null): void
     {
+        parent::init($columnConfig);
         $this->setModelType(Identifier::getModelType());
     }
 

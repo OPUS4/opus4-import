@@ -72,6 +72,19 @@ class CsvCollectionProcessorTest extends TestCase
         $this->col = $col;
     }
 
+    public function testProcessEmpty()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [''];
+
+        $processor->process($row, $doc);
+
+        $this->assertCount(0, $doc->getCollection());
+    }
+
     public function testProcessCollectionId()
     {
         $processor = $this->processor;

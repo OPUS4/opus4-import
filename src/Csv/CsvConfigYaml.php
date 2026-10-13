@@ -34,8 +34,10 @@ namespace Opus\Import\Csv;
 use Opus\Common\Document;
 
 use function array_key_exists;
+use function array_key_first;
 use function count;
 use function explode;
+use function is_int;
 use function yaml_parse_file;
 
 /**
@@ -96,7 +98,7 @@ class CsvConfigYaml implements CsvConfigInterface
 
             // Using a Yaml sequence to allow repeating object names like 'Identifier' for multiple columns
             if (is_int($columnName)) {
-                $columnName = array_key_first($columnConfig);
+                $columnName   = array_key_first($columnConfig);
                 $columnConfig = $columnConfig[$columnName];
             }
 

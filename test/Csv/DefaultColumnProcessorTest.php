@@ -78,6 +78,19 @@ class DefaultColumnProcessorTest extends TestCase
     {
         $processor = $this->processor;
         $processor->setColumnNo(0);
+        $processor->setFieldName('Volume');
+
+        $doc = Document::new();
+        $row = ['vol1'];
+        $processor->process($row, $doc);
+
+        $this->assertEquals('vol1', $doc->getVolume());
+    }
+
+    public function testSetFieldNameAutoUcFirst()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
         $processor->setFieldName('volume');
 
         $doc = Document::new();

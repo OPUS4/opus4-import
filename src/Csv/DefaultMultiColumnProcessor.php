@@ -47,7 +47,7 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
 
     public function __construct(?array $columnConfig = null, ?string $shortcutOption = null)
     {
-        parent::__construct();
+        parent::__construct($columnConfig);
 
         if (null !== $columnConfig && isset($columnConfig['columns'])) {
             $this->setColumns($columnConfig['columns']);

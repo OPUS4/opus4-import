@@ -95,7 +95,7 @@ class CsvConfigYamlTest extends TestCase
 
         $identifierProcessor = $processors[0];
 
-        $this->assertEquals('old', $identifierProcessor->getType());
+        $this->assertEquals('Old', $identifierProcessor->getType());
         $this->assertEquals(0, $identifierProcessor->getColumnNo());
     }
 

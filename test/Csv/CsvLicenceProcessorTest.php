@@ -42,7 +42,6 @@ class CsvLicenceProcessorTest extends TestCase
 
     public function testProcessLicenceId()
     {
-
     }
 
     public function testProcessMultipleLicences()
