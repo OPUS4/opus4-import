@@ -61,7 +61,11 @@ class CsvTitleProcessorTest extends TestCase
 
     public function testProcessTitles()
     {
-        // TODO includes Type column
+        $this->processor->setColumns([
+            'Type',
+            'Language',
+            'Value',
+        ]);
     }
 
     public function testProcessMultipleValues()

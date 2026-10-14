@@ -144,4 +144,13 @@ class CsvParserTest extends TestCase
 
         // TODO check File
     }
+
+    public function testParseString()
+    {
+        $parser = new CsvParser();
+    }
+
+    public function testParseCustomConfig()
+    {
+    }
 }

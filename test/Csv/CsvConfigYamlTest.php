@@ -108,4 +108,70 @@ class CsvConfigYamlTest extends TestCase
 
         $this->assertCount(4, $processors);
     }
+
+    public function testLoadString()
+    {
+        $yaml = <<<YAML
+columns:
+  - Title-Main:
+      columns:
+        Language:
+        Value:
+YAML;
+
+        $config = new CsvConfigYaml();
+        $config->loadString($yaml);
+        $processors = $config->getProcessors();
+
+        $this->assertCount(1, $processors);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[0]);
+        $this->assertEquals([
+            'Language',
+            'Value',
+        ], $processors[0]->getColumns());
+    }
+
+    public function testLoadColumnsSequence()
+    {
+        $yaml = <<<YAML
+columns:
+  - Title-Main:
+      columns:
+        - Language:
+        - Value:
+YAML;
+
+        $config = new CsvConfigYaml();
+        $config->loadString($yaml);
+        $processors = $config->getProcessors();
+
+        $this->assertCount(1, $processors);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[0]);
+        $this->assertEquals([
+            'Language',
+            'Value',
+        ], $processors[0]->getColumns());
+    }
+
+    public function testLoadColumnsList()
+    {
+        $yaml = <<<YAML
+columns:
+  - Title-Main:
+      columns:
+        - Language
+        - Value
+YAML;
+
+        $config = new CsvConfigYaml();
+        $config->loadString($yaml);
+        $processors = $config->getProcessors();
+
+        $this->assertCount(1, $processors);
+        $this->assertInstanceOf(CsvTitleProcessor::class, $processors[0]);
+        $this->assertEquals([
+            'Language',
+            'Value',
+        ], $processors[0]->getColumns());
+    }
 }

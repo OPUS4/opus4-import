@@ -38,6 +38,7 @@ use function array_key_first;
 use function count;
 use function explode;
 use function is_int;
+use function yaml_parse;
 use function yaml_parse_file;
 
 /**
@@ -85,6 +86,11 @@ class CsvConfigYaml implements CsvConfigInterface
             $yamlFile = __DIR__ . '/default.yaml';
         }
         $this->config = yaml_parse_file($yamlFile);
+    }
+
+    public function loadString(string $yaml): void
+    {
+        $this->config = yaml_parse($yaml);
     }
 
     public function getProcessors(): array

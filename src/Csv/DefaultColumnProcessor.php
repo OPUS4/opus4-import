@@ -32,6 +32,7 @@
 namespace Opus\Import\Csv;
 
 use Exception;
+use Opus\Common\Document;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Repository;
 
@@ -167,6 +168,11 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
         return $this;
     }
 
+    protected function getDocumentFields(): array
+    {
+        return Document::new()->describe();
+    }
+
     public function getModelFields(): array
     {
         // TODO deal with modelType === null OR unknown
@@ -186,7 +192,7 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
     public function setFieldName(?string $name): self
     {
         $name = ucfirst($name);
-        if (! $this->fieldExists($name)) {
+        if (! in_array($name, $this->getDocumentFields())) {
             throw new Exception('unknown field');
         }
         $this->fieldName = $name;

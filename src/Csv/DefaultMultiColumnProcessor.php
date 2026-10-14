@@ -33,8 +33,11 @@ namespace Opus\Import\Csv;
 
 use Exception;
 
+use function array_key_first;
+use function array_keys;
 use function count;
 use function is_array;
+use function is_int;
 use function ucfirst;
 
 /**
@@ -69,7 +72,18 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
         }
 
         $offset = 0;
+
         foreach ($columns as $fieldName => $fieldConfig) {
+            if (is_int($fieldName)) {
+                if (is_array($fieldConfig)) {
+                    $fieldName   = array_key_first($fieldConfig);
+                    $fieldConfig = $fieldConfig[$fieldName];
+                } else {
+                    $fieldName   = $fieldConfig;
+                    $fieldConfig = null;
+                }
+            }
+
             if (null !== $fieldConfig && ! is_array($fieldConfig)) {
                 $fieldName = $fieldConfig;
             }
@@ -94,5 +108,10 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
     {
         $columnCount = count($this->columnOffset);
         return $columnCount > 0 ? $columnCount : 1;
+    }
+
+    public function getColumns(): array
+    {
+        return array_keys($this->columnOffset);
     }
 }
