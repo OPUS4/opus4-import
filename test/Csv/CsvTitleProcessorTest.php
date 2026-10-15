@@ -31,6 +31,7 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Document;
 use Opus\Import\Csv\CsvTitleProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -48,27 +49,140 @@ class CsvTitleProcessorTest extends TestCase
 
     public function testProcessTitleMain()
     {
+        $this->processor->setColumnNo(0);
+        $this->processor->setType('Main');
         $this->processor->setColumns([
             'Language',
             'Value',
         ]);
         $this->processor->setFieldname('TitleMain');
+
+        $doc = Document::new();
+        $row = ['eng', 'Title1'];
+
+        $this->processor->process($row, $doc);
+
+        $titles = $doc->getTitleMain();
+
+        $this->assertCount(1, $titles);
+        $this->assertEquals('eng', $titles[0]->getLanguage());
+        $this->assertEquals('Title1', $titles[0]->getValue());
     }
 
     public function testProcessTitleAbstract()
     {
-    }
-
-    public function testProcessTitles()
-    {
+        $this->processor->setColumnNo(0);
         $this->processor->setColumns([
             'Type',
             'Language',
             'Value',
         ]);
+
+        $doc = Document::new();
+        $row = ['Abstract', 'deu', 'Abstract1'];
+
+        $this->processor->process($row, $doc);
+
+        $titles = $doc->getTitleAbstract();
+
+        $this->assertCount(1, $titles);
+        $this->assertEquals('deu', $titles[0]->getLanguage());
+        $this->assertEquals('Abstract1', $titles[0]->getValue());
+    }
+
+    public function testProcessTitles()
+    {
+        $this->processor->setColumnNo(0);
+        $this->processor->setColumns([
+            'Type',
+            'Language',
+            'Value',
+        ]);
+
+        $doc = Document::new();
+        $row = ['Parent', 'deu', 'ParentTitle1'];
+
+        $this->processor->process($row, $doc);
+
+        $titles = $doc->getTitleParent();
+
+        $this->assertCount(1, $titles);
+        $this->assertEquals('deu', $titles[0]->getLanguage());
+        $this->assertEquals('ParentTitle1', $titles[0]->getValue());
     }
 
     public function testProcessMultipleValues()
     {
+        $this->processor->setColumnNo(0);
+        $this->processor->setColumns([
+            'Type',
+            'Language',
+            'Value',
+        ]);
+        $this->processor->setMultiValueEnabled(true);
+
+        $doc = Document::new();
+        $row = ['Parent || Additional', 'deu || eng', 'ParentTitle1 || AdditionalTitle1'];
+
+        $this->processor->process($row, $doc);
+
+        $titles = $doc->getTitleParent();
+
+        $this->assertCount(1, $titles);
+        $this->assertEquals('deu', $titles[0]->getLanguage());
+        $this->assertEquals('ParentTitle1', $titles[0]->getValue());
+
+        $titles = $doc->getTitleAdditional();
+
+        $this->assertCount(1, $titles);
+        $this->assertEquals('eng', $titles[0]->getLanguage());
+        $this->assertEquals('AdditionalTitle1', $titles[0]->getValue());
+    }
+
+    public function testProcessMultipleValuesShortcutType()
+    {
+        $this->processor->setColumnNo(0);
+        $this->processor->setColumns([
+            'Language',
+            'Value',
+        ]);
+        $this->processor->setMultiValueEnabled(true);
+        $this->processor->setType('Sub');
+
+        $doc = Document::new();
+        $row = ['deu || eng', 'SubTitle1 || SubTitle2'];
+
+        $this->processor->process($row, $doc);
+
+        $titles = $doc->getTitleSub();
+
+        $this->assertCount(2, $titles);
+        $this->assertEquals('deu', $titles[0]->getLanguage());
+        $this->assertEquals('SubTitle1', $titles[0]->getValue());
+        $this->assertEquals('eng', $titles[1]->getLanguage());
+        $this->assertEquals('SubTitle2', $titles[1]->getValue());
+    }
+
+    public function testProcessMultipleValuesMissmatchedCount()
+    {
+        $this->processor->setColumnNo(0);
+        $this->processor->setColumns([
+            'Language',
+            'Value',
+        ]);
+        $this->processor->setMultiValueEnabled(true);
+        $this->processor->setType('Sub');
+
+        $doc = Document::new();
+        $row = ['deu', 'SubTitle1 || SubTitle2'];
+
+        $this->expectExceptionMessage('Number of entries in columns do not match');
+        $this->processor->process($row, $doc);
+    }
+
+    public function testConfigUnknownType()
+    {
+        $this->expectExceptionMessage('Unknown title type');
+        $this->processor->setType('Unknown');
     }
 }

@@ -101,7 +101,11 @@ class DefaultMultiColumnProcessor extends DefaultColumnProcessor
 
     public function getFieldColumn(string $fieldName): int
     {
-        return $this->getColumnNo() + $this->columnOffset[$fieldName];
+        if (isset($this->columnOffset[$fieldName])) {
+            return $this->getColumnNo() + $this->columnOffset[$fieldName];
+        } else {
+            return $this->getColumnNo();
+        }
     }
 
     public function getColumnCount(): int

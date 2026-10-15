@@ -108,7 +108,11 @@ class CsvConfigYaml implements CsvConfigInterface
                 $columnConfig = $columnConfig[$columnName];
             }
 
-            [$fieldName, $shortcutOption] = explode('-', $columnName, 2);
+            $parts = explode('-', $columnName, 2);
+            if (count($parts) < 2) {
+                $parts[] = null;
+            }
+            [$fieldName, $shortcutOption] = $parts;
 
             $processor = null;
 

@@ -41,47 +41,47 @@ columns:
     # Main titles
   - Title-Main:
       columns:
-        Language:
-        Value:
+        - Language
+        - Value
 
   # Abstracts
   - Title-Abstract:
       multiValue: true
       columns:
-        Language:
-        Value:
+        - Language
+        - Value
 
   # Process all title types
   - Title:
       columns:
-        Type:
-        Language:
-        Value:
+        - Type
+        - Language
+        - Value
 
   - Person:
       multiValue: true
       columns:
-        Role:
-        FirstName:
-        LastName:
+        - Role
+        - FirstName
+        - LastName
 
     # Dates
   - Date:
       columns:
-        Type:
-        Value:
+        - Type
+        - Value
 
   - Identifier:
       multiValue: true
       columns:
-        Type:
-        Value:
+        - Type
+        - Value
 
   # TODO
   - Note:
       columns:
-        Visibility:
-        Message:
+        - Visibility
+        - Message
 
   # TODO currently collections are not setup for testing - fix!
   # TODO multiValue true should be default for Collection
@@ -106,12 +106,13 @@ columns:
       multiValue: true
 
   - Enrichment-availability:
-  - Enrichment-Format:
-  - Enrichment-KindOfPublication:
-  - Enrichment-IdNo:
-  - Enrichment-CopyrightPrint:
-  - Enrichment-CopyrightEBook:
-  - Enrichment-Relevance:
+  # TODO detect if config does not match column count in CSV file
+  # - Enrichment-Format:
+  # - Enrichment-KindOfPublication:
+  # - Enrichment-IdNo:
+  # - Enrichment-CopyrightPrint:
+  # - Enrichment-CopyrightEBook:
+  # - Enrichment-Relevance:
 
   # TODO "Filename"
   - File:

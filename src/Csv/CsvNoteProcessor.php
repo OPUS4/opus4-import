@@ -31,30 +31,89 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Note;
 
-use function ucfirst;
+use function array_map;
+use function count;
+use function explode;
+use function in_array;
+use function strtolower;
 
 class CsvNoteProcessor extends DefaultMultiColumnProcessor
 {
+    /** Visibility short cut setting */
+    private ?string $visibility = null;
+
     protected function init(?array $columnConfig = null): void
     {
         $this->setModelType(Note::getModelType());
     }
 
+    public function setShortcutOption(?string $shortcutOption): DefaultColumnProcessor
+    {
+        $this->setVisibility($shortcutOption);
+        return $this;
+    }
+
     public function process(array $row, DocumentInterface $document): void
     {
-        $columnFields = ['Visibility', 'Message'];
+        $visibility = $this->getVisibility();
 
-        $note = Note::new();
+        $separator = $this->getMultiValueSeparator();
 
-        foreach ($columnFields as $fieldName) {
-            $value  = $row[$this->getFieldColumn($fieldName)];
-            $method = 'set' . ucfirst($fieldName);
-            $note->$method($value);
+        $messages = array_map('trim', explode($separator, $row[$this->getFieldColumn('Message')]));
+
+        if (null === $visibility) {
+            $visibilities = array_map(
+                'trim',
+                explode($separator, $row[$this->getFieldColumn('Visibility')])
+            );
+
+            if (count($visibilities) !== count($messages)) {
+                throw new Exception('Number of entries for Visibility and Message do not match');
+            }
+        } else {
+            $visibilities = null;
         }
 
-        $document->addNote($note);
+        $pos = 0;
+
+        foreach ($messages as $message) {
+            if (null !== $visibilities) {
+                $visibility = $visibilities[$pos];
+            }
+
+            $visibility = strtolower($visibility);
+
+            if (empty($visibility) || ! in_array($visibility, ['public', 'private'])) {
+                // TODO log invalid visibility
+                $visibility = 'private';
+            }
+
+            $note = Note::new();
+            $note->setVisibility($visibility);
+            $note->setMessage($message);
+            $document->addNote($note);
+            $pos++;
+        }
+    }
+
+    public function setVisibility(?string $visibility = null): self
+    {
+        if (null !== $visibility) {
+            $visibility = strtolower($visibility);
+            if (! in_array($visibility, ['public', 'private'])) {
+                throw new Exception('Visibility must be public or private');
+            }
+        }
+        $this->visibility = $visibility;
+        return $this;
+    }
+
+    public function getVisibility(): ?string
+    {
+        return $this->visibility;
     }
 }

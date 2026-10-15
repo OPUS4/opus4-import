@@ -31,9 +31,14 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Title;
 
+use function array_map;
+use function count;
+use function explode;
+use function in_array;
 use function strtolower;
 use function ucfirst;
 
@@ -44,6 +49,15 @@ use function ucfirst;
  */
 class CsvTitleProcessor extends DefaultMultiColumnProcessor
 {
+    /** @var string[] Types of titles TODO get from model description */
+    private $supportedTypes = [
+        'main',
+        'parent',
+        'sub',
+        'additional',
+        'abstract',
+    ];
+
     private ?string $type = null;
 
     protected function init(?array $columnConfig = null): void
@@ -58,7 +72,36 @@ class CsvTitleProcessor extends DefaultMultiColumnProcessor
         $lang   = $row[$this->getFieldColumn('Language')];
         $value  = $row[$this->getFieldColumn('Value')];
 
-        $this->addTitle($document, $type, $lang, $value);
+        if ($this->isMultiValueEnabled()) {
+            $separator = $this->getMultiValueSeparator();
+
+            if (null !== $this->getType()) {
+                $types = null;
+            } else {
+                $types = array_map('trim', explode($separator, $type));
+            }
+
+            $languages = array_map('trim', explode($separator, $lang));
+            $values    = array_map('trim', explode($separator, $value));
+
+            if (count($languages) !== count($values) || null !== $types && count($types) !== count($values)) {
+                throw new Exception('Number of entries in columns do not match');
+            }
+
+            // TODO check counts are matching
+            $pos = 0;
+
+            foreach ($values as $value) {
+                if (null !== $types) {
+                    $type = $types[$pos];
+                }
+
+                $this->addTitle($document, $type, $languages[$pos], $value);
+                $pos++;
+            }
+        } else {
+            $this->addTitle($document, $type, $lang, $value);
+        }
     }
 
     protected function addTitle(DocumentInterface $doc, string $type, string $lang, string $value): void
@@ -83,7 +126,14 @@ class CsvTitleProcessor extends DefaultMultiColumnProcessor
 
     public function setType(?string $type): self
     {
-        $this->type = strtolower($type);
+        $type = strtolower($type);
+
+        if (! in_array($type, $this->supportedTypes)) {
+            throw new Exception('Unknown title type');
+        }
+
+        $this->type = $type;
+
         return $this;
     }
 }

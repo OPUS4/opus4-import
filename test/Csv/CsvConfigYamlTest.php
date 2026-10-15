@@ -62,7 +62,7 @@ class CsvConfigYamlTest extends TestCase
     {
         $processors = $this->yamlConfig->getProcessors();
 
-        $this->assertCount(24, $processors);
+        $this->assertCount(18, $processors);
         $this->assertInstanceOf(CsvIdentifierProcessor::class, $processors[0]);
         $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[1]);
         $this->assertInstanceOf(DefaultColumnProcessor::class, $processors[2]);
@@ -80,13 +80,7 @@ class CsvConfigYamlTest extends TestCase
         $this->assertInstanceOf(CsvLicenceProcessor::class, $processors[14]);
         $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[15]);
         $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[16]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[17]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[18]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[19]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[20]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[21]);
-        $this->assertInstanceOf(CsvEnrichmentProcessor::class, $processors[22]);
-        $this->assertInstanceOf(CsvFileProcessor::class, $processors[23]);
+        $this->assertInstanceOf(CsvFileProcessor::class, $processors[17]);
     }
 
     public function testLoadIdentifierProcessor()

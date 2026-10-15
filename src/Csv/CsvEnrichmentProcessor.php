@@ -80,9 +80,10 @@ class CsvEnrichmentProcessor extends DefaultMultiColumnProcessor
             if ($this->getColumnCount() > 1) {
                 $keyName = $row[$this->getFieldColumn('KeyName')];
             } else {
-                preg_match('/^{([A-Za-z]+): (.+)}$/', $value, $matches);
-                $keyName = $matches[1];
-                $value   = $matches[2];
+                if (preg_match('/^{([A-Za-z]+): (.+)}$/', $value, $matches)) {
+                    $keyName = $matches[1];
+                    $value   = $matches[2];
+                }
             }
         }
 
