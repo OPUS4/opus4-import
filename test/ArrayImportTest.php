@@ -40,7 +40,7 @@ class ArrayImportTest extends TestCase
     {
         $importer = new ArrayImport();
 
-        $importer->import([
+        $doc = $importer->import([
             'Type'      => 'article',
             'TitleMain' => [
                 [
@@ -50,5 +50,10 @@ class ArrayImportTest extends TestCase
                 ],
             ],
         ]);
+
+        $this->assertEquals('article', $doc->getType());
+        $this->assertCount(1, $doc->getTitleMain());
+        $this->assertEquals('Document Test Title', $doc->getTitleMain()[0]->getValue());
+        $this->assertEquals('eng', $doc->getTitleMain()[0]->getLanguage());
     }
 }

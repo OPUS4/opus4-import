@@ -39,6 +39,7 @@ use Opus\Common\Document;
  * TODO What is the use case, besides an easy way to test import mechanisms.
  * TODO Interface?
  * TODO support multiple documents?
+ * TODO this should probably be a "Parser", because it is basically just another format like CSV and OPUSXML
  */
 class ArrayImport
 {
@@ -49,6 +50,6 @@ class ArrayImport
      */
     public function import($data)
     {
-        $document = Document::fromArray($data);
+        return Document::fromArray($data);
     }
 }
