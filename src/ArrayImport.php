@@ -32,6 +32,7 @@
 namespace Opus\Import;
 
 use Opus\Common\Document;
+use Opus\Common\DocumentInterface;
 
 /**
  * Imports documents from array.
@@ -48,7 +49,7 @@ class ArrayImport
      *
      * TODO handling of collections
      */
-    public function import($data)
+    public function import($data): DocumentInterface
     {
         return Document::fromArray($data);
     }
