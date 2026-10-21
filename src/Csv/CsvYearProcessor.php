@@ -29,24 +29,67 @@
  * @license     http://www.gnu.org/licenses/gpl.html General Public License
  */
 
-namespace OpusTest\Import\Csv;
+namespace Opus\Import\Csv;
 
-use Opus\Import\Csv\CsvDateProcessor;
-use OpusTest\Import\TestAsset\TestCase;
+use Exception;
+use Opus\Common\Date;
+use Opus\Common\DocumentInterface;
 
-class CsvDateProcessorTest extends TestCase
+use function in_array;
+use function preg_match;
+use function strtolower;
+use function ucfirst;
+
+/**
+ * Process date and year values.
+ *
+ * Columns are not corresponding to actual fields for Document or a Date
+ * object.
+ *
+ * If a column is used for a specific date or year field, the basic
+ * DefaultColumnProcessor can handle it.
+ *
+ * - CompletedDate
+ * - CompletedYear
+ * - PublishedDate
+ * - PublishedYear
+ * - EmbargoDate
+ *
+ * This class has no support for multiple values.
+ */
+class CsvYearProcessor extends DefaultMultiColumnProcessor
 {
-    /** @var CsvDateProcessor */
-    private $processor;
-
-    public function setUp(): void
+    protected function init(?array $columnConfig = null): void
     {
-        parent::setUp();
-        $this->processor = new CsvDateProcessor();
+        $this->setModelType(Date::getModelType());
+        $this->setColumns(['Type', 'Value']);
     }
 
-    public function testProcessMultiColumn()
+    public function process(array $row, DocumentInterface $document): void
     {
-        // TODO test Type | Value
+        $type  = $row[$this->getFieldColumn('Type')];
+        $value = $row[$this->getFieldColumn('Value')];
+
+        if (empty($type)) {
+            throw new Exception('type of year value not specified');
+        }
+
+        $type = strtolower($type);
+
+        if (! preg_match("/^[0-9]{4}$/", $value)) {
+            throw new Exception("Value {$value} is not a valid year");
+        }
+
+        if (in_array($type, ['published', 'completed'])) {
+            $method = 'set' . ucfirst($type) . 'Year'; // TODO could be 'Date'
+            $document->$method($value);
+        } else {
+            throw new Exception('Invalid type of year field');
+        }
+    }
+
+    public function getModelFields(): array
+    {
+        return ['Type', 'Value'];
     }
 }

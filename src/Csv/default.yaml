@@ -13,6 +13,7 @@
 # TODO support global options/defaults
 # TODO support IdentifierOld like a simple field ?
 # TODO support adding number to Object key like 'Identifier2'
+# TODO support using Date fields as simple columns
 #
 # TODO Special legacy behaviour
 # TODO Fromm licence handling (dependence on format-Enrichment)
@@ -65,8 +66,8 @@ columns:
         - FirstName
         - LastName
 
-    # Dates
-  - Date:
+    # PublisedYear or CompletedYear
+  - Year:
       columns:
         - Type
         - Value

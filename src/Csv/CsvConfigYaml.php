@@ -64,7 +64,6 @@ class CsvConfigYaml implements CsvConfigInterface
     private $mapping = [
         'default'    => DefaultColumnProcessor::class,
         'Collection' => CsvCollectionProcessor::class,
-        'Date'       => CsvDateProcessor::class,
         'Year'       => CsvYearProcessor::class,
         'Enrichment' => CsvEnrichmentProcessor::class,
         'Identifier' => CsvIdentifierProcessor::class,

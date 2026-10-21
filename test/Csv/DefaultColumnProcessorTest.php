@@ -106,4 +106,30 @@ class DefaultColumnProcessorTest extends TestCase
         $this->expectExceptionMessage('unknown field');
         $processor->setFieldName('UnknownField');
     }
+
+    public function testProcessDate()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setFieldName('CompletedDate');
+
+        $doc = Document::new();
+        $row = ['2025-10-21'];
+        $processor->process($row, $doc);
+
+        $this->assertEquals('2025-10-21', $doc->getCompletedDate());
+    }
+
+    public function testProcessYear()
+    {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setFieldName('CompletedYear');
+
+        $doc = Document::new();
+        $row = ['2024'];
+        $processor->process($row, $doc);
+
+        $this->assertEquals('2024', $doc->getCompletedYear());
+    }
 }

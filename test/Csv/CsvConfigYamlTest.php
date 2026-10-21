@@ -33,7 +33,6 @@ namespace OpusTest\Import\Csv;
 
 use Opus\Import\Csv\CsvCollectionProcessor;
 use Opus\Import\Csv\CsvConfigYaml;
-use Opus\Import\Csv\CsvDateProcessor;
 use Opus\Import\Csv\CsvEnrichmentProcessor;
 use Opus\Import\Csv\CsvFileProcessor;
 use Opus\Import\Csv\CsvIdentifierProcessor;
@@ -42,6 +41,7 @@ use Opus\Import\Csv\CsvNoteProcessor;
 use Opus\Import\Csv\CsvPersonProcessor;
 use Opus\Import\Csv\CsvSeriesProcessor;
 use Opus\Import\Csv\CsvTitleProcessor;
+use Opus\Import\Csv\CsvYearProcessor;
 use Opus\Import\Csv\DefaultColumnProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -71,7 +71,7 @@ class CsvConfigYamlTest extends TestCase
         $this->assertInstanceOf(CsvTitleProcessor::class, $processors[5]);
         $this->assertInstanceOf(CsvTitleProcessor::class, $processors[6]);
         $this->assertInstanceOf(CsvPersonProcessor::class, $processors[7]);
-        $this->assertInstanceOf(CsvDateProcessor::class, $processors[8]);
+        $this->assertInstanceOf(CsvYearProcessor::class, $processors[8]);
         $this->assertInstanceOf(CsvIdentifierProcessor::class, $processors[9]);
         $this->assertInstanceOf(CsvNoteProcessor::class, $processors[10]);
         $this->assertInstanceOf(CsvCollectionProcessor::class, $processors[11]);
