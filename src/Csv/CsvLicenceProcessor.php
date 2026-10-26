@@ -31,13 +31,45 @@
 
 namespace Opus\Import\Csv;
 
+use Exception;
+use Opus\Common\DocumentInterface;
+use Opus\Common\Licence;
+use Opus\Common\Model\NotFoundException;
+
+use function array_map;
+use function explode;
+use function is_numeric;
+
 /**
+ * Supports one or more licence IDs in a column.
+ *
  * TODO support default licence (column is yes/no)
- * TODO support licence based on ID
  * TODO support licence based on Name
  * TODO legacy implementation supports looking at different column (Enrichment 'format' to determine licence)
  *      This should be done using import rules after the parsing the CSV.
  */
-class CsvLicenceProcessor extends DefaultMultiColumnProcessor
+class CsvLicenceProcessor extends DefaultColumnProcessor
 {
+    public function process(array $row, DocumentInterface $document): void
+    {
+        $columnValue = $row[$this->getColumnNo()];
+
+        $values = array_map('trim', explode('||', $columnValue));
+
+        foreach ($values as $value) {
+            if (is_numeric($value)) {
+                $this->addLicence((int) $value, $document);
+            }
+        }
+    }
+
+    protected function addLicence(int $licenceId, DocumentInterface $doc): void
+    {
+        try {
+            $licence = Licence::get($licenceId);
+            $doc->addLicence($licence);
+        } catch (NotFoundException $nfe) {
+            throw new Exception('licence id ' . $licenceId . ' does not exist: ' . $nfe->getMessage());
+        }
+    }
 }

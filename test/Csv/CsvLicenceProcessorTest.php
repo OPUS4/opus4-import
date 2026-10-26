@@ -31,28 +31,81 @@
 
 namespace OpusTest\Import\Csv;
 
+use Opus\Common\Document;
+use Opus\Common\Licence;
+use Opus\Common\LicenceInterface;
+use Opus\Import\Csv\CsvLicenceProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 
 class CsvLicenceProcessorTest extends TestCase
 {
+    /** @var CsvLicenceProcessor */
+    private $processor;
+
+    /** @var LicenceInterface */
+    private $licenceCcBy;
+
+    /** @var LicenceInterface */
+    private $licenceCcBySa;
+
     public function setUp(): void
     {
         parent::setUp();
+
+        $this->processor = new CsvLicenceProcessor();
+
+        $licence = Licence::new();
+        $licence->setName('CC BY 4.0');
+        $licence->setNameLong('Creative Commons - CC BY - Namensnennung 4.0 International');
+        $licence->setLinkLicence('https://creativecommons.org/licenses/by/4.0/deed.de');
+        $licence->store();
+        $this->licenceCcBy = $licence;
+
+        $licence = Licence::fromArray([
+            'Name'        => 'CC BY-SA 4.0',
+            'NameLong'    => 'Creative Commons - CC BY-SA - Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International',
+            'LinkLicence' => 'https://creativecommons.org/licenses/by-sa/4.0/deed.de',
+        ]);
+        $licence->store();
+        $this->licenceCcBySa = $licence;
     }
 
     public function testProcessLicenceId()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [$this->licenceCcBy->getId()];
+        $processor->process($row, $doc);
+
+        $this->assertCount(1, $doc->getLicence());
+        $this->assertEquals('CC BY 4.0', $doc->getLicence()[0]->getName());
     }
 
     public function testProcessMultipleLicences()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+
+        $doc = Document::new();
+        $row = [$this->licenceCcBy->getId() . ' || ' . $this->licenceCcBySa->getId()];
+        $processor->process($row, $doc);
+
+        $this->assertCount(2, $doc->getLicence());
+        $this->assertEquals('CC BY 4.0', $doc->getLicence()[0]->getName());
+        $this->assertEquals('CC BY-SA 4.0', $doc->getLicence()[1]->getName());
     }
 
-    public function testProcessLicenceName()
+    public function testProcessUnknownLicenceId()
     {
-    }
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
 
-    public function testProcessMappedLicences()
-    {
+        $doc = Document::new();
+        $row = ['9999'];
+
+        $this->expectExceptionMessage('does not exist');
+        $processor->process($row, $doc);
     }
 }

@@ -34,8 +34,8 @@ namespace Opus\Import\Csv;
 use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Identifier;
-
 use Opus\Common\Model\ModelException;
+
 use function array_map;
 use function count;
 use function explode;
