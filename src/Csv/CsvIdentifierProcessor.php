@@ -35,6 +35,7 @@ use Exception;
 use Opus\Common\DocumentInterface;
 use Opus\Common\Identifier;
 
+use Opus\Common\Model\ModelException;
 use function array_map;
 use function count;
 use function explode;
@@ -63,7 +64,7 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
         return $this;
     }
 
-    public function process(array $row, DocumentInterface $doc): void
+    public function process(array $row, DocumentInterface $document): void
     {
         $type = $this->getType();
 
@@ -95,11 +96,11 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
                 if (null !== $types) {
                     $type = $types[$pos];
                 }
-                $this->addIdentifier($doc, $value, $type);
+                $this->addIdentifier($document, $value, $type);
                 $pos++;
             }
         } else {
-            $this->addIdentifier($doc, $value, $type);
+            $this->addIdentifier($document, $value, $type);
         }
     }
 
@@ -134,7 +135,11 @@ class CsvIdentifierProcessor extends DefaultMultiColumnProcessor
 
     protected function getIdentifierType(string $type): string
     {
-        $type = Identifier::getTypeForFieldname('Identifier' . ucfirst($type));
+        try {
+            $type = Identifier::getTypeForFieldname('Identifier' . ucfirst($type));
+        } catch (ModelException $me) {
+            $type = null;
+        }
 
         if (null === $type) {
             throw new Exception('unknown identifier type');
