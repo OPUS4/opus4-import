@@ -34,11 +34,19 @@ namespace OpusTest\Import\Csv;
 use Opus\Common\Collection;
 use Opus\Common\CollectionRole;
 use Opus\Common\Document;
+use Opus\Common\Licence;
+use Opus\Common\LicenceInterface;
 use Opus\Import\Csv\CsvParser;
 use OpusTest\Import\TestAsset\TestCase;
 
 class CsvParserTest extends TestCase
 {
+    /** @var LicenceInterface */
+    private $licence;
+
+    /** @var LicenceInterface */
+    private $licenceCcBySa;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -57,6 +65,22 @@ class CsvParserTest extends TestCase
             $root->addLastChild($col);
             $role->store();
         }
+
+        $licence = Licence::fromArray([
+            'Name'        => 'CC BY 4.0',
+            'NameLong'    => 'Creative Commons - CC BY - Namensnennung 4.0 International',
+            'LinkLicence' => 'https://creativecommons.org/licenses/by/4.0/deed.de',
+        ]);
+        $licence->store();
+        $this->licence = $licence;
+
+        $licence = Licence::fromArray([
+            'Name'        => 'CC BY-SA 4.0',
+            'NameLong'    => 'Creative Commons - CC BY-SA - Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International',
+            'LinkLicence' => 'https://creativecommons.org/licenses/by-sa/4.0/deed.de',
+        ]);
+        $licence->store();
+        $this->licenceCcBySa = $licence;
     }
 
     public function testParseFile()
@@ -143,11 +167,6 @@ class CsvParserTest extends TestCase
         $enrichment = $doc->getEnrichmentValue('availability');
 
         // TODO check File
-    }
-
-    public function testParseString()
-    {
-        $parser = new CsvParser();
     }
 
     public function testParseCustomConfig()
