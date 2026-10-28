@@ -32,8 +32,10 @@
 namespace OpusTest\Import\Csv;
 
 use Opus\Common\Document;
+use Opus\Common\Title;
 use Opus\Import\Csv\DefaultColumnProcessor;
 use OpusTest\Import\TestAsset\TestCase;
+use ReflectionClass;
 
 class DefaultColumnProcessorTest extends TestCase
 {
@@ -54,37 +56,76 @@ class DefaultColumnProcessorTest extends TestCase
 
     public function testSetMultiValueSeparator()
     {
+        $processor = $this->processor;
+        $this->assertEquals('||', $processor->getMultiValueSeparator());
+
+        $processor->setMultiValueSeparator('::');
+        $this->assertEquals('::', $processor->getMultiValueSeparator());
     }
 
     public function testSetModelType()
     {
+        $processor = $this->processor;
+        $processor->setModelType('Title');
+
+        $modelFields = $processor->getModelFields();
+        $this->assertEqualsCanonicalizing([
+            'Language',
+            'Value',
+            'Type'
+        ], $modelFields);
     }
 
     public function testFieldExists()
     {
-        // TODO protected
+        $this->processor->setModelType('Title') ;
+        $model = new ReflectionClass(DefaultColumnProcessor::class);
+        $method = $model->getMethod('fieldExists');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($this->processor, 'Language'));
+        $this->assertFalse($method->invoke($this->processor, 'Unknown'));
+    }
+
+    public function testFieldExistsDefaultModelIsDocument()
+    {
+        $model = new ReflectionClass(DefaultColumnProcessor::class);
+        $method = $model->getMethod('fieldExists');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($this->processor, 'Volume'));
+        $this->assertFalse($method->invoke($this->processor, 'Developer'));
     }
 
     public function testGetModelFields()
     {
-        // TODO protected
+        $modelFields = $this->processor->getModelFields();
+
+        $this->assertCount(63, $modelFields);
+
+        // just some Document model fields
+        $this->assertContains('TitleMain', $modelFields);
+        $this->assertContains('Language', $modelFields);
+        $this->assertContains('Patent', $modelFields);
     }
 
     public function testSetFieldName()
     {
+        $processor = $this->processor;
+        $processor->setFieldName('TitleMain');
+        $this->assertEquals('TitleMain', $processor->getFieldName());
     }
 
-    public function testProcess()
+    public function testSetFieldNameCaseSensitive()
     {
-        $processor = $this->processor;
-        $processor->setColumnNo(0);
-        $processor->setFieldName('Volume');
+        $this->expectExceptionMessage('unknown field');
+        $this->processor->setFieldName('titlemain');
+    }
 
-        $doc = Document::new();
-        $row = ['vol1'];
-        $processor->process($row, $doc);
-
-        $this->assertEquals('vol1', $doc->getVolume());
+    public function testSetFieldNameUnknown()
+    {
+        $this->expectExceptionMessage('unknown field');
+        $this->processor->setFieldName('Title');
     }
 
     public function testSetFieldNameAutoUcFirst()
@@ -100,11 +141,17 @@ class DefaultColumnProcessorTest extends TestCase
         $this->assertEquals('vol1', $doc->getVolume());
     }
 
-    public function testSetFieldNameUnknown()
+    public function testProcess()
     {
         $processor = $this->processor;
-        $this->expectExceptionMessage('unknown field');
-        $processor->setFieldName('UnknownField');
+        $processor->setColumnNo(0);
+        $processor->setFieldName('Volume');
+
+        $doc = Document::new();
+        $row = ['vol1'];
+        $processor->process($row, $doc);
+
+        $this->assertEquals('vol1', $doc->getVolume());
     }
 
     public function testProcessDate()

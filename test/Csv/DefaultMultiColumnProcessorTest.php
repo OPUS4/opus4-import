@@ -47,9 +47,45 @@ class DefaultMultiColumnProcessorTest extends TestCase
 
     public function testSetColumns()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setModelType('Title');
+
+        $processor->setColumns([
+            'Language',
+            'Value'
+        ]);
+
+        $this->assertEqualsCanonicalizing([
+            'Language',
+            'Value'
+        ], $processor->getColumns());
+
+        $this->assertEquals(0, $processor->getFieldColumn('Language'));
+        $this->assertEquals(1, $processor->getFieldColumn('Value'));
     }
 
-    public function testSetColumnsSequence()
+    public function testSetColumnsUnknownField()
     {
+        $processor = $this->processor;
+        $processor->setColumnNo(0);
+        $processor->setModelType('Title');
+        $this->expectExceptionMessage('field Unknown does not exist');
+        $processor->setColumns(['Unknown']);
+    }
+
+    public function testGetColumnCount()
+    {
+        $processor = $this->processor;
+
+        $processor->setColumnNo(0);
+        $processor->setModelType('Title');
+
+        $processor->setColumns([
+            'Language',
+            'Value'
+        ]);
+
+        $this->assertEquals(2, $processor->getColumnCount());
     }
 }

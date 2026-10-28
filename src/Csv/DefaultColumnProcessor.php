@@ -175,13 +175,13 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
 
     public function getModelFields(): array
     {
-        // TODO deal with modelType === null OR unknown
         if (null === $this->modelType) {
             return [];
         }
 
         if (null === $this->modelFields) {
             $modelFactory      = Repository::getInstance()->getModelFactory();
+            // TODO deal with modelType === null OR unknown
             $model             = $modelFactory->create($this->getModelType());
             $this->modelFields = $model->describe();
         }
