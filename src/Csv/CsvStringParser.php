@@ -31,45 +31,44 @@
 
 namespace Opus\Import\Csv;
 
-use Opus\Common\Document;
-use Opus\Common\DocumentInterface;
-use SplFileObject;
-use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-
-use function fgetcsv;
-use function fopen;
-
-use const PHP_INT_MAX;
-
 /**
  * Configurable parser for OPUS 4 CSV strings.
  *
  * Exceptions importing a row, a document should not stop the entire import
  * process.
  */
-class CsvStringParser
+class CsvStringParser extends AbstractCsvParser
 {
-    public function parseFile(string $path)
+    /** @var array */
+    private $data;
+
+    /** @var int */
+    private $rowNumber;
+
+    public function parse(string $csv): void
     {
-        $this->config = new CsvConfigYaml(); // TODO configurable
-        $this->config->load();
+        $config = new CsvConfigYaml();
+        $config->load();
+        $this->setConfig($config);
+
+        $this->data = str_getcsv($csv, "\n", '"', '');
+
+        $this->rowNumber = 0;
     }
 
-    public function next(): ?DocumentInterface
+    protected function getNextRow(): ?array
     {
-        if ($this->lineCount === 0) {
-            fgetcsv($this->csvFile, 0, "\t", '"', '\\');
-            $this->lineCount++;
-        }
-
-        $row = fgetcsv($this->csvFile, 0, "\t", '"', '\\');
-
-        if ($row !== false) {
-            $document = $this->processRow($row);
+        if ($this->rowNumber < count($this->data)) {
+            $row = $this->data[$this->rowNumber++];
+            return str_getcsv($row, "\t", '"', '');
         } else {
-            $document = null;
+            return null;
         }
+    }
 
-        return $document;
+    public function getLineCount(): int
+    {
+        // TODO: Implement getLineCount() method.
+        return 0;
     }
 }

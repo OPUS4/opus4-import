@@ -180,7 +180,7 @@ class DefaultColumnProcessor implements ColumnProcessorInterface
         }
 
         if (null === $this->modelFields) {
-            $modelFactory      = Repository::getInstance()->getModelFactory();
+            $modelFactory = Repository::getInstance()->getModelFactory();
             // TODO deal with modelType === null OR unknown
             $model             = $modelFactory->create($this->getModelType());
             $this->modelFields = $model->describe();

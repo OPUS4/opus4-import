@@ -32,7 +32,6 @@
 namespace OpusTest\Import\Csv;
 
 use Opus\Common\Document;
-use Opus\Common\Title;
 use Opus\Import\Csv\DefaultColumnProcessor;
 use OpusTest\Import\TestAsset\TestCase;
 use ReflectionClass;
@@ -72,14 +71,14 @@ class DefaultColumnProcessorTest extends TestCase
         $this->assertEqualsCanonicalizing([
             'Language',
             'Value',
-            'Type'
+            'Type',
         ], $modelFields);
     }
 
     public function testFieldExists()
     {
-        $this->processor->setModelType('Title') ;
-        $model = new ReflectionClass(DefaultColumnProcessor::class);
+        $this->processor->setModelType('Title');
+        $model  = new ReflectionClass(DefaultColumnProcessor::class);
         $method = $model->getMethod('fieldExists');
         $method->setAccessible(true);
 
@@ -89,7 +88,7 @@ class DefaultColumnProcessorTest extends TestCase
 
     public function testFieldExistsDefaultModelIsDocument()
     {
-        $model = new ReflectionClass(DefaultColumnProcessor::class);
+        $model  = new ReflectionClass(DefaultColumnProcessor::class);
         $method = $model->getMethod('fieldExists');
         $method->setAccessible(true);
 

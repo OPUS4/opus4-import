@@ -31,12 +31,6 @@
 
 namespace OpusTest\Import\Csv;
 
-use Opus\Common\Collection;
-use Opus\Common\CollectionRole;
-use Opus\Common\Document;
-use Opus\Common\Licence;
-use Opus\Common\LicenceInterface;
-use Opus\Import\Csv\CsvParser;
 use Opus\Import\Csv\CsvStringParser;
 use OpusTest\Import\TestAsset\TestCase;
 
@@ -56,6 +50,9 @@ r3v1\tr3v2\tr3v3
 CSV;
 
         $parser = new CsvStringParser();
-        $parser->parseFile($csvData);
+        $parser->parse($csvData);
+
+        $doc = $parser->next();
+        $doc = $parser->next();
     }
 }

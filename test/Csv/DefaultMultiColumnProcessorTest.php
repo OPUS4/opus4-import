@@ -53,12 +53,12 @@ class DefaultMultiColumnProcessorTest extends TestCase
 
         $processor->setColumns([
             'Language',
-            'Value'
+            'Value',
         ]);
 
         $this->assertEqualsCanonicalizing([
             'Language',
-            'Value'
+            'Value',
         ], $processor->getColumns());
 
         $this->assertEquals(0, $processor->getFieldColumn('Language'));
@@ -83,7 +83,7 @@ class DefaultMultiColumnProcessorTest extends TestCase
 
         $processor->setColumns([
             'Language',
-            'Value'
+            'Value',
         ]);
 
         $this->assertEquals(2, $processor->getColumnCount());

@@ -31,8 +31,6 @@
 
 namespace Opus\Import\Csv;
 
-use Opus\Common\Document;
-use Opus\Common\DocumentInterface;
 use SplFileObject;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
@@ -53,58 +51,40 @@ use const PHP_INT_MAX;
  * TODO support single and multi column identifier
  * TODO support dryrun, parsing CSV file without saving documents
  */
-class CsvParser
+class CsvFileParser extends AbstractCsvParser
 {
-    /** @var CsvConfigInterface */
-    private $config;
-
-    /** @var ?string  Path to fulltext files for documents. */
-    private $fulltextPath;
-
     /** @var ?string Path to CSV file */
     private $filePath;
 
     /** @var resource */
     private $csvFile;
 
-    /** @var string */
-    private $separator = "\t"; // TODO configurable
-
-    /** @var int */
-    private $lineCount = 0;
-
-    public function parseFile(string $path)
+    public function parse(string $csv): void
     {
-        $this->filePath = $path;
+        $this->filePath = $csv;
 
-        $file = fopen($path, 'r');
+        $file = fopen($csv, 'r');
 
         if (! $file) {
             throw new FileNotFoundException('CSV file not found');
         }
 
-        $this->config = new CsvConfigYaml(); // TODO configurable
-        $this->config->load();
+        $config = new CsvConfigYaml(); // TODO configurable and move to parent class
+        $config->load();
+        $this->setConfig($config);
 
         $this->csvFile = $file;
     }
 
-    public function next(): ?DocumentInterface
+    protected function getNextRow(): ?array
     {
-        if ($this->lineCount === 0) {
-            fgetcsv($this->csvFile, 0, "\t", '"', '\\');
-            $this->lineCount++;
-        }
-
         $row = fgetcsv($this->csvFile, 0, "\t", '"', '\\');
 
-        if ($row !== false) {
-            $document = $this->processRow($row);
-        } else {
-            $document = null;
+        if (! $row) {
+            return null;
         }
 
-        return $document;
+        return $row;
     }
 
     /**
@@ -115,23 +95,5 @@ class CsvParser
         $file = new SplFileObject($this->filePath, 'r');
         $file->seek(PHP_INT_MAX);
         return $file->key() + 1;
-    }
-
-    protected function processRow(array $row): ?DocumentInterface
-    {
-        $document = Document::new();
-
-        $processors = $this->getProcessors();
-
-        foreach ($processors as $processor) {
-            $processor->process($row, $document);
-        }
-
-        return $document;
-    }
-
-    protected function getProcessors(): array
-    {
-        return $this->config->getProcessors();
     }
 }

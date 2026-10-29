@@ -33,7 +33,7 @@ namespace Opus\Import\Console;
 
 use Opus\Common\Model\NotFoundException;
 use Opus\Common\UserRole;
-use Opus\Import\Csv\CsvParser;
+use Opus\Import\Csv\CsvFileParser;
 use Opus\Import\CsvImporter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -145,7 +145,7 @@ EOT;
             }
         } else {
             // TODO use new implementation, generic Importer with CsvParser (requires merging with branch)
-            $parser = new CsvParser();
+            $parser = new CsvFileParser();
             // TODO set CSV configuration
         }
 

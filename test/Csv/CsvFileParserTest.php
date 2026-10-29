@@ -36,10 +36,10 @@ use Opus\Common\CollectionRole;
 use Opus\Common\Document;
 use Opus\Common\Licence;
 use Opus\Common\LicenceInterface;
-use Opus\Import\Csv\CsvParser;
+use Opus\Import\Csv\CsvFileParser;
 use OpusTest\Import\TestAsset\TestCase;
 
-class CsvParserTest extends TestCase
+class CsvFileParserTest extends TestCase
 {
     /** @var LicenceInterface */
     private $licence;
@@ -83,10 +83,10 @@ class CsvParserTest extends TestCase
         $this->licenceCcBySa = $licence;
     }
 
-    public function testParseFile()
+    public function testParse()
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
+        $parser = new CsvFileParser();
+        $parser->parse(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
 
         $documentCount = 0;
 
@@ -102,8 +102,8 @@ class CsvParserTest extends TestCase
 
     public function testGetLineCount()
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
+        $parser = new CsvFileParser();
+        $parser->parse(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
         $this->assertEquals(5, $parser->getLineCount()); // TODO counts empty last line - fix!
     }
 
@@ -114,8 +114,8 @@ class CsvParserTest extends TestCase
 
     public function testParseDocument()
     {
-        $parser = new CsvParser();
-        $parser->parseFile(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
+        $parser = new CsvFileParser();
+        $parser->parse(APPLICATION_PATH . '/test/_files/csv/default-example.csv');
 
         $doc = $parser->next();
 
@@ -162,7 +162,8 @@ class CsvParserTest extends TestCase
 
         $this->assertEquals('vol1', $doc->getVolume());
 
-        // TODO check licence
+        $this->assertCount(1, $doc->getLicence());
+        $this->assertEquals($this->licence->getName(), $doc->getLicence()[0]->getName());
 
         $enrichment = $doc->getEnrichmentValue('availability');
 
