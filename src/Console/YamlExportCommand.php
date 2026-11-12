@@ -44,7 +44,7 @@ use function yaml_emit;
  */
 class YamlExportCommand extends AbstractDocumentCommand
 {
-    protected function configure()
+    protected function configure(): void
     {
         parent::configure();
 
