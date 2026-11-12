@@ -56,9 +56,6 @@ class CsvImportCommand extends Command
     const OPTION_FULLTEXT_PATH = 'fulltext-path';
     const ARGUMENT_FILE        = 'file';
 
-    /**
-     * @return void
-     */
     protected function configure(): void
     {
         parent::configure();

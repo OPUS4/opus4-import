@@ -42,9 +42,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class YamlImportCommand extends Command
 {
-    /**
-     * @return void
-     */
     protected function configure(): void
     {
         parent::configure();
